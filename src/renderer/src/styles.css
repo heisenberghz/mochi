@@ -1,0 +1,46 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: transparent;
+  color: #2a2622;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+/* The pet surface is a transparent, click-through overlay. */
+body:has(.pet-root) {
+  overflow: hidden;
+  user-select: none;
+}
+
+/* The Den follows the OS preference. The pet window is driven by the
+   reducedMotion setting instead, so this rule is scoped to the Den. */
+@media (prefers-reduced-motion: reduce) {
+  .den-root *,
+  .den-root *::before,
+  .den-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

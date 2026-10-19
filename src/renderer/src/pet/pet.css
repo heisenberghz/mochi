@@ -1,0 +1,565 @@
+.pet-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pet-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+  box-sizing: border-box;
+}
+
+.pet-interaction {
+  width: 200px;
+  height: 220px;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-drag: none;
+}
+
+.pet-interaction:active {
+  cursor: grabbing;
+}
+
+.pet-sprite,
+.pet-svg {
+  width: 200px;
+  height: 220px;
+  display: block;
+}
+
+.pet-svg {
+  overflow: visible;
+}
+
+.pet-svg .character {
+  transform-box: view-box;
+  transform-origin: 100px 205px;
+  animation: mochi-breathe 3.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.pet-svg .eye-open {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mochi-blink 5.4s infinite;
+}
+
+.pet-svg .eye-closed {
+  opacity: 0;
+}
+
+.pet-svg .tail,
+.pet-svg .tail-outline {
+  transform-box: view-box;
+  transform-origin: 150px 172px;
+  animation: mochi-tail 4.4s ease-in-out infinite;
+}
+
+.pet-svg .scarf-tail {
+  transform-box: fill-box;
+  transform-origin: 100px 156px;
+  animation: mochi-scarf 4.4s ease-in-out infinite;
+}
+
+.pet-svg .zzz,
+.pet-svg .sparkles,
+.pet-svg .eye-closed {
+  opacity: 0;
+}
+
+.pet-svg .zzz-letter {
+  font-size: 16px;
+  opacity: 0;
+}
+
+.pet-svg .sparkle {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Idle micro-motion is always present. */
+.pet-svg .ear-left {
+  transform-box: fill-box;
+  transform-origin: 70% 90%;
+}
+.pet-svg .ear-right {
+  transform-box: fill-box;
+  transform-origin: 30% 90%;
+}
+
+/* Walk */
+.behavior-walk .character {
+  animation: mochi-walk 0.5s ease-in-out infinite;
+}
+.behavior-walk .paw-left {
+  animation: mochi-step 0.5s ease-in-out infinite;
+}
+.behavior-walk .paw-right {
+  animation: mochi-step 0.5s ease-in-out infinite;
+  animation-delay: 0.25s;
+}
+.behavior-walk .tail,
+.behavior-walk .tail-outline {
+  animation-duration: 0.9s;
+}
+
+/* Sleep */
+.behavior-sleep .character {
+  animation: mochi-sleep 5s ease-in-out infinite;
+}
+.behavior-sleep .eye-open {
+  opacity: 0;
+  animation: none;
+}
+.behavior-sleep .eye-closed {
+  opacity: 1;
+}
+.behavior-sleep .zzz {
+  opacity: 1;
+}
+.behavior-sleep .zzz-letter {
+  animation: mochi-zzz 3.2s ease-in-out infinite;
+}
+.behavior-sleep .zzz-two {
+  animation-delay: 0.5s;
+}
+.behavior-sleep .zzz-three {
+  animation-delay: 1s;
+}
+.behavior-sleep .tail,
+.behavior-sleep .tail-outline {
+  animation-duration: 7s;
+}
+.behavior-sleep .contact-shadow {
+  transform: scaleX(1.08);
+  transform-origin: 100px 209px;
+}
+
+/* Wake */
+.behavior-wake .character {
+  animation: mochi-wake 1.2s ease-in-out;
+  transform-origin: 100px 205px;
+}
+
+/* Wave */
+.behavior-wave .character {
+  animation: mochi-wave-body 1.5s ease-in-out;
+}
+.behavior-wave .paw-right {
+  transform-box: fill-box;
+  transform-origin: 30% 70%;
+  animation: mochi-wave-paw 1.5s ease-in-out;
+}
+.behavior-wave .ear-left {
+  animation: mochi-ear-lift 1.5s ease-in-out;
+}
+
+/* Focus */
+.behavior-focus .character {
+  animation: mochi-focus 4.4s ease-in-out infinite;
+}
+.behavior-focus .glasses {
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+/* Celebrate */
+.behavior-celebrate .character {
+  animation: mochi-celebrate 0.5s ease-in-out 5;
+}
+.behavior-celebrate .sparkles {
+  opacity: 1;
+}
+.behavior-celebrate .sparkle {
+  animation: mochi-sparkle 2.4s ease-out;
+}
+.behavior-celebrate .sparkle-two {
+  animation-delay: 0.15s;
+}
+.behavior-celebrate .sparkle-three {
+  animation-delay: 0.3s;
+}
+.behavior-celebrate .sparkle-four {
+  animation-delay: 0.45s;
+}
+.behavior-celebrate .sparkle-five {
+  animation-delay: 0.2s;
+}
+
+/* Dragged */
+.behavior-drag .character {
+  animation: mochi-dangle 1.2s ease-in-out infinite;
+  transform-origin: 100px 70px;
+}
+.behavior-drag .paw-left,
+.behavior-drag .paw-right {
+  animation: mochi-dangle-paw 1.2s ease-in-out infinite;
+}
+
+/* Click reaction overrides the current animation briefly. */
+.poked .character {
+  animation: mochi-poke 0.42s ease-out;
+}
+
+/* Bubble */
+.bubble {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 272px;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  padding: 12px 14px 10px;
+  border-radius: 14px;
+  border: 1px solid #e4dacb;
+  background: #fffdf8;
+  color: #2a2622;
+  box-shadow: 0 10px 30px rgba(42, 38, 34, 0.16);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  pointer-events: auto;
+  z-index: 5;
+  animation: mochi-bubble-in 160ms ease-out;
+}
+
+.bubble-text {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  line-height: 1.42;
+}
+
+.bubble-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bubble-action {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  background: #d98c45;
+  color: #231d17;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.bubble-action:hover {
+  background: #e39b58;
+}
+
+.bubble-action:focus-visible,
+.bubble-close:focus-visible {
+  outline: 2px solid #2a2622;
+  outline-offset: 2px;
+}
+
+.bubble-close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #756b5f;
+  font-size: 18px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.bubble-close:hover {
+  background: #f1eadf;
+  color: #2a2622;
+}
+
+.bubble-spacer {
+  flex: 1;
+}
+
+.bubble-tail {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: #fffdf8;
+  border-right: 1px solid #e4dacb;
+  border-bottom: 1px solid #e4dacb;
+  transform: rotate(45deg);
+}
+
+/* Keyframes */
+@keyframes mochi-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(1.5px) scaleY(1.014);
+  }
+}
+
+@keyframes mochi-focus {
+  0%,
+  100% {
+    transform: translateY(-1px) scaleY(1.004);
+  }
+  50% {
+    transform: translateY(0) scaleY(1.012);
+  }
+}
+
+@keyframes mochi-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  94%,
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes mochi-tail {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes mochi-scarf {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes mochi-walk {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.6deg);
+  }
+  25% {
+    transform: translateY(-2px) rotate(0.4deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0.6deg);
+  }
+  75% {
+    transform: translateY(-2px) rotate(-0.4deg);
+  }
+}
+
+@keyframes mochi-step {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-4px) scaleY(0.92);
+  }
+}
+
+@keyframes mochi-sleep {
+  0%,
+  100% {
+    transform: translateY(6px) scale(0.94, 0.9);
+  }
+  50% {
+    transform: translateY(7px) scale(0.95, 0.92);
+  }
+}
+
+@keyframes mochi-zzz {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  25%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes mochi-wake {
+  0% {
+    transform: translateY(6px) scale(0.94, 0.9);
+  }
+  35% {
+    transform: translateY(-4px) scale(1.02, 1.04);
+  }
+  65% {
+    transform: translateY(0) scale(0.99, 1);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+@keyframes mochi-wave-body {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-1.5deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+@keyframes mochi-wave-paw {
+  0%,
+  15% {
+    transform: translateY(0) rotate(0deg);
+  }
+  30% {
+    transform: translateY(-26px) rotate(-24deg);
+  }
+  45% {
+    transform: translateY(-30px) rotate(12deg);
+  }
+  60% {
+    transform: translateY(-28px) rotate(-18deg);
+  }
+  75% {
+    transform: translateY(-26px) rotate(8deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes mochi-ear-lift {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  40% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes mochi-celebrate {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  25% {
+    transform: translateY(2px) scale(1.04, 0.94);
+  }
+  55% {
+    transform: translateY(-12px) scale(0.97, 1.06);
+  }
+  80% {
+    transform: translateY(0) scale(1.01, 0.99);
+  }
+}
+
+@keyframes mochi-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(4px);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15) translateY(-16px);
+  }
+}
+
+@keyframes mochi-dangle {
+  0%,
+  100% {
+    transform: rotate(3.5deg) translateY(-2px);
+  }
+  50% {
+    transform: rotate(-3.5deg) translateY(2px);
+  }
+}
+
+@keyframes mochi-dangle-paw {
+  0%,
+  100% {
+    transform: translateY(2px) rotate(6deg);
+  }
+  50% {
+    transform: translateY(5px) rotate(-6deg);
+  }
+}
+
+@keyframes mochi-poke {
+  0% {
+    transform: scale(1, 1);
+  }
+  35% {
+    transform: scale(1.06, 0.9);
+  }
+  70% {
+    transform: scale(0.98, 1.03);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes mochi-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(7px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* Reduced motion: keep the state readable without continuous movement. */
+.pet-sprite.reduced .character,
+.pet-sprite.reduced .paw,
+.pet-sprite.reduced .tail,
+.pet-sprite.reduced .tail-outline,
+.pet-sprite.reduced .scarf-tail,
+.pet-sprite.reduced .eye-open,
+.pet-sprite.reduced .zzz-letter,
+.pet-sprite.reduced .sparkle {
+  animation: none !important;
+}
+
+.pet-sprite.reduced .eye-open {
+  transform: none;
+}
+
+.pet-sprite.reduced .bubble {
+  animation: none;
+}
