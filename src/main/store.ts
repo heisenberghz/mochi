@@ -1,16 +1,35 @@
 import {
-  copyFileSync,
+  closeSync,
   existsSync,
+  fsyncSync,
   mkdirSync,
+  openSync,
   readFileSync,
-  renameSync,
+  readdirSync,
+  statSync,
   unlinkSync,
-  writeFileSync,
 } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { DEFAULT_SETTINGS } from '../shared/constants';
 import type { PetView, Settings } from '../shared/types';
 import type { StoredPet } from '../domain/pet-brain';
+import { nodeFileOps, writeFileAtomically, type AtomicFileOps } from './atomic-write';
+
+/** A temp file older than this is left over from a crash and is safe to drop. */
+const STALE_TEMP_AGE_MS = 60 * 60 * 1000;
+
+const fileOps: AtomicFileOps = {
+  ...nodeFileOps,
+  /** Push the bytes to stable storage, so a crash cannot leave a short file. */
+  flush(path: string): void {
+    const fd = openSync(path, 'r+');
+    try {
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+  },
+};
 
 interface PersistedState {
   version: 1;
@@ -76,6 +95,7 @@ export class Store {
 
   constructor(userDataDir: string) {
     this.filePath = join(userDataDir, 'state.json');
+    this.cleanupStaleTemps();
     this.state = this.load();
   }
 
@@ -107,22 +127,49 @@ export class Store {
   }
 
   save(): void {
-    const dir = dirname(this.filePath);
-    mkdirSync(dir, { recursive: true });
-    const tmp = `${this.filePath}.tmp`;
-    const payload = `${JSON.stringify(this.state, null, 2)}\n`;
-    writeFileSync(tmp, payload, 'utf8');
-
     try {
-      if (existsSync(this.filePath)) copyFileSync(this.filePath, `${this.filePath}.bak`);
-      renameSync(tmp, this.filePath);
+      mkdirSync(dirname(this.filePath), { recursive: true });
     } catch {
-      // Windows can reject a replace while a scanner holds the file.
-      writeFileSync(this.filePath, payload, 'utf8');
+      // The write below reports the real problem.
+    }
+
+    const payload = `${JSON.stringify(this.state, null, 2)}\n`;
+    const result = writeFileAtomically(this.filePath, payload, fileOps);
+
+    if (!result.ok) {
+      // The previous state file is untouched and still holds the last good
+      // state. Say so out loud rather than losing the failure quietly.
+      console.error(
+        `[mochi] state write failed, keeping the previous file. ${result.error ?? 'unknown error'}`,
+      );
+    }
+  }
+
+  /**
+   * Drop temp files left behind by a crash. They are named uniquely, so
+   * without this they would pile up forever.
+   */
+  private cleanupStaleTemps(): void {
+    const dir = dirname(this.filePath);
+    const prefix = `${basename(this.filePath)}.tmp-`;
+    const cutoff = Date.now() - STALE_TEMP_AGE_MS;
+
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      if (!entry.startsWith(prefix)) continue;
+      const full = join(dir, entry);
       try {
-        unlinkSync(tmp);
+        if (statSync(full).mtimeMs < cutoff) {
+          unlinkSync(full);
+        }
       } catch {
-        // Best effort cleanup.
+        // Best effort.
       }
     }
   }

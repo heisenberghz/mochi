@@ -310,6 +310,27 @@ saved data can be destroyed, then the write cadence.*
 
 *Newest first. I add an entry after each piece of work.*
 
+### 2026-10-20 — Stage 1A started
+
+**A1 — security hardening** *(working tree, not committed)*
+- Both windows now refuse navigation and popups. Allow-listed `https` links open in
+  the browser; everything else is dropped.
+- The Den no longer keeps DevTools on in packaged builds.
+- Every renderer permission request is denied.
+- The production CSP no longer allows any `ws://` host.
+- **Side fix:** development mode had been silently broken — `script-src 'self'` was
+  blocking Vite's inline React-refresh preamble, so hot refresh never worked.
+- 31 tests passing (was 17). typecheck, build and smoke all green.
+
+**A2 — the primary state file can no longer be truncated** *(working tree, not committed)*
+- `save()` used to fall back to writing **straight onto** `state.json` when the rename
+  failed. That was how the only good copy could be destroyed.
+- Now: a unique temp name with the `wx` flag, `fsync` before the rename, the rename
+  retried with backoff, and if it still fails **the previous file is left exactly as it
+  was** while the new content stays in the temp file. Nothing is lost either way.
+- Stale temp files from a crash are cleaned up on startup.
+- 54 tests passing (23 new). typecheck, build and smoke all green.
+
 ### 2026-10-20 — Second pass: full doc audit, diagnosis, and re-plan
 - Read all 20 documents in `docs/` and every line of source, via three parallel audits.
 - Measured the code against all 88 functional requirements: **17 done, 40 partial, 31 missing**.
