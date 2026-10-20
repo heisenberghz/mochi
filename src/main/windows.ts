@@ -1,6 +1,7 @@
 import { app, BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
 import { PET_WINDOW } from '../shared/constants';
+import { hardenWebContents } from './hardening';
 import type { Store } from './store';
 
 const isDev = !app.isPackaged;
@@ -85,6 +86,7 @@ export function createPetWindow(store: Store): BrowserWindow {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setMenu(null);
   win.setIgnoreMouseEvents(true, { forward: true });
+  hardenWebContents(win);
   loadSurface(win, 'pet');
 
   return win;
@@ -105,6 +107,7 @@ export function createDenWindow(): BrowserWindow {
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
+      devTools: isDev,
       spellcheck: false,
       safeDialogs: true,
       disableDialogs: true,
@@ -112,6 +115,7 @@ export function createDenWindow(): BrowserWindow {
   });
 
   win.setMenu(null);
+  hardenWebContents(win);
   loadSurface(win, 'den');
   return win;
 }

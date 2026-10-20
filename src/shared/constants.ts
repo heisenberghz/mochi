@@ -40,3 +40,11 @@ export const DEFAULT_SETTINGS = {
   sound: true,
   launchAtLogin: false,
 } as const;
+
+/**
+ * Hosts allowed to open in the user's browser. Anything not listed here is
+ * refused. The support and privacy pages will live on the project's GitHub
+ * organisation, so that is the only host allowed today. Add an entry here when
+ * a real link ships — never widen this at the call site.
+ */
+export const EXTERNAL_LINK_HOSTS: readonly string[] = ['github.com'];

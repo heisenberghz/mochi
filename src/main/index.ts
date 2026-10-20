@@ -1,6 +1,7 @@
-import { app } from 'electron';
+import { app, session } from 'electron';
 import { join } from 'node:path';
 import { MochiController } from './controller';
+import { denyAllPermissions } from './hardening';
 import { Store } from './store';
 
 const smoke = process.argv.includes('--smoke-test');
@@ -27,6 +28,8 @@ if (!hasLock) {
   });
 
   app.whenReady().then(async () => {
+    denyAllPermissions(session.defaultSession);
+
     const store = new Store(app.getPath('userData'));
     controller = new MochiController(store, smoke);
     await controller.start();
