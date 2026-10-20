@@ -6,6 +6,7 @@ import {
   nativeImage,
   powerMonitor,
   screen,
+  shell,
   Tray,
   ipcMain,
   type IpcMainInvokeEvent,
@@ -192,7 +193,8 @@ export class MochiController {
             nav: Array.from(document.querySelectorAll('.nav-item')).map((n) => n.textContent),
             title: document.querySelector('.den-title')?.textContent ?? null,
             ring: document.querySelector('.ring-time')?.textContent ?? null,
-            cards: document.querySelectorAll('.card').length
+            cards: document.querySelectorAll('.card').length,
+            recovery: document.querySelector('.banner-recovery')?.textContent ?? null
           })`,
         );
       } catch (error) {
@@ -399,6 +401,7 @@ export class MochiController {
       focus: this.focus.state(),
       settings: { ...this.store.state.settings },
       welcome: this.welcome,
+      recovery: this.store.recovery,
     };
   }
 
@@ -837,6 +840,21 @@ export class MochiController {
       if (!fromApp(event)) return { ok: false };
       this.openDen();
       return { ok: true };
+    });
+
+    ipcMain.handle('app:openDataFolder', async (event): Promise<OkResult> => {
+      if (!fromApp(event)) return { ok: false };
+      const folder = this.store.dataFolder;
+      try {
+        const error = await shell.openPath(folder);
+        if (error) {
+          // Opening the folder failed, so show the state file itself instead.
+          shell.showItemInFolder(join(folder, 'state.json'));
+        }
+        return { ok: true };
+      } catch {
+        return { ok: false, error: 'could not open the data folder' };
+      }
     });
 
     ipcMain.handle('window:setPetVisible', (event, value: unknown): OkResult => {

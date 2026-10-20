@@ -30,6 +30,7 @@ export function mockSnapshot(): AppSnapshot {
       launchAtLogin: false,
     },
     welcome: true,
+    recovery: null,
   };
 }
 

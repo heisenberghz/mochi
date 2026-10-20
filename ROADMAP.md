@@ -331,6 +331,19 @@ saved data can be destroyed, then the write cadence.*
 - Stale temp files from a crash are cleaned up on startup.
 - 54 tests passing (23 new). typecheck, build and smoke all green.
 
+**A3 — unreadable data is kept, and a newer Mochi is never overwritten** *(working tree, not committed)*
+- Corrupt state used to be silently discarded and replaced with defaults. Now the file is
+  **moved aside** as `state.corrupt-<timestamp>-<name>.json` and kept — never deleted — so
+  the user can still get at whatever was in it.
+- The Den now says what happened and offers an **Open folder** button. No more silent data
+  loss.
+- A file written by a **newer** Mochi is left completely alone: the app runs read-only and
+  refuses to save over it, so a downgrade can never destroy data it does not understand.
+- Verified end to end: a corrupted `state.json` was quarantined with its contents intact
+  and the banner appeared in the Den; a `version: 99` file came out byte-for-byte
+  unchanged after a full app run.
+- 64 tests passing (10 new). typecheck, build and smoke all green.
+
 ### 2026-10-20 — Second pass: full doc audit, diagnosis, and re-plan
 - Read all 20 documents in `docs/` and every line of source, via three parallel audits.
 - Measured the code against all 88 functional requirements: **17 done, 40 partial, 31 missing**.

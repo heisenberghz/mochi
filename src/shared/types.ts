@@ -58,11 +58,25 @@ export interface Settings {
   launchAtLogin: boolean;
 }
 
+export type RecoveryKind = 'quarantined' | 'newer-version';
+
+export interface RecoveryNotice {
+  kind: RecoveryKind;
+  /** One sentence, written for a person rather than a log. */
+  message: string;
+  /** Where the affected files live. */
+  folder: string;
+  /** The files that were quarantined, or that a newer version owns. */
+  files: string[];
+}
+
 export interface AppSnapshot {
   pet: PetView;
   focus: FocusView;
   settings: Settings;
   welcome: boolean;
+  /** Set once, when saved data could not be used as-is. */
+  recovery: RecoveryNotice | null;
 }
 
 export interface BubbleAction {
@@ -99,6 +113,7 @@ export interface MochiApi {
   dragEnd(cursor: Point): Promise<OkResult>;
   contextMenu(cursor: Point): Promise<OkResult>;
   openDen(): Promise<OkResult>;
+  openDataFolder(): Promise<OkResult>;
   focus(action: FocusAction): Promise<OkResult>;
   updateSettings(patch: Partial<Settings>): Promise<SettingsResult>;
   setPetVisible(visible: boolean): Promise<OkResult>;

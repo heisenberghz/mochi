@@ -108,6 +108,7 @@ export function DenApp() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [recoveryDismissed, setRecoveryDismissed] = useState(false);
 
   useEffect(() => {
     const api = window.mochi;
@@ -185,7 +186,19 @@ export function DenApp() {
     }
   }, [snapshot.settings.petName]);
 
+  const openDataFolder = useCallback(async () => {
+    const api = window.mochi;
+    if (!api) return;
+    try {
+      const result = await api.openDataFolder();
+      if (!result.ok) setNotice('Could not open the data folder.');
+    } catch {
+      setNotice('Could not open the data folder.');
+    }
+  }, []);
+
   const { pet, focus, settings } = snapshot;
+  const recovery = snapshot.recovery;
   const phase = PHASE_LABEL[focus.phase];
   const totalMs = Math.max(1, focus.phaseDurationMs);
   const progress =
@@ -251,6 +264,31 @@ export function DenApp() {
             </div>
           ) : null}
         </header>
+
+        {recovery && !recoveryDismissed ? (
+          <div className="banner banner-recovery" role="alert">
+            <div className="banner-copy">
+              <p className="banner-text">{recovery.message}</p>
+              <p className="banner-path">{recovery.folder}</p>
+            </div>
+            <div className="banner-actions">
+              <button
+                type="button"
+                className="btn btn-soft btn-small"
+                onClick={() => void openDataFolder()}
+              >
+                Open folder
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-small"
+                onClick={() => setRecoveryDismissed(true)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {!connected ? (
           <div className="banner" role="note">

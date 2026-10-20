@@ -54,6 +54,7 @@ const api: MochiApi = {
   contextMenu: (cursor: Point) =>
     ipcRenderer.invoke('pet:contextMenu', cursor) as Promise<OkResult>,
   openDen: () => ipcRenderer.invoke('window:openDen') as Promise<OkResult>,
+  openDataFolder: () => ipcRenderer.invoke('app:openDataFolder') as Promise<OkResult>,
   focus,
   updateSettings: (patch: Partial<Settings>) =>
     ipcRenderer.invoke('settings:update', patch) as Promise<SettingsResult>,

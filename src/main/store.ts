@@ -6,12 +6,13 @@ import {
   openSync,
   readFileSync,
   readdirSync,
+  renameSync,
   statSync,
   unlinkSync,
 } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
-import { DEFAULT_SETTINGS } from '../shared/constants';
-import type { PetView, Settings } from '../shared/types';
+import { CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS } from '../shared/constants';
+import type { PetView, RecoveryNotice, Settings } from '../shared/types';
 import type { StoredPet } from '../domain/pet-brain';
 import { nodeFileOps, writeFileAtomically, type AtomicFileOps } from './atomic-write';
 
@@ -32,7 +33,7 @@ const fileOps: AtomicFileOps = {
 };
 
 interface PersistedState {
-  version: 1;
+  version: number;
   pet: StoredPet;
   placement: { x: number; y: number } | null;
   settings: Settings;
@@ -40,7 +41,7 @@ interface PersistedState {
 }
 
 const DEFAULT_STATE: PersistedState = {
-  version: 1,
+  version: CURRENT_SCHEMA_VERSION,
   pet: { energy: 80, mood: 70, xp: 0, level: 1, facing: 1 },
   placement: null,
   settings: { ...DEFAULT_SETTINGS },
@@ -91,6 +92,11 @@ function sanitizeSettings(value: unknown): Settings {
 /** Single-writer JSON store. Small state, atomic replace, one backup. */
 export class Store {
   private readonly filePath: string;
+  /** Set when a newer Mochi owns the file and we must not write to it. */
+  private readOnly = false;
+  private recoveryNotice: RecoveryNotice | null = null;
+  private warnedAboutReadOnly = false;
+
   state: PersistedState;
 
   constructor(userDataDir: string) {
@@ -99,34 +105,147 @@ export class Store {
     this.state = this.load();
   }
 
+  /** The folder the state file lives in, so the user can open it. */
+  get dataFolder(): string {
+    return dirname(this.filePath);
+  }
+
+  /** What went wrong with the saved data, if anything. Shown once. */
+  get recovery(): RecoveryNotice | null {
+    return this.recoveryNotice;
+  }
+
+  /** True when a newer Mochi owns the file, so we refuse to write to it. */
+  get isReadOnly(): boolean {
+    return this.readOnly;
+  }
+
   private load(): PersistedState {
     const candidates = [this.filePath, `${this.filePath}.bak`];
+    const quarantined: string[] = [];
+    let newerVersionPath: string | null = null;
+    let loaded: PersistedState | null = null;
+
     for (const candidate of candidates) {
       if (!existsSync(candidate)) continue;
+
+      let parsed: unknown;
       try {
-        const parsed: unknown = JSON.parse(readFileSync(candidate, 'utf8'));
-        if (!isRecord(parsed) || parsed.version !== 1) continue;
-        const placement = isRecord(parsed.placement)
-          ? {
-              x: Number(parsed.placement.x) || 0,
-              y: Number(parsed.placement.y) || 0,
-            }
-          : null;
-        return {
-          version: 1,
-          pet: sanitizePet(parsed.pet),
-          placement,
-          settings: sanitizeSettings(parsed.settings),
-          hasSeenWelcome: parsed.hasSeenWelcome === true,
-        };
+        parsed = JSON.parse(readFileSync(candidate, 'utf8'));
       } catch {
-        // Try the backup; if both fail, start clean.
+        quarantined.push(this.quarantineFile(candidate));
+        continue;
       }
+
+      if (!isRecord(parsed)) {
+        quarantined.push(this.quarantineFile(candidate));
+        continue;
+      }
+
+      const version = typeof parsed.version === 'number' ? parsed.version : 0;
+
+      if (version > CURRENT_SCHEMA_VERSION) {
+        // A newer Mochi owns this file. Reading it would mean guessing at
+        // fields we do not know, and writing over it would destroy data we
+        // cannot recreate.
+        newerVersionPath = candidate;
+        continue;
+      }
+
+      if (version < CURRENT_SCHEMA_VERSION) {
+        // This needs a migration rather than a guess. The migration chain
+        // arrives with schema v2; until then an unreadable older file is
+        // kept rather than silently discarded.
+        quarantined.push(this.quarantineFile(candidate));
+        continue;
+      }
+
+      loaded = this.fromRecord(parsed);
+      break;
     }
-    return { ...DEFAULT_STATE, pet: { ...DEFAULT_STATE.pet }, settings: { ...DEFAULT_STATE.settings } };
+
+    if (newerVersionPath !== null) {
+      this.readOnly = true;
+      this.recoveryNotice = {
+        kind: 'newer-version',
+        message:
+          'A newer version of Mochi wrote this data, so it has been left alone. Update Mochi to keep using it.',
+        folder: this.dataFolder,
+        files: [newerVersionPath],
+      };
+    } else if (quarantined.length > 0) {
+      this.recoveryNotice = {
+        kind: 'quarantined',
+        message:
+          'Mochi could not read its saved data, so it kept a copy and started fresh. Your old data is still in the folder below.',
+        folder: this.dataFolder,
+        files: quarantined,
+      };
+    }
+
+    if (loaded !== null) return loaded;
+
+    return {
+      ...DEFAULT_STATE,
+      pet: { ...DEFAULT_STATE.pet },
+      settings: { ...DEFAULT_STATE.settings },
+    };
+  }
+
+  private fromRecord(parsed: Record<string, unknown>): PersistedState {
+    const placement = isRecord(parsed.placement)
+      ? {
+          x: Number(parsed.placement.x) || 0,
+          y: Number(parsed.placement.y) || 0,
+        }
+      : null;
+
+    return {
+      version: CURRENT_SCHEMA_VERSION,
+      pet: sanitizePet(parsed.pet),
+      placement,
+      settings: sanitizeSettings(parsed.settings),
+      hasSeenWelcome: parsed.hasSeenWelcome === true,
+    };
+  }
+
+  /**
+   * Move an unreadable file out of the way instead of letting the next save
+   * overwrite it. The file is kept, never deleted, so the user can still get
+   * at whatever was in it.
+   */
+  private quarantineFile(path: string): string {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const dir = dirname(path);
+    let target = join(dir, `state.corrupt-${stamp}-${basename(path)}`);
+
+    let counter = 2;
+    while (existsSync(target)) {
+      target = join(dir, `state.corrupt-${stamp}-${counter}-${basename(path)}`);
+      counter += 1;
+    }
+
+    try {
+      renameSync(path, target);
+      return target;
+    } catch {
+      // It could not be moved. Leave it where it is — it is still the user's
+      // to look at, and we will not write over it.
+      return path;
+    }
   }
 
   save(): void {
+    if (this.readOnly) {
+      if (!this.warnedAboutReadOnly) {
+        this.warnedAboutReadOnly = true;
+        console.error(
+          '[mochi] not writing state: a newer version of Mochi owns this file',
+        );
+      }
+      return;
+    }
+
     try {
       mkdirSync(dirname(this.filePath), { recursive: true });
     } catch {
