@@ -19,6 +19,14 @@ import { nodeFileOps, writeFileAtomically, type AtomicFileOps } from './atomic-w
 /** A temp file older than this is left over from a crash and is safe to drop. */
 const STALE_TEMP_AGE_MS = 60 * 60 * 1000;
 
+/**
+ * How long a write may be deferred, and how long it may be deferred in total.
+ * Together they mean a forced kill can never lose more than two seconds of
+ * changes.
+ */
+const PERSIST_DEBOUNCE_MS = 500;
+const PERSIST_MAX_DELAY_MS = 2000;
+
 const fileOps: AtomicFileOps = {
   ...nodeFileOps,
   /** Push the bytes to stable storage, so a crash cannot leave a short file. */
@@ -96,6 +104,14 @@ export class Store {
   private readOnly = false;
   private recoveryNotice: RecoveryNotice | null = null;
   private warnedAboutReadOnly = false;
+
+  /** True when the state has changed but has not been written yet. */
+  private pending = false;
+  private timer: NodeJS.Timeout | null = null;
+  /** When the file on disk was last known to match the state. */
+  private lastWriteAt = Date.now();
+  /** The exact bytes last written, so an unchanged state costs no disk write. */
+  private lastWrittenPayload: string | null = null;
 
   state: PersistedState;
 
@@ -235,16 +251,66 @@ export class Store {
     }
   }
 
+  /**
+   * Schedule a write.
+   *
+   * Writes are debounced so a burst of changes costs one file write, and are
+   * never deferred for more than two seconds, so a forced kill cannot lose
+   * much. The state is serialised when the write actually happens, so every
+   * change made in the meantime is included.
+   */
   save(): void {
     if (this.readOnly) {
-      if (!this.warnedAboutReadOnly) {
-        this.warnedAboutReadOnly = true;
-        console.error(
-          '[mochi] not writing state: a newer version of Mochi owns this file',
-        );
-      }
+      this.warnReadOnly();
       return;
     }
+
+    this.pending = true;
+
+    if (Date.now() - this.lastWriteAt >= PERSIST_MAX_DELAY_MS) {
+      this.flush();
+      return;
+    }
+
+    if (this.timer === null) {
+      this.timer = setTimeout(() => this.flush(), PERSIST_DEBOUNCE_MS);
+      // A pending write must never keep the process alive on its own.
+      this.timer.unref?.();
+    }
+  }
+
+  /**
+   * Write the state now. Call this before the app quits, and whenever losing
+   * the change would be noticed.
+   *
+   * This always attempts a write — it is an explicit request — but a state
+   * that is byte-for-byte what is already on disk costs no disk write.
+   */
+  flush(): void {
+    if (this.timer !== null) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+
+    this.pending = false;
+
+    if (this.readOnly) {
+      this.warnReadOnly();
+      return;
+    }
+
+    const payload = `${JSON.stringify(this.state, null, 2)}\n`;
+
+    if (payload === this.lastWrittenPayload) {
+      // Nothing actually changed, so the file on disk is already correct.
+      // The pet's energy drifts every tick, and writing that to disk twice a
+      // second forever would be a lot of pointless I/O.
+      this.lastWriteAt = Date.now();
+      return;
+    }
+
+    this.lastWrittenPayload = payload;
+    this.lastWriteAt = Date.now();
 
     try {
       mkdirSync(dirname(this.filePath), { recursive: true });
@@ -252,7 +318,6 @@ export class Store {
       // The write below reports the real problem.
     }
 
-    const payload = `${JSON.stringify(this.state, null, 2)}\n`;
     const result = writeFileAtomically(this.filePath, payload, fileOps);
 
     if (!result.ok) {
@@ -262,6 +327,12 @@ export class Store {
         `[mochi] state write failed, keeping the previous file. ${result.error ?? 'unknown error'}`,
       );
     }
+  }
+
+  private warnReadOnly(): void {
+    if (this.warnedAboutReadOnly) return;
+    this.warnedAboutReadOnly = true;
+    console.error('[mochi] not writing state: a newer version of Mochi owns this file');
   }
 
   /**

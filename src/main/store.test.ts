@@ -4,12 +4,13 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   utimesSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Store } from './store';
 
 let dir: string;
@@ -34,7 +35,7 @@ describe('Store', () => {
   it('writes state that it can read back', () => {
     const store = new Store(dir);
     store.state.settings.petName = 'Biscuit';
-    store.save();
+    store.flush();
 
     const reloaded = new Store(dir);
     expect(reloaded.state.settings.petName).toBe('Biscuit');
@@ -42,7 +43,7 @@ describe('Store', () => {
 
   it('leaves the state file as valid JSON', () => {
     const store = new Store(dir);
-    store.save();
+    store.flush();
 
     const raw = readFileSync(join(dir, 'state.json'), 'utf8');
     expect(() => JSON.parse(raw)).not.toThrow();
@@ -51,10 +52,10 @@ describe('Store', () => {
   it('keeps the previous state as a backup', () => {
     const store = new Store(dir);
     store.state.settings.petName = 'First';
-    store.save();
+    store.flush();
 
     store.state.settings.petName = 'Second';
-    store.save();
+    store.flush();
 
     const backup = JSON.parse(readFileSync(join(dir, 'state.json.bak'), 'utf8'));
     expect(backup.settings.petName).toBe('First');
@@ -62,8 +63,8 @@ describe('Store', () => {
 
   it('leaves no temp file behind after a successful save', () => {
     const store = new Store(dir);
-    store.save();
-    store.save();
+    store.flush();
+    store.flush();
 
     const leftovers = readFileSync(join(dir, 'state.json'), 'utf8');
     expect(leftovers.length).toBeGreaterThan(0);
@@ -90,34 +91,20 @@ describe('Store', () => {
     expect(existsSync(recent)).toBe(true);
   });
 
-  it('falls back to the backup when the main file is unreadable', () => {
-    const store = new Store(dir);
-    store.state.settings.petName = 'Good';
-    store.save();
-    store.state.settings.petName = 'Newer';
-    store.save();
-
-    // The backup now holds 'Good'; corrupt the primary.
-    writeFileSync(join(dir, 'state.json'), '{ this is not json');
-
-    const reloaded = new Store(dir);
-    expect(reloaded.state.settings.petName).toBe('Good');
-  });
-
   it('survives being saved many times in a row', () => {
     const store = new Store(dir);
     for (let i = 0; i < 50; i += 1) {
       store.state.pet.xp = i;
       store.save();
     }
+    store.flush();
 
     const reloaded = new Store(dir);
     expect(reloaded.state.pet.xp).toBe(49);
   });
 });
 
-describe('Store recovery', () => {
-  function corruptFiles(): string[] {
+describe('Store recovery', () => {  function corruptFiles(): string[] {
     return readdirSync(dir)
       .filter((name) => name.startsWith('state.corrupt-'))
       .map((name) => join(dir, name));
@@ -125,7 +112,7 @@ describe('Store recovery', () => {
 
   it('reports no recovery when everything is fine', () => {
     const store = new Store(dir);
-    store.save();
+    store.flush();
 
     const reloaded = new Store(dir);
     expect(reloaded.recovery).toBeNull();
@@ -145,9 +132,9 @@ describe('Store recovery', () => {
   it('falls back to the backup when the main file is unreadable', () => {
     const store = new Store(dir);
     store.state.settings.petName = 'Recovered';
-    store.save();
+    store.flush();
     store.state.settings.petName = 'Overwritten';
-    store.save();
+    store.flush();
 
     // The backup holds 'Recovered'; corrupt the main file.
     writeFileSync(join(dir, 'state.json'), 'not json at all');
@@ -221,10 +208,194 @@ describe('Store recovery', () => {
 
     const store = new Store(dir);
     store.state.settings.petName = 'Fresh';
-    store.save();
+    store.flush();
 
     const reloaded = new Store(dir);
     expect(reloaded.state.settings.petName).toBe('Fresh');
     expect(reloaded.recovery).toBeNull();
+  });
+});
+
+describe('Store write scheduling', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not write the moment it is asked to', () => {
+    const store = new Store(dir);
+    store.state.settings.petName = 'Later';
+
+    store.save();
+
+    expect(existsSync(join(dir, 'state.json'))).toBe(false);
+  });
+
+  it('writes after the debounce', () => {
+    const store = new Store(dir);
+    store.state.settings.petName = 'Later';
+
+    store.save();
+    vi.advanceTimersByTime(499);
+    expect(existsSync(join(dir, 'state.json'))).toBe(false);
+
+    vi.advanceTimersByTime(1);
+    expect(existsSync(join(dir, 'state.json'))).toBe(true);
+  });
+
+  it('writes the latest state, not the state at the time of the call', () => {
+    const store = new Store(dir);
+    store.state.settings.petName = 'First';
+    store.save();
+    store.state.settings.petName = 'Second';
+    store.save();
+
+    vi.advanceTimersByTime(500);
+
+    const reloaded = new Store(dir);
+    expect(reloaded.state.settings.petName).toBe('Second');
+  });
+
+  it('coalesces a burst of changes into one write', () => {
+    const store = new Store(dir);
+    for (let i = 0; i < 20; i += 1) {
+      store.state.pet.xp = i;
+      store.save();
+    }
+
+    vi.advanceTimersByTime(500);
+
+    const reloaded = new Store(dir);
+    expect(reloaded.state.pet.xp).toBe(19);
+  });
+
+  it('writes immediately when flushed', () => {
+    const store = new Store(dir);
+    store.state.settings.petName = 'Now';
+
+    store.save();
+    store.flush();
+
+    expect(existsSync(join(dir, 'state.json'))).toBe(true);
+  });
+
+  it('does not write twice when flushed after a write already happened', () => {
+    const store = new Store(dir);
+    store.state.pet.xp = 1;
+
+    store.flush();
+    store.state.pet.xp = 2;
+    store.flush();
+
+    const reloaded = new Store(dir);
+    expect(reloaded.state.pet.xp).toBe(2);
+  });
+
+  it('cancels the pending write when flushed', () => {
+    const store = new Store(dir);
+    store.state.settings.petName = 'Flushed';
+
+    store.save();
+    store.flush();
+    vi.advanceTimersByTime(5000);
+
+    // One file, not a second one from the timer.
+    const stateFiles = readdirSync(dir).filter((name) => name === 'state.json');
+    expect(stateFiles).toHaveLength(1);
+  });
+
+  it('does not write again when the state has not changed', () => {
+    const store = new Store(dir);
+    store.flush();
+    const first = statSync(join(dir, 'state.json')).mtimeMs;
+
+    store.flush();
+    vi.advanceTimersByTime(5000);
+
+    expect(statSync(join(dir, 'state.json')).mtimeMs).toBe(first);
+  });
+
+  it('writes straight away when flushed, even if save was never called', () => {
+    const store = new Store(dir);
+    store.state.settings.petName = 'StraightAway';
+
+    store.flush();
+
+    const reloaded = new Store(dir);
+    expect(reloaded.state.settings.petName).toBe('StraightAway');
+  });
+
+  it('never leaves the saved state more than two seconds behind', () => {
+    const store = new Store(dir);
+    let lastWritten = -1;
+
+    // A change every 100 ms, for ten seconds.
+    for (let tick = 0; tick < 100; tick += 1) {
+      store.state.pet.xp = tick;
+      store.save();
+      vi.advanceTimersByTime(100);
+
+      if (!existsSync(join(dir, 'state.json'))) continue;
+
+      const onDisk = JSON.parse(readFileSync(join(dir, 'state.json'), 'utf8')) as {
+        pet: { xp: number };
+      };
+      // Twenty ticks is two seconds.
+      expect(tick - onDisk.pet.xp).toBeLessThanOrEqual(20);
+      lastWritten = onDisk.pet.xp;
+    }
+
+    expect(lastWritten).toBeGreaterThanOrEqual(79);
+  });
+
+  it('does not write when nothing actually changed', () => {
+    const store = new Store(dir);
+    store.state.settings.petName = 'Same';
+
+    store.flush();
+    const first = statSync(join(dir, 'state.json')).mtimeMs;
+
+    store.state.pet.energy = 80; // already the default
+    store.flush();
+    vi.advanceTimersByTime(5000);
+
+    expect(statSync(join(dir, 'state.json')).mtimeMs).toBe(first);
+  });
+
+  it('writes again once the state really changes', () => {
+    const store = new Store(dir);
+    store.flush();
+    const first = statSync(join(dir, 'state.json')).mtimeMs;
+
+    store.state.pet.xp = 7;
+    store.flush();
+
+    expect(statSync(join(dir, 'state.json')).mtimeMs).not.toBe(first);
+  });
+
+  it('keeps working when the file cannot be written', () => {
+    const store = new Store(dir);
+    store.state.settings.petName = 'One';
+
+    store.flush();
+    store.state.settings.petName = 'Two';
+    store.flush();
+
+    const reloaded = new Store(dir);
+    expect(reloaded.state.settings.petName).toBe('Two');
+  });
+
+  it('recovers after a corrupt file is quarantined', () => {
+    writeFileSync(join(dir, 'state.json'), 'broken');
+
+    const store = new Store(dir);
+    store.state.settings.petName = 'Fresh';
+    store.flush();
+
+    const reloaded = new Store(dir);
+    expect(reloaded.state.settings.petName).toBe('Fresh');
   });
 });

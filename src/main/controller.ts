@@ -85,7 +85,6 @@ export class MochiController {
   private isQuitting = false;
 
   private welcome: boolean;
-  private lastPersistAt = 0;
   private lastTrayKey = '';
   private timersStarted = false;
 
@@ -127,7 +126,7 @@ export class MochiController {
       setTimeout(() => this.brain.wave(Date.now()), 900);
     });
 
-    powerMonitor.on('suspend', () => this.persist());
+    powerMonitor.on('suspend', () => this.persistNow());
     powerMonitor.on('resume', () => {
       this.brain.forceWake(Date.now());
       clampPlacement(this.petWindow!);
@@ -259,6 +258,8 @@ export class MochiController {
       'utf8',
     );
     console.log(`SMOKE_RESULT ${JSON.stringify(result)}`);
+    // app.exit() skips before-quit, so the pending write is flushed by hand.
+    this.persistNow();
     app.exit(0);
   }
 
@@ -300,7 +301,7 @@ export class MochiController {
 
   stop(): void {
     this.isQuitting = true;
-    this.persist();
+    this.persistNow();
     if (this.behaviorTimer) clearInterval(this.behaviorTimer);
     if (this.focusTimer) clearInterval(this.focusTimer);
     this.stopWalk();
@@ -359,10 +360,9 @@ export class MochiController {
 
     this.broadcast();
 
-    if (now - this.lastPersistAt > 30_000) {
-      this.lastPersistAt = now;
-      this.persist();
-    }
+    // The store debounces this, so the saved state never falls more than a
+    // couple of seconds behind what is on screen.
+    this.persist();
   }
 
   private focusTick(): void {
@@ -434,6 +434,7 @@ export class MochiController {
     this.stopWalk();
     this.petWindow.setIgnoreMouseEvents(true, { forward: true });
     this.petWindow.hide();
+    this.persistNow();
     this.broadcast();
   }
 
@@ -494,6 +495,9 @@ export class MochiController {
       default:
         return { ok: false, error: 'unknown focus action' };
     }
+    // A focus command is worth keeping even if the app is killed a second
+    // later, so it is written straight away.
+    this.persistNow();
     this.broadcast();
     return { ok: true };
   }
@@ -539,7 +543,7 @@ export class MochiController {
       if (t >= 1) {
         this.stopWalk();
         this.store.setPlacement(x, bounds.y);
-        this.store.save();
+        this.store.flush();
       }
     }, 16);
   }
@@ -621,7 +625,7 @@ export class MochiController {
 
     const finalBounds = win.getBounds();
     this.store.setPlacement(finalBounds.x, finalBounds.y);
-    this.store.save();
+    this.store.flush();
     this.brain.endDrag(Date.now());
     win.setIgnoreMouseEvents(true, { forward: true });
     this.broadcast();
@@ -797,7 +801,7 @@ export class MochiController {
       if (this.welcome) {
         this.welcome = false;
         this.store.markWelcomeSeen();
-        this.store.save();
+        this.store.flush();
       }
       return snapshot;
     });
@@ -903,7 +907,7 @@ export class MochiController {
         if (key === 'launchAtLogin' && typeof value === 'boolean') next.launchAtLogin = value;
       }
       this.store.setSettings(next);
-      this.store.save();
+      this.store.flush();
       this.applyLoginItem();
       this.broadcast();
       return { ok: true, settings: { ...next } };
@@ -926,5 +930,11 @@ export class MochiController {
   private persist(): void {
     this.store.setPet(this.brain.snapshot());
     this.store.save();
+  }
+
+  /** Write the state to disk right now, for moments where a lost change shows. */
+  private persistNow(): void {
+    this.store.setPet(this.brain.snapshot());
+    this.store.flush();
   }
 }

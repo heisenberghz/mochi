@@ -344,6 +344,19 @@ saved data can be destroyed, then the write cadence.*
   unchanged after a full app run.
 - 64 tests passing (10 new). typecheck, build and smoke all green.
 
+**A4 — the saved state is never more than two seconds behind** *(working tree, not committed)*
+- Pet state was written only every 30 seconds, and hiding the pet did not write at all. A
+  force-kill could lose half a minute of progress.
+- Writes are now debounced by 500 ms with a hard 2-second ceiling, and are written straight
+  away on quit, suspend, hide, focus commands, settings changes and the welcome flag.
+- A state that is byte-for-byte what is already on disk costs **no disk write at all** — the
+  pet's energy drifts every tick, and rewriting that twice a second forever would be
+  pointless I/O.
+- Verified end to end: killed the app with no clean exit and the state was still on disk;
+  planted a name and an XP total, relaunched, and both came back intact (with the level
+  correctly recomputed from XP).
+- 77 tests passing (13 new). typecheck, build and smoke all green.
+
 ### 2026-10-20 — Second pass: full doc audit, diagnosis, and re-plan
 - Read all 20 documents in `docs/` and every line of source, via three parallel audits.
 - Measured the code against all 88 functional requirements: **17 done, 40 partial, 31 missing**.
