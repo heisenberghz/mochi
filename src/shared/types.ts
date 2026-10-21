@@ -73,6 +73,10 @@ export interface Settings {
   reducedMotion: ReducedMotion;
   sound: boolean;
   launchAtLogin: boolean;
+  /** Pause the session when the computer is locked. */
+  pauseWhenLocked: boolean;
+  /** Carry on by itself after an idle pause, instead of asking. */
+  autoResume: boolean;
 }
 
 export type RecoveryKind = 'quarantined' | 'newer-version';
@@ -97,14 +101,17 @@ export interface AppSnapshot {
 }
 
 export interface BubbleAction {
-  id: 'start-focus' | 'resume-focus' | 'dismiss';
+  id: 'start-focus' | 'resume-focus' | 'end-focus' | 'dismiss';
   label: string;
 }
 
 export interface BubbleSpec {
   id: string;
   text: string;
+  /** The main thing the bubble is offering. */
   action?: BubbleAction;
+  /** A second option, for when there really are two. */
+  secondaryAction?: BubbleAction;
   durationMs: number;
 }
 

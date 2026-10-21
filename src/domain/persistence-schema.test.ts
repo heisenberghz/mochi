@@ -23,8 +23,18 @@ describe('migrateState', () => {
 
     expect(state.pet).toEqual(v1Fixture.pet);
     expect(state.placement).toEqual(v1Fixture.placement);
-    expect(state.settings).toEqual(v1Fixture.settings);
     expect(state.hasSeenWelcome).toBe(true);
+
+    // Every setting the old file had is kept as it was.
+    expect(state.settings.petName).toBe(v1Fixture.settings.petName);
+    expect(state.settings.roam).toBe(v1Fixture.settings.roam);
+    expect(state.settings.reducedMotion).toBe(v1Fixture.settings.reducedMotion);
+    expect(state.settings.sound).toBe(v1Fixture.settings.sound);
+    expect(state.settings.launchAtLogin).toBe(v1Fixture.settings.launchAtLogin);
+
+    // Settings the old file never had arrive with their defaults.
+    expect(state.settings.pauseWhenLocked).toBe(true);
+    expect(state.settings.autoResume).toBe(false);
   });
 
   it('gives a version 1 file a focus section', () => {

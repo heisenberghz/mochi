@@ -422,6 +422,28 @@ saved data can be destroyed, then the write cadence.*
   interactive for as long as a drag is in progress.
 - 138 tests passing (11 new). typecheck, build and smoke all green.
 
+**B4 — sleeping, locking and going quiet no longer steal focus time** *(working tree, not committed)*
+- **Suspending stops the session where it was** and it picks up from there when the machine
+  wakes. Whatever happened while it slept is not focus time, and the pause is what keeps
+  it that way — no deadline arithmetic, and it makes no difference whether the monotonic
+  clock runs during sleep.
+- **Locking pauses the session too**, and unlocking leaves it paused with a "carry on?"
+  bubble rather than quietly restarting it.
+- **Three minutes of no input pauses a work phase**, so a session cannot tick away with
+  nobody there. The question — carry on, or end it — is asked **when you are back**, not
+  while you are still away. A break is never interrupted.
+- Two new settings, both documented and both with a default: **pause when the computer is
+  locked** (on) and **carry on by itself** after an idle pause (off).
+- **The speech bubble can now offer two things**, so "carry on or end it" is a real choice
+  rather than a guess.
+- **The pet only sits in focus posture during a running work phase.** It used to hold the
+  pose through breaks and pauses too, which the spec does not ask for and which left it
+  looking busy when nobody was working.
+- **The smoke test drives the power events** and checks the session keeps its exact
+  remaining time across a sleep and a lock: waking up and unlocking consumed **zero**
+  milliseconds.
+- 138 tests passing. typecheck, build and smoke all green.
+
 ### 2026-10-20 — Second pass: full doc audit, diagnosis, and re-plan
 - Read all 20 documents in `docs/` and every line of source, via three parallel audits.
 - Measured the code against all 88 functional requirements: **17 done, 40 partial, 31 missing**.

@@ -830,6 +830,24 @@ export function DenApp() {
 
               <Card>
                 <div className="card-head">
+                  <span className="eyebrow">Sessions</span>
+                </div>
+                <Toggle
+                  label="Pause when the computer is locked"
+                  description="A locked computer is not focus time."
+                  checked={settings.pauseWhenLocked}
+                  onChange={(value) => void saveSettings({ pauseWhenLocked: value })}
+                />
+                <Toggle
+                  label="Carry on by itself"
+                  description="After an idle pause, start again without asking."
+                  checked={settings.autoResume}
+                  onChange={(value) => void saveSettings({ autoResume: value })}
+                />
+              </Card>
+
+              <Card>
+                <div className="card-head">
                   <span className="eyebrow">Privacy</span>
                 </div>
                 <p className="tip">

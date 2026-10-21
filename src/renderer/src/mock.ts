@@ -32,6 +32,8 @@ export function mockSnapshot(): AppSnapshot {
       reducedMotion: 'system',
       sound: true,
       launchAtLogin: false,
+      pauseWhenLocked: true,
+      autoResume: false,
     },
     welcome: true,
     recovery: null,

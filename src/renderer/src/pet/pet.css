@@ -263,6 +263,16 @@
   background: #e39b58;
 }
 
+.bubble-action-secondary {
+  background: transparent;
+  color: #6c4a22;
+  box-shadow: inset 0 0 0 1px #e4dacb;
+}
+
+.bubble-action-secondary:hover {
+  background: #fbf0dd;
+}
+
 .bubble-action:focus-visible,
 .bubble-close:focus-visible {
   outline: 2px solid #2a2622;

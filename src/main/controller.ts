@@ -22,6 +22,7 @@ import {
   FOCUS_PHASE_BONUS_XP,
   FOCUS_TICK_MS,
   FOCUS_XP_PER_MINUTE,
+  IDLE_AUTO_PAUSE_SECONDS,
   SNAP_DISTANCE,
 } from '../shared/constants';
 import type {
@@ -30,6 +31,7 @@ import type {
   FocusAction,
   FocusConfig,
   FocusConfigResult,
+  FocusPauseReason,
   OkResult,
   Point,
   Settings,
@@ -45,6 +47,8 @@ const SETTINGS_KEYS: (keyof Settings)[] = [
   'reducedMotion',
   'sound',
   'launchAtLogin',
+  'pauseWhenLocked',
+  'autoResume',
 ];
 
 function isPoint(value: unknown): value is Point {
@@ -62,6 +66,9 @@ function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+/** How often the idle clock is read. Reading it every tick would be wasteful. */
+const IDLE_CHECK_INTERVAL_MS = 5000;
+
 interface SmokeFocusFlow {
   start?: unknown;
   running?: { status: string; behavior: string; remainingMs: number };
@@ -70,6 +77,21 @@ interface SmokeFocusFlow {
   stop?: unknown;
   stopped?: string;
   configWorkMin?: number;
+  error?: string;
+}
+
+interface SmokeFocusSnapshot {
+  status: string;
+  pauseReason: string | null;
+  remainingMs: number;
+}
+
+interface SmokePowerFlow {
+  beforeSleep: number;
+  duringSleep: SmokeFocusSnapshot;
+  afterWake: SmokeFocusSnapshot;
+  whileLocked: SmokeFocusSnapshot;
+  afterUnlock: SmokeFocusSnapshot;
   error?: string;
 }
 
@@ -96,6 +118,9 @@ export class MochiController {
   private welcome: boolean;
   private lastTrayKey = '';
   private timersStarted = false;
+  /** Whether the idle pause has already been offered to the user. */
+  private idlePauseOffered = false;
+  private lastIdleCheckAt = 0;
 
   constructor(store: Store, smoke = false, smokeRecover = false) {
     this.store = store;
@@ -153,12 +178,14 @@ export class MochiController {
       }, 900);
     });
 
-    powerMonitor.on('suspend', () => this.persistNow());
-    powerMonitor.on('resume', () => {
-      this.brain.forceWake(Date.now());
-      clampPlacement(this.petWindow!);
-      this.broadcast();
-    });
+    // Suspending stops the session here and picks it up where it left off when
+    // the machine wakes. Whatever happened while it slept is not focus time,
+    // and the pause is what keeps it that way — no deadline arithmetic, and it
+    // does not matter whether the monotonic clock runs during sleep.
+    powerMonitor.on('suspend', () => this.onSuspend());
+    powerMonitor.on('resume', () => this.onResume());
+    powerMonitor.on('lock-screen', () => this.onLock());
+    powerMonitor.on('unlock-screen', () => this.onUnlock());
     screen.on('display-metrics-changed', () => {
       if (this.petWindow) clampPlacement(this.petWindow);
     });
@@ -215,6 +242,13 @@ export class MochiController {
     let denCapture = { pngBytes: 0, empty: true, diagnostics: [] as string[] };
     const tabs: Record<string, unknown> = {};
     const focusFlow: SmokeFocusFlow = {};
+    const powerFlow: SmokePowerFlow = {
+      beforeSleep: 0,
+      duringSleep: { status: 'idle', pauseReason: null, remainingMs: 0 },
+      afterWake: { status: 'idle', pauseReason: null, remainingMs: 0 },
+      whileLocked: { status: 'idle', pauseReason: null, remainingMs: 0 },
+      afterUnlock: { status: 'idle', pauseReason: null, remainingMs: 0 },
+    };
 
     if (den) {
       await this.sleep(500);
@@ -264,6 +298,52 @@ export class MochiController {
         focusFlow.error = String(error);
       }
 
+      // The power events. A session must not lose time while the machine is
+      // asleep, and it must stay paused when the screen is locked.
+      try {
+        await den.webContents.executeJavaScript("window.mochi.focus('start')");
+        await this.sleep(1200);
+
+        powerFlow.beforeSleep = this.focus.state().remainingMs;
+
+        this.simulatePowerEvent('suspend');
+        const duringSleep = this.focus.state();
+        powerFlow.duringSleep = {
+          status: duringSleep.status,
+          pauseReason: duringSleep.pauseReason,
+          remainingMs: duringSleep.remainingMs,
+        };
+
+        this.simulatePowerEvent('resume');
+        const afterWake = this.focus.state();
+        powerFlow.afterWake = {
+          status: afterWake.status,
+          pauseReason: afterWake.pauseReason,
+          remainingMs: afterWake.remainingMs,
+        };
+
+        await den.webContents.executeJavaScript("window.mochi.focus('resume')");
+        await this.sleep(200);
+
+        this.simulatePowerEvent('lock-screen');
+        const whileLocked = this.focus.state();
+        powerFlow.whileLocked = {
+          status: whileLocked.status,
+          pauseReason: whileLocked.pauseReason,
+          remainingMs: whileLocked.remainingMs,
+        };
+
+        this.simulatePowerEvent('unlock-screen');
+        const afterUnlock = this.focus.state();
+        powerFlow.afterUnlock = {
+          status: afterUnlock.status,
+          pauseReason: afterUnlock.pauseReason,
+          remainingMs: afterUnlock.remainingMs,
+        };
+      } catch (error) {
+        powerFlow.error = String(error);
+      }
+
       // Walk through the Den's tabs, so each one is known to render.
       for (const tabName of ['Focus', 'Settings']) {
         await den.webContents.executeJavaScript(
@@ -309,6 +389,7 @@ export class MochiController {
           }
         : null,
       focusFlow,
+      powerFlow,
       state: this.petWindow ? this.snapshot() : null,
     };
     writeFileSync(
@@ -444,7 +525,10 @@ export class MochiController {
     const hour = new Date(now).getHours();
     const result = this.brain.tick(now, {
       idleSeconds: powerMonitor.getSystemIdleTime(),
-      focusActive: focusState.status !== 'idle',
+      // Focus posture is for a running work phase and nothing else. On a break
+      // the pet is awake and free to stretch and wander, and a paused session
+      // means nobody is there anyway.
+      focusActive: focusState.status === 'running' && focusState.phase === 'work',
       quietHours: hour >= 22 || hour < 7,
       canRoam: this.store.state.settings.roam,
     });
@@ -460,12 +544,120 @@ export class MochiController {
     this.persist();
   }
 
+  /**
+   * Offer to carry on after the session paused itself.
+   */
+  private offerToResume(reason: FocusPauseReason): void {
+    const focus = this.focus.state();
+    if (focus.status !== 'paused' || focus.pauseReason !== reason) return;
+
+    this.showBubble({
+      id: `focus-paused-${reason}-${Date.now()}`,
+      text:
+        reason === 'lock'
+          ? 'Your computer was locked, so I paused. Carry on?'
+          : 'Your computer was asleep, so I paused. Carry on?',
+      durationMs: 12_000,
+      action: { id: 'resume-focus', label: 'Resume' },
+    });
+  }
+
+  /** The machine went to sleep. The session stops here and picks up later. */
+  private onSuspend(): void {
+    this.focus.pause(monotonicNow(), 'suspend');
+    this.persistNow();
+  }
+
+  /** The machine woke up. The session stays paused until the user says so. */
+  private onResume(): void {
+    this.brain.forceWake(Date.now());
+    clampPlacement(this.petWindow!);
+    this.offerToResume('suspend');
+    this.broadcast();
+  }
+
+  /** The screen was locked. A locked computer is not focus time. */
+  private onLock(): void {
+    if (!this.store.state.settings.pauseWhenLocked) return;
+    this.focus.pause(monotonicNow(), 'lock');
+    this.persistNow();
+  }
+
+  /** The screen was unlocked. The session stays paused until the user says so. */
+  private onUnlock(): void {
+    this.offerToResume('lock');
+  }
+
+  /**
+   * Drive the power events the operating system would send.
+   *
+   * Only the smoke test can use this. In a real build it does nothing, so
+   * there is no way to reach it from anywhere.
+   */
+  simulatePowerEvent(event: 'suspend' | 'resume' | 'lock-screen' | 'unlock-screen'): void {
+    if (!this.smoke) return;
+
+    switch (event) {
+      case 'suspend':
+        this.onSuspend();
+        return;
+      case 'resume':
+        this.onResume();
+        return;
+      case 'lock-screen':
+        this.onLock();
+        return;
+      case 'unlock-screen':
+        this.onUnlock();
+        return;
+    }
+  }
+
+  /**
+   * Pause a work phase that has been left alone for too long.
+   *
+   * The session stops rather than ticking away with nobody there, and the
+   * question is asked when the user is back rather than while they are away.
+   */
+  private autoPauseIfIdle(wallNow: number): void {
+    if (wallNow - this.lastIdleCheckAt < IDLE_CHECK_INTERVAL_MS) return;
+    this.lastIdleCheckAt = wallNow;
+
+    const focus = this.focus.state();
+
+    if (focus.status === 'paused' && focus.pauseReason === 'idle') {
+      // Ask the moment the user is back, not while they are still away.
+      if (!this.idlePauseOffered && powerMonitor.getSystemIdleTime() < IDLE_AUTO_PAUSE_SECONDS) {
+        this.idlePauseOffered = true;
+        this.showBubble({
+          id: `focus-idle-${wallNow}`,
+          text: 'You went quiet for a while, so I paused. Carry on?',
+          durationMs: 12_000,
+          action: { id: 'resume-focus', label: 'Resume' },
+          secondaryAction: { id: 'end-focus', label: 'End' },
+        });
+      }
+      return;
+    }
+
+    if (focus.status !== 'running') return;
+    if (focus.phase !== 'work') return; // a break is never interrupted
+    if (this.store.state.settings.autoResume) return; // carry on by itself
+    if (powerMonitor.getSystemIdleTime() < IDLE_AUTO_PAUSE_SECONDS) return;
+
+    this.focus.pause(monotonicNow(), 'idle');
+    this.persistNow();
+    this.idlePauseOffered = false;
+  }
+
   private focusTick(): void {
     // The timer runs on a monotonic clock, so changing the system clock cannot
     // stretch a session. The pet and the bubbles use wall-clock time.
     const wallNow = Date.now();
     const result = this.focus.tick(monotonicNow());
     const config = this.focus.getConfig();
+
+    this.autoPauseIfIdle(wallNow);
 
     if (result.completedWork) {
       const xp = Math.max(1, Math.round(config.workMin)) * FOCUS_XP_PER_MINUTE + FOCUS_PHASE_BONUS_XP;
@@ -1065,6 +1257,8 @@ export class MochiController {
         }
         if (key === 'sound' && typeof value === 'boolean') next.sound = value;
         if (key === 'launchAtLogin' && typeof value === 'boolean') next.launchAtLogin = value;
+        if (key === 'pauseWhenLocked' && typeof value === 'boolean') next.pauseWhenLocked = value;
+        if (key === 'autoResume' && typeof value === 'boolean') next.autoResume = value;
       }
       this.store.setSettings(next);
       this.store.flush();

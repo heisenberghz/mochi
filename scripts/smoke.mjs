@@ -119,6 +119,64 @@ async function main() {
 
   console.log('Phase 1 assertions passed.');
 
+  // --- The power events ----------------------------------------------------
+
+  const power = result.powerFlow ?? {};
+  check(!power.error, 'The power flow threw.', power.error);
+  check(
+    power.duringSleep?.status === 'paused',
+    'Suspending did not pause the session.',
+    power.duringSleep,
+  );
+  check(
+    power.duringSleep?.pauseReason === 'suspend',
+    'The pause did not say it was a suspend.',
+    power.duringSleep,
+  );
+  check(
+    power.duringSleep?.remainingMs > 0,
+    'The session lost its remaining time when the machine slept.',
+    power.duringSleep,
+  );
+  check(
+    power.duringSleep.remainingMs <= power.beforeSleep + 50 &&
+      power.duringSleep.remainingMs > power.beforeSleep - 1500,
+    'The session did not keep its remaining time when the machine slept.',
+    { before: power.beforeSleep, during: power.duringSleep },
+  );
+  check(
+    power.afterWake?.status === 'paused',
+    'Waking up restarted the session by itself.',
+    power.afterWake,
+  );
+  check(
+    power.afterWake?.pauseReason === 'suspend',
+    'The pause reason changed on wake.',
+    power.afterWake,
+  );
+  check(
+    Math.abs((power.afterWake?.remainingMs ?? 0) - (power.duringSleep?.remainingMs ?? 0)) <= 50,
+    'Waking up consumed part of the session.',
+    { during: power.duringSleep, after: power.afterWake },
+  );
+  check(
+    power.whileLocked?.status === 'paused',
+    'Locking did not pause the session.',
+    power.whileLocked,
+  );
+  check(
+    power.whileLocked?.pauseReason === 'lock',
+    'The pause did not say it was a lock.',
+    power.whileLocked,
+  );
+  check(
+    power.afterUnlock?.status === 'paused',
+    'Unlocking restarted the session by itself.',
+    power.afterUnlock,
+  );
+
+  console.log('Power event assertions passed.');
+
   // --- Phase two: launch again and see what comes back ---------------------
 
   await runPhase(['--smoke-test=recover'], 40_000);

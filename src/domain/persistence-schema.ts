@@ -183,6 +183,9 @@ export function sanitiseSettings(value: unknown): Settings {
     sound: typeof value.sound === 'boolean' ? value.sound : base.sound,
     launchAtLogin:
       typeof value.launchAtLogin === 'boolean' ? value.launchAtLogin : base.launchAtLogin,
+    pauseWhenLocked:
+      typeof value.pauseWhenLocked === 'boolean' ? value.pauseWhenLocked : base.pauseWhenLocked,
+    autoResume: typeof value.autoResume === 'boolean' ? value.autoResume : base.autoResume,
   };
 }
 

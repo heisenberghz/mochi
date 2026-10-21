@@ -6,7 +6,7 @@ import {
   HIT_HYSTERESIS,
   INTERACTIVE_EXIT_DELAY,
 } from '../../../shared/constants';
-import type { AppSnapshot, BubbleSpec } from '../../../shared/types';
+import type { AppSnapshot, BubbleAction, BubbleSpec } from '../../../shared/types';
 import { mockSnapshot } from '../mock';
 import { PetSprite } from './PetSprite';
 
@@ -226,12 +226,14 @@ export function PetApp() {
   };
 
   const action = useMemo(() => bubble?.action ?? null, [bubble]);
+  const secondaryAction = useMemo(() => bubble?.secondaryAction ?? null, [bubble]);
 
-  const onBubbleAction = (): void => {
-    if (!action) return;
+  const runBubbleAction = (target: BubbleAction | null): void => {
+    if (!target) return;
     if (window.mochi) {
-      if (action.id === 'start-focus') void window.mochi.focus('start');
-      if (action.id === 'resume-focus') void window.mochi.focus('resume');
+      if (target.id === 'start-focus') void window.mochi.focus('start');
+      if (target.id === 'resume-focus') void window.mochi.focus('resume');
+      if (target.id === 'end-focus') void window.mochi.focus('stop');
     }
     setBubble(null);
   };
@@ -245,12 +247,25 @@ export function PetApp() {
           <p className="bubble-text">{bubble.text}</p>
           <div className="bubble-row">
             {action ? (
-              <button type="button" className="bubble-action" onClick={onBubbleAction}>
+              <button
+                type="button"
+                className="bubble-action"
+                onClick={() => runBubbleAction(action)}
+              >
                 {action.label}
               </button>
             ) : (
               <span className="bubble-spacer" />
             )}
+            {secondaryAction ? (
+              <button
+                type="button"
+                className="bubble-action bubble-action-secondary"
+                onClick={() => runBubbleAction(secondaryAction)}
+              >
+                {secondaryAction.label}
+              </button>
+            ) : null}
             <button
               type="button"
               className="bubble-close"

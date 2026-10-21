@@ -71,6 +71,8 @@ export const DEFAULT_SETTINGS = {
   reducedMotion: 'system',
   sound: true,
   launchAtLogin: false,
+  pauseWhenLocked: true,
+  autoResume: false,
 } as const;
 
 /**
