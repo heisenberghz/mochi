@@ -26,6 +26,11 @@ const PHASE_LABEL: Record<FocusPhase, string> = {
 
 const BEHAVIOR_LABEL: Record<AppSnapshot['pet']['behavior'], string> = {
   idle: 'hanging out',
+  lookLeft: 'looking left',
+  lookRight: 'looking right',
+  earFlick: 'flicking an ear',
+  stretch: 'stretching',
+  yawn: 'yawning',
   walk: 'wandering around',
   sleep: 'taking a nap',
   wake: 'waking up',

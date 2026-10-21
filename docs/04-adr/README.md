@@ -5,14 +5,15 @@ An ADR captures a decision that is expensive to reverse, the context that justif
 | ADR | Decision | Status | Date |
 | --- | --- | --- | --- |
 | [0001](0001-electron-react-typescript.md) | Electron + React + TypeScript for the Windows desktop shell | Accepted | 2026-10-19 |
-| [0002](0002-rive-animation-runtime.md) | Rive as the pet animation runtime | Accepted | 2026-10-19 |
+| [0002](0002-rive-animation-runtime.md) | Rive as the pet animation runtime | **Superseded by [0010](0010-svg-css-sprite-renderer.md)** | 2026-10-19 |
 | [0003](0003-main-process-authority.md) | Main process owns authoritative state | Accepted | 2026-10-19 |
-| [0004](0004-rive-data-binding.md) | Rive view-model data binding, not state-machine inputs | Accepted | 2026-10-19 |
+| [0004](0004-rive-data-binding.md) | Rive view-model data binding, not state-machine inputs | **Superseded by [0010](0010-svg-css-sprite-renderer.md)** | 2026-10-19 |
 | [0005](0005-transparent-roaming-window.md) | Tight transparent window with a native motion driver | Accepted (validate in S1) | 2026-10-19 |
 | [0006](0006-click-through-hit-testing.md) | Renderer ellipse hit testing with forwarded mouse events | Accepted (validate in S1) | 2026-10-19 |
 | [0007](0007-versioned-json-store.md) | Versioned JSON document store with atomic writes | Accepted | 2026-10-19 |
 | [0008](0008-packaging-signing-updates.md) | electron-builder NSIS, signed, staged auto-updates | Accepted (O-2/O-3 open) | 2026-10-19 |
 | [0009](0009-privacy-first-observability.md) | Local-first observability, no telemetry by default | Accepted | 2026-10-19 |
+| [0010](0010-svg-css-sprite-renderer.md) | The pet is drawn in SVG and animated with CSS, not Rive | Accepted | 2026-10-21 |
 
 ## Template
 

@@ -60,6 +60,20 @@ const MIGRATIONS: Record<number, Migration> = {
     version: 2,
     focus: isRecord(state.focus) ? state.focus : defaultFocus(today),
   }),
+
+  // 2 -> 3: the pet remembers when the user was last here, so it can catch
+  // up on the time it was away.
+  3: (state) => {
+    const pet = isRecord(state.pet) ? state.pet : {};
+    return {
+      ...state,
+      version: 3,
+      pet: {
+        ...pet,
+        lastSeenAt: typeof pet.lastSeenAt === 'number' ? pet.lastSeenAt : null,
+      },
+    };
+  },
 };
 
 export interface MigrationOutcome {
@@ -116,7 +130,14 @@ export function defaultPersistedState(today: string): PersistedState {
   };
 }
 
-const DEFAULT_PET: StoredPet = { energy: 80, mood: 70, xp: 0, level: 1, facing: 1 };
+const DEFAULT_PET: StoredPet = {
+  energy: 80,
+  mood: 70,
+  xp: 0,
+  level: 1,
+  facing: 1,
+  lastSeenAt: null,
+};
 
 function defaultFocus(today: string): FocusPersisted {
   return {
@@ -164,6 +185,10 @@ export function sanitisePet(value: unknown): StoredPet {
     xp: Math.max(0, Math.round(num('xp', 0, 0, 10_000_000))),
     level: Math.max(1, Math.round(num('level', 1, 1, 20))),
     facing,
+    lastSeenAt:
+      typeof value.lastSeenAt === 'number' && Number.isFinite(value.lastSeenAt)
+        ? value.lastSeenAt
+        : null,
   };
 }
 

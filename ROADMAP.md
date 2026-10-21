@@ -182,29 +182,28 @@ polished at the end, once everything else is finished.
 - [ ] A behaviour that never ends can no longer get stuck with no way out
 - [ ] The 10-second celebrate cooldown
 
-### Commit 4 — The pet's mind and poses *(9 items)*
-*Turn "a blob that moves" into "a pet".*
+### Commit 4 — The pet's mind *(5 items)*
+*What the pet thinks and how it feels. No new artwork.*
 
-- [ ] Idle micro-behaviours: look-around, stretch, ear-flick
-- [ ] Offline catch-up after 12 hours away
-- [ ] Mood decay and the mood awards
-- [ ] Energy and mood driving the art
-- [ ] Sleep curls into a proper oval; the body stretches when carried
-- [ ] The tail goes still during focus; the scarf bounces when waving
-- [ ] The celebration squash is right
-- [ ] The walk cycle at 0.9 s, matched to speed, with the drop settle
+- [ ] **Idle micro-behaviours** — look-around, stretch, ear-flick — picked from a catalog on
+      a 4–12 second timer, so the pet is never a statue when you step away
+- [ ] **Offline catch-up** — after 12 hours away, Mochi recovers properly and doesn't
+      celebrate about it
+- [ ] **The mood rules** — +6 for a finished block, +3 for a break, +2 for a level up, and
+      a slow decay when it is neglected
+- [ ] **Energy and mood in the view model**, so the art can use them
 - [ ] `ADR-0010` superseding the two Rive ADRs, so the spec describes the renderer that
       actually ships
 
 ### Commit 5 — Progression and feel *(6 items)*
 *What you get for playing, and how it feels to play.*
 
-- [ ] Level up does something: a wave, a bubble, something new to wear
-- [ ] The Locker — cosmetics unlock by level, no pressure mechanics
+- [ ] Level up does something: a wave, a bubble, and something new to wear
+- [ ] The Locker's unlock rules — cosmetics unlock by level, no pressure mechanics
 - [ ] The speech bubble behaves: one unasked bubble every 5 minutes, 6 per hour, gone in 4–8 s
 - [ ] A poke reacts within 100 ms
 - [ ] Hovering makes Mochi look at your cursor
-- [ ] High contrast mode for the pet and the Den
+- [ ] High contrast mode for the Den
 
 ### Commit 6 — The Product *(9 items)*
 *Everything the spec promises that isn't a pet behaviour.*
@@ -233,19 +232,34 @@ polished at the end, once everything else is finished.
 - [ ] A performance harness against the spec's CPU, memory and frame-pacing budgets
 - [ ] Fault injection — renderer crash, corrupt state, display unplugged, failed update
 
-### Commit 8 — The last mile *(6 items)*
-*Make the spec tell the truth, and check the thing by eye.*
+### Commit 8 — The visual polish *(10 items)*
+*The artwork, now that the software is finished. This is where the character gets its
+personality — and where you polish it.*
 
+- [ ] The micro-behaviours get their poses, so they read on screen
+- [ ] Sleep curls into a proper oval; the body stretches when carried
+- [ ] The tail goes still during focus; the scarf bounces when waving
+- [ ] The celebration squash is right
+- [ ] The walk cycle matched to speed, with the drop settle
+- [ ] Energy and mood expressed in the art — droopy eyes when tired, a smile when happy
+- [ ] The accessories drawn — leaf hat, mug, bed, and the moss, sky and aurora scarves
+- [ ] High contrast for the pet
 - [ ] Visual QA over light, dark and busy wallpapers, 100–200% scaling, two monitors
+- [ ] The app icon, drawn from the final character
+
+### Commit 9 — The last mile *(6 items)*
+*Make the spec tell the truth.*
+
 - [ ] Every hardcoded number moved into `shared/constants.ts`
 - [ ] A "Solo track" note in `roadmap.md`
 - [ ] The risk register closed where it should be
 - [ ] The root `README.md` status line and stack table fixed
 - [ ] The two doc contradictions the audit found, reconciled
+- [ ] The `docs/03-design/` documents brought in line with the character that shipped
 
-### Parked — only if a designer appears
-- [ ] **Rive renderer** — replace the SVG with a real `.riv`, build the view-model bridge, and
-      add the contract validator CI would use.
+### Parked — not happening
+- [ ] ~~Rive renderer~~ — **decided against**. The art stays SVG, edited in any drawing
+      tool and exported. The contract keeps the door open without the cost.
 
 ---
 
@@ -278,6 +292,26 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 ## 7. Status log
 
 *Newest first. I add an entry after each piece of work.*
+
+### 2026-10-21 — Commit 4: the pet's mind
+
+- **The pet now does small things of its own** — looks left, looks right, flicks an ear,
+  stretches, yawns — picked from a catalogue on an uneven 4–12 second timer. It never does the
+  same thing twice running, each has its own cooldown, and it needs enough energy to bother.
+- **It stays out of the way while you are working.** The fidgeting only starts once you have
+  been idle for a minute, because a pet that moves while you type is noise, not company.
+- **The mood rules now exist** — +6 for a finished block, +3 for a break, +2 for a level up,
+  and a slow fade for neglect, capped at four a day. The floor is still twenty, so a neglected
+  pet is never punishing.
+- **Time away is caught up.** The pet remembers when you were last here, and recovers
+  energy at the same rate as a nap for up to twelve hours. Its mood fades a little for every
+  day it was ignored, and never by more than four.
+- **The saved file is now version 3**, with a migration for it. The chain from the original
+  version 1 runs through 2 to 3, and there is a fixture for each step.
+- **ADR-0010 is written.** The spec no longer mandates Rive: the pet is SVG, animated with
+  CSS, and the behaviour contract stays renderer-agnostic so the door is open without the
+  cost. ADR-0002 and ADR-0004 are marked superseded.
+- 202 tests passing (18 new). typecheck, build and both smoke phases green.
 
 ### 2026-10-21 — Mochi redrawn, and the artwork is now a real file
 

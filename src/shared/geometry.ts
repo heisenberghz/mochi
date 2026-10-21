@@ -50,6 +50,12 @@ export const HIT_REGION_SVG: Record<Behavior, HitRegion> = {
   walk: BODY,
   wake: BODY,
   wave: BODY,
+  // The small things the pet does of its own.
+  lookLeft: BODY,
+  lookRight: BODY,
+  earFlick: BODY,
+  stretch: BODY,
+  yawn: BODY,
   // The glasses reach a little past the face.
   focus: { cx: 100, cy: 106, rx: 86, ry: 102 },
   // The sparkles reach further still.

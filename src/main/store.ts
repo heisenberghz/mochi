@@ -313,13 +313,14 @@ export class Store {
     }
   }
 
-  setPet(pet: PetView): void {
+  setPet(pet: PetView, lastSeenAt: number): void {
     this.state.pet = {
       energy: pet.energy,
       mood: pet.mood,
       xp: pet.xp,
       level: pet.level,
       facing: pet.facing,
+      lastSeenAt,
     };
   }
 

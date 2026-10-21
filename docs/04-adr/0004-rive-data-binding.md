@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Accepted |
+| Status | **Superseded by [ADR-0010](0010-svg-css-sprite-renderer.md)** |
 | Date | 2026-10-19 |
 | Deciders | Engineering, Design |
 | Related | [Animation system](../02-architecture/animation-system.md#5-the-view-model-contract) · [Rive contract](../03-design/rive-authoring-contract.md#2-view-model) · [ADR-0002](0002-rive-animation-runtime.md) |

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Accepted |
+| Status | **Superseded by [ADR-0010](0010-svg-css-sprite-renderer.md)** |
 | Version | 1.0 |
 | Date | 2026-10-19 |
 | Deciders | Design, Engineering |

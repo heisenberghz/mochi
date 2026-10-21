@@ -149,6 +149,90 @@
   animation-duration: 4.2s;
 }
 
+/*
+ * The small things the pet does of its own. The head turns about the neck, so
+ * a glance looks like a glance and not the whole body leaning.
+ */
+.pet-svg .head {
+  transform-box: view-box;
+  transform-origin: 100px 116px;
+}
+
+.behavior-lookLeft .head {
+  animation: mochi-look-left 1.4s var(--ease-standard) infinite;
+}
+
+.behavior-lookRight .head {
+  animation: mochi-look-right 1.4s var(--ease-standard) infinite;
+}
+
+.behavior-earFlick .ear-left {
+  animation: mochi-ear-flick-once 700ms var(--ease-standard);
+}
+
+.behavior-stretch .character {
+  animation: mochi-stretch 1.6s var(--ease-standard);
+}
+
+.behavior-yawn .head {
+  animation: mochi-yawn 1.4s var(--ease-standard);
+}
+
+@keyframes mochi-look-left {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30%,
+  70% {
+    transform: rotate(-7deg);
+  }
+}
+
+@keyframes mochi-look-right {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30%,
+  70% {
+    transform: rotate(7deg);
+  }
+}
+
+@keyframes mochi-ear-flick-once {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  40% {
+    transform: rotate(-14deg);
+  }
+}
+
+@keyframes mochi-stretch {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  40% {
+    transform: translateY(-4px) scaleY(1.05);
+  }
+  70% {
+    transform: translateY(0) scaleY(0.99);
+  }
+}
+
+@keyframes mochi-yawn {
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+  45% {
+    transform: rotate(-8deg) translateY(-3px);
+  }
+}
+
 /* Sleep */
 .behavior-sleep .character {
   animation: mochi-sleep 5s var(--ease-standard) infinite;

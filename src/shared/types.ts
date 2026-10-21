@@ -1,5 +1,10 @@
 export type Behavior =
   | 'idle'
+  | 'lookLeft'
+  | 'lookRight'
+  | 'earFlick'
+  | 'stretch'
+  | 'yawn'
   | 'walk'
   | 'sleep'
   | 'wake'

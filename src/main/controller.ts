@@ -132,7 +132,7 @@ export class MochiController {
     this.smoke = smoke;
     this.smokeRecover = smokeRecover;
     this.brain = new PetBrain({ now: Date.now() });
-    this.brain.restore(store.state.pet);
+    this.brain.restore(store.state.pet, Date.now());
     this.focus = new FocusTimer(FOCUS_DEFAULTS, systemFocusClock);
     // A session that was running when the app last closed comes back paused,
     // ready for the user to pick up or abandon.
@@ -798,6 +798,7 @@ export class MochiController {
     if (result.completedWork) {
       const xp = Math.max(1, Math.round(config.workMin)) * FOCUS_XP_PER_MINUTE + FOCUS_PHASE_BONUS_XP;
       this.brain.addXp(xp);
+      this.brain.rewardFocusPhase();
       this.brain.celebrate(wallNow);
       this.showBubble({
         id: `work-complete-${wallNow}`,
@@ -809,6 +810,7 @@ export class MochiController {
 
     if (result.completedBreak) {
       this.brain.addXp(FOCUS_BREAK_XP);
+      this.brain.rewardBreak();
       this.showBubble({
         id: `break-complete-${wallNow}`,
         text: "Break's over. Ready when you are.",
@@ -1474,14 +1476,14 @@ export class MochiController {
   }
 
   private persist(): void {
-    this.store.setPet(this.brain.snapshot());
+    this.store.setPet(this.brain.snapshot(), this.brain.lastSeen ?? Date.now());
     this.store.setFocus(this.focus.serialize());
     this.store.save();
   }
 
   /** Write the state to disk right now, for moments where a lost change shows. */
   private persistNow(): void {
-    this.store.setPet(this.brain.snapshot());
+    this.store.setPet(this.brain.snapshot(), this.brain.lastSeen ?? Date.now());
     this.store.setFocus(this.focus.serialize());
     this.store.flush();
   }

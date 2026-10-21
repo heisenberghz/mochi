@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CURRENT_SCHEMA_VERSION, FOCUS_DEFAULTS } from '../shared/constants';
 import v1Fixture from './fixtures/state-v1.json';
+import v2Fixture from './fixtures/state-v2.json';
 import {
   migrateState,
   SchemaError,
@@ -14,14 +15,17 @@ describe('migrateState', () => {
   it('upgrades a version 1 file', () => {
     const outcome = migrateState(v1Fixture, TODAY);
 
-    expect(outcome.applied).toEqual([2]);
+    expect(outcome.applied).toEqual([2, 3]);
     expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
   });
 
   it('keeps everything a version 1 file had', () => {
     const { state } = migrateState(v1Fixture, TODAY);
 
-    expect(state.pet).toEqual(v1Fixture.pet);
+    expect(state.pet.energy).toBe(v1Fixture.pet.energy);
+    expect(state.pet.mood).toBe(v1Fixture.pet.mood);
+    expect(state.pet.xp).toBe(v1Fixture.pet.xp);
+    expect(state.pet.facing).toBe(v1Fixture.pet.facing);
     expect(state.placement).toEqual(v1Fixture.placement);
     expect(state.hasSeenWelcome).toBe(true);
 
@@ -35,6 +39,7 @@ describe('migrateState', () => {
     // Settings the old file never had arrive with their defaults.
     expect(state.settings.pauseWhenLocked).toBe(true);
     expect(state.settings.autoResume).toBe(false);
+    expect(state.pet.lastSeenAt).toBeNull();
   });
 
   it('gives a version 1 file a focus section', () => {
@@ -228,8 +233,43 @@ describe('migrateState', () => {
   });
 });
 
-describe('defaultPersistedState', () => {
-  it('starts a fresh install with nothing in it', () => {
+describe('the version 2 to 3 migration', () => {
+  it('upgrades a version 2 file', () => {
+    const outcome = migrateState(v2Fixture, TODAY);
+
+    expect(outcome.applied).toEqual([3]);
+    expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
+  });
+
+  it('keeps everything a version 2 file had', () => {
+    const { state } = migrateState(v2Fixture, TODAY);
+
+    expect(state.pet.xp).toBe(v2Fixture.pet.xp);
+    expect(state.settings.petName).toBe(v2Fixture.settings.petName);
+    expect(state.focus.config).toEqual(v2Fixture.focus.config);
+    expect(state.focus.aggregates.completedToday).toBe(2);
+    expect(state.focus.aggregates.streakDays).toBe(3);
+    expect(state.focus.sessions).toHaveLength(1);
+  });
+
+  it('gives the pet a last-seen time, so it can catch up later', () => {
+    const { state } = migrateState(v2Fixture, TODAY);
+    expect(state.pet.lastSeenAt).toBeNull();
+  });
+});
+
+describe('the whole chain', () => {
+  it('takes a version 1 file all the way to the current version', () => {
+    const outcome = migrateState(v1Fixture, TODAY);
+
+    expect(outcome.applied).toEqual([2, 3]);
+    expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
+    expect(outcome.state.focus.config).toEqual(FOCUS_DEFAULTS);
+    expect(outcome.state.pet.lastSeenAt).toBeNull();
+  });
+});
+
+describe('defaultPersistedState', () => {  it('starts a fresh install with nothing in it', () => {
     const state = defaultPersistedState(TODAY);
 
     expect(state.version).toBe(CURRENT_SCHEMA_VERSION);

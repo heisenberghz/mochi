@@ -63,7 +63,7 @@ describe('PetBrain', () => {
   it('forces sleep when energy is low, and a poke wakes the pet', () => {
     const now = 1_000_000;
     const brain = new PetBrain({ now, rng: () => 0 });
-    brain.restore({ energy: 10 });
+    brain.restore({ energy: 10 }, now);
 
     const asleep = brain.tick(now + 1000, context);
     expect(asleep.state.behavior).toBe('sleep');
@@ -151,8 +151,179 @@ describe('PetBrain', () => {
   });
 });
 
-describe('PetBrain priority', () => {
-  it('does not let a celebration interrupt a focus session', () => {
+describe('PetBrain small things', () => {
+  it('does something of its own when the user is away', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    // The user walked away a while ago.
+    const away = { ...context, idleSeconds: 300 };
+    brain.tick(now + 1000, away);
+
+    // Over a few minutes it should do a handful of different things.
+    const seen = new Set<string>();
+    for (let step = 0; step < 400; step += 1) {
+      brain.tick(now + 1000 + step * 1000, away);
+      if (brain.snapshot().behavior !== 'idle') seen.add(brain.snapshot().behavior);
+    }
+
+    expect(seen.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it('stays out of the way while the user is at the keyboard', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    for (let step = 0; step < 60; step += 1) {
+      brain.tick(now + 1000 + step * 1000, { ...context, idleSeconds: 0 });
+    }
+
+    expect(brain.snapshot().behavior).toBe('idle');
+  });
+
+  it('never does the same small thing twice running', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+    const away = { ...context, idleSeconds: 300 };
+
+    let previous = '';
+    for (let step = 0; step < 200; step += 1) {
+      brain.tick(now + 1000 + step * 1000, away);
+      const behavior = brain.snapshot().behavior;
+      if (behavior !== 'idle' && behavior !== previous) {
+        expect(behavior).not.toBe(previous);
+        previous = behavior;
+      }
+    }
+  });
+
+  it('comes back to rest between its small things', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+    const away = { ...context, idleSeconds: 300 };
+
+    const seen = new Set<string>();
+    for (let step = 0; step < 200; step += 1) {
+      brain.tick(now + 1000 + step * 1000, away);
+      seen.add(brain.snapshot().behavior);
+    }
+
+    // It rests in between, and it does more than one thing.
+    expect(seen.has('idle')).toBe(true);
+    expect(seen.size).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('PetBrain mood', () => {
+  it('is pleased by a finished block', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+    const before = brain.snapshot().mood;
+
+    brain.rewardFocusPhase();
+
+    expect(brain.snapshot().mood).toBe(before + 6);
+  });
+
+  it('is pleased by a finished break, just a little less', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+    const before = brain.snapshot().mood;
+
+    brain.rewardBreak();
+
+    expect(brain.snapshot().mood).toBe(before + 3);
+  });
+
+  it('is pleased by a level up', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+    const before = brain.snapshot().mood;
+
+    brain.addXp(70); // reaches level 2
+
+    expect(brain.snapshot().level).toBe(2);
+    expect(brain.snapshot().mood).toBe(before + 2);
+  });
+
+  it('never falls below twenty, however long it is neglected', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    for (let step = 0; step < 500; step += 1) {
+      brain.tick(now + step * 1000, context);
+    }
+
+    expect(brain.snapshot().mood).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe('PetBrain time away', () => {
+  it('recovers energy while the user is gone', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+    brain.restore({ energy: 20, lastSeenAt: now - 6 * 60 * 60 * 1000 }, now);
+
+    // Six hours away, at the same rate as a nap.
+    expect(brain.snapshot().energy).toBeGreaterThan(20);
+  });
+
+  it('does not recover more than twelve hours of energy', () => {
+    const now = 1_000_000;
+
+    const twelve = new PetBrain({ now, rng: () => 0 });
+    twelve.restore({ energy: 0, lastSeenAt: now - 12 * 60 * 60 * 1000 }, now);
+
+    const twoDays = new PetBrain({ now, rng: () => 0 });
+    twoDays.restore({ energy: 0, lastSeenAt: now - 48 * 60 * 60 * 1000 }, now);
+
+    // Two days away is no better than twelve hours.
+    expect(twelve.snapshot().energy).toBe(twoDays.snapshot().energy);
+    expect(twelve.snapshot().energy).toBe(100);
+  });
+
+  it('recovers more the longer it was away', () => {
+    const now = 1_000_000;
+
+    const six = new PetBrain({ now, rng: () => 0 });
+    six.restore({ energy: 0, lastSeenAt: now - 6 * 60 * 60 * 1000 }, now);
+
+    const twelve = new PetBrain({ now, rng: () => 0 });
+    twelve.restore({ energy: 0, lastSeenAt: now - 12 * 60 * 60 * 1000 }, now);
+
+    // Six hours is ninety points at fifteen an hour.
+    expect(six.snapshot().energy).toBe(90);
+    expect(twelve.snapshot().energy).toBeGreaterThan(six.snapshot().energy);
+  });
+
+  it('fades the mood a little for every day it was ignored', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+    brain.restore({ mood: 80, lastSeenAt: now - 24 * 60 * 60 * 1000 }, now);
+
+    expect(brain.snapshot().mood).toBe(76);
+  });
+
+  it('never loses more than four mood for being away', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+    brain.restore({ mood: 80, lastSeenAt: now - 30 * 24 * 60 * 60 * 1000 }, now);
+
+    expect(brain.snapshot().mood).toBe(76);
+  });
+
+  it('does nothing about time away when it does not know when the user left', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.restore({ energy: 50, mood: 70 }, now);
+
+    expect(brain.snapshot().energy).toBe(50);
+    expect(brain.snapshot().mood).toBe(70);
+  });
+});
+
+describe('PetBrain priority', () => {  it('does not let a celebration interrupt a focus session', () => {
     const now = 1_000_000;
     const brain = new PetBrain({ now, rng: () => 0 });
 

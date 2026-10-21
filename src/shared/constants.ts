@@ -64,6 +64,31 @@ export const FOCUS_PARTIAL_CREDIT_RATIO = 0.5;
 /** How long the system may sit idle before a work phase pauses itself. */
 export const IDLE_AUTO_PAUSE_SECONDS = 180;
 
+/**
+ * How often the pet does something small of its own, when the user is away.
+ * The gap is uneven, so it never looks like a loop.
+ */
+export const MICRO_BEHAVIOR_INTERVAL_MIN_MS = 4_000;
+export const MICRO_BEHAVIOR_INTERVAL_MAX_MS = 12_000;
+
+/** How long the user must be away before the pet starts fidgeting. */
+export const MICRO_BEHAVIOR_IDLE_SECONDS = 60;
+
+/** How long the pet may be away before it stops recovering energy. */
+export const MAX_OFFLINE_HOURS = 12;
+
+/** Mood lost for every six hours awake, and the most it may lose in a day. */
+export const MOOD_DECAY_INTERVAL_MS = 6 * 60 * 60 * 1000;
+export const MOOD_DECAY_DAILY_CAP = 4;
+
+/** Mood lost for being away for a whole day, and the most it may lose. */
+export const MOOD_OFFLINE_DECAY = 4;
+
+/** Mood gained for a finished block, a finished break, and a level up. */
+export const MOOD_FOCUS_REWARD = 6;
+export const MOOD_BREAK_REWARD = 3;
+export const MOOD_LEVEL_REWARD = 2;
+
 /** XP for each minute of a finished work phase. */
 export const FOCUS_XP_PER_MINUTE = 1;
 
@@ -77,7 +102,7 @@ export const FOCUS_BREAK_XP = 2;
  * The schema version this build writes. Bump it whenever the persisted shape
  * changes, and add a migration for the previous version.
  */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export const DEFAULT_SETTINGS = {
   petName: 'Mochi',

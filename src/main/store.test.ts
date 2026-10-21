@@ -28,7 +28,7 @@ describe('Store', () => {
   it('starts from defaults when there is no file yet', () => {
     const store = new Store(dir);
 
-    expect(store.state.version).toBe(2);
+    expect(store.state.version).toBe(3);
     expect(store.state.settings.petName).toBe('Mochi');
     expect(store.state.hasSeenWelcome).toBe(false);
     expect(store.state.focus.active).toBeNull();
@@ -406,7 +406,7 @@ describe('Store write scheduling', () => {
 
     const store = new Store(dir);
 
-    expect(store.state.version).toBe(2);
+    expect(store.state.version).toBe(3);
     expect(store.state.pet.xp).toBe(310);
     expect(store.state.settings.petName).toBe('Mochi');
     expect(store.state.focus.config.workMin).toBe(25);
@@ -435,7 +435,7 @@ describe('Store write scheduling', () => {
     const onDisk = JSON.parse(readFileSync(join(dir, 'state.json'), 'utf8')) as {
       version: number;
     };
-    expect(onDisk.version).toBe(2);
+    expect(onDisk.version).toBe(3);
   });
 
   it('does not take a pre-migration copy of a file that was already current', () => {
