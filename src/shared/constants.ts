@@ -33,6 +33,32 @@ export const FOCUS_DEFAULTS = {
   autoStartWork: false,
 } as const;
 
+/** The range each focus setting may take. Anything outside it is rejected. */
+export const FOCUS_LIMITS = {
+  workMin: { min: 5, max: 120 },
+  shortBreakMin: { min: 1, max: 30 },
+  longBreakMin: { min: 5, max: 60 },
+  rounds: { min: 2, max: 8 },
+} as const;
+
+/**
+ * A partial session only counts once this much of it was actually focused.
+ * Below that, the time is recorded but earns nothing.
+ */
+export const FOCUS_PARTIAL_CREDIT_RATIO = 0.5;
+
+/** How long the system may sit idle before a work phase pauses itself. */
+export const IDLE_AUTO_PAUSE_SECONDS = 180;
+
+/** XP for each minute of a finished work phase. */
+export const FOCUS_XP_PER_MINUTE = 1;
+
+/** XP on top of the minutes, for finishing a whole phase. */
+export const FOCUS_PHASE_BONUS_XP = 5;
+
+/** XP for finishing a break. */
+export const FOCUS_BREAK_XP = 2;
+
 /**
  * The schema version this build writes. Bump it whenever the persisted shape
  * changes, and add a migration for the previous version.

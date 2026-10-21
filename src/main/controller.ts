@@ -17,8 +17,11 @@ import { PetBrain, type WalkStart } from '../domain/pet-brain';
 import { FocusTimer } from '../domain/focus-timer';
 import {
   BEHAVIOR_TICK_MS,
+  FOCUS_BREAK_XP,
   FOCUS_DEFAULTS,
+  FOCUS_PHASE_BONUS_XP,
   FOCUS_TICK_MS,
+  FOCUS_XP_PER_MINUTE,
   SNAP_DISTANCE,
 } from '../shared/constants';
 import type {
@@ -30,6 +33,7 @@ import type {
   Settings,
 } from '../shared/types';
 import { Store } from './store';
+import { monotonicNow, systemFocusClock } from './clock';
 import { clampPlacement, createDenWindow, createPetWindow } from './windows';
 
 const SETTINGS_KEYS: (keyof Settings)[] = [
@@ -93,7 +97,7 @@ export class MochiController {
     this.smoke = smoke;
     this.brain = new PetBrain({ now: Date.now() });
     this.brain.restore(store.state.pet);
-    this.focus = new FocusTimer(FOCUS_DEFAULTS);
+    this.focus = new FocusTimer(FOCUS_DEFAULTS, systemFocusClock);
     this.welcome = !store.state.hasSeenWelcome;
   }
 
@@ -366,31 +370,39 @@ export class MochiController {
   }
 
   private focusTick(): void {
-    const now = Date.now();
-    const result = this.focus.tick(now);
+    // The timer runs on a monotonic clock, so changing the system clock cannot
+    // stretch a session. The pet and the bubbles use wall-clock time.
+    const wallNow = Date.now();
+    const result = this.focus.tick(monotonicNow());
     const config = this.focus.getConfig();
 
     if (result.completedWork) {
-      const xp = Math.max(1, Math.round(config.workMin)) + 5;
+      const xp = Math.max(1, Math.round(config.workMin)) * FOCUS_XP_PER_MINUTE + FOCUS_PHASE_BONUS_XP;
       this.brain.addXp(xp);
-      this.brain.celebrate(now);
+      this.brain.celebrate(wallNow);
       this.showBubble({
-        id: `work-complete-${now}`,
+        id: `work-complete-${wallNow}`,
         text: `${Math.round(config.workMin)} minutes. That's a good block.`,
         durationMs: 6000,
       });
-      this.persist();
+      this.persistNow();
     }
 
     if (result.completedBreak) {
+      this.brain.addXp(FOCUS_BREAK_XP);
       this.showBubble({
-        id: `break-complete-${now}`,
+        id: `break-complete-${wallNow}`,
         text: "Break's over. Ready when you are.",
         durationMs: 5000,
       });
     }
 
-    if (result.completedWork || result.completedBreak || this.focus.state().status === 'running') {
+    if (
+      result.completedWork ||
+      result.completedBreak ||
+      result.dayRolledOver ||
+      this.focus.state().status === 'running'
+    ) {
       this.broadcast();
     }
   }
@@ -471,27 +483,54 @@ export class MochiController {
   }
 
   private handleFocus(action: FocusAction): OkResult {
-    const now = Date.now();
+    // The timer runs on a monotonic clock; the pet and the bubble use the
+    // wall clock.
+    const now = monotonicNow();
+    const wallNow = Date.now();
+
     switch (action) {
       case 'start':
         this.stopWalk();
         this.focus.start(now);
         this.showBubble({
-          id: `focus-start-${now}`,
+          id: `focus-start-${wallNow}`,
           text: "I'll be right here.",
           durationMs: 3200,
         });
         break;
       case 'pause':
-        this.focus.pause(now);
+        this.focus.pause(now, 'user');
         break;
       case 'resume':
         this.focus.resume(now);
         break;
-      case 'stop':
-        this.focus.stop();
-        this.brain.endFocus(now);
+      case 'skip': {
+        this.focus.skip(now);
+        this.showBubble({
+          id: `focus-skip-${wallNow}`,
+          text: 'Skipped. No credit for that one.',
+          durationMs: 3200,
+        });
         break;
+      }
+      case 'stop': {
+        // Ending a session early keeps whatever was genuinely focused.
+        const result = this.focus.abandon();
+        if (result.counts) {
+          const minutes = Math.floor(result.focusedMs / 60_000);
+          if (minutes > 0) {
+            this.brain.addXp(minutes * FOCUS_XP_PER_MINUTE);
+            this.brain.celebrate(wallNow);
+            this.showBubble({
+              id: `focus-partial-${wallNow}`,
+              text: `${minutes} minutes logged. That still counts.`,
+              durationMs: 5000,
+            });
+          }
+        }
+        this.brain.endFocus(wallNow);
+        break;
+      }
       default:
         return { ok: false, error: 'unknown focus action' };
     }
@@ -879,6 +918,10 @@ export class MochiController {
     ipcMain.handle('focus:resume', (event): OkResult => {
       if (!fromApp(event)) return { ok: false };
       return this.handleFocus('resume');
+    });
+    ipcMain.handle('focus:skip', (event): OkResult => {
+      if (!fromApp(event)) return { ok: false };
+      return this.handleFocus('skip');
     });
     ipcMain.handle('focus:stop', (event): OkResult => {
       if (!fromApp(event)) return { ok: false };

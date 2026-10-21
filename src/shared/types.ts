@@ -13,6 +13,9 @@ export type PetMode = 'awake' | 'focus' | 'sleep' | 'drag';
 export type FocusPhase = 'work' | 'shortBreak' | 'longBreak';
 export type FocusStatus = 'idle' | 'running' | 'paused';
 
+/** Why a session is not running. */
+export type FocusPauseReason = 'user' | 'idle' | 'lock' | 'suspend' | 'recovered';
+
 export interface Point {
   x: number;
   y: number;
@@ -45,6 +48,14 @@ export interface FocusView {
   round: number;
   totalRounds: number;
   completedToday: number;
+  /** Focus time recorded today, in milliseconds. */
+  focusedMsToday: number;
+  /** Consecutive days with at least one completed block. */
+  streakDays: number;
+  /** Why the session is not running, or null when it is. */
+  pauseReason: FocusPauseReason | null;
+  /** When the current phase began, on the monotonic clock. */
+  startedAtMs: number | null;
   config: FocusConfig;
 }
 
@@ -91,7 +102,7 @@ export interface BubbleSpec {
   durationMs: number;
 }
 
-export type FocusAction = 'start' | 'pause' | 'resume' | 'stop';
+export type FocusAction = 'start' | 'pause' | 'resume' | 'skip' | 'stop';
 
 export interface OkResult {
   ok: boolean;

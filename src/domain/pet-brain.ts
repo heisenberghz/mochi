@@ -9,6 +9,7 @@ import {
   WALK_INTERVAL_MAX_MS,
   WALK_INTERVAL_MIN_MS,
 } from '../shared/constants';
+import { localDateKey } from '../shared/dates';
 import type { Behavior, PetMode, PetView } from '../shared/types';
 
 export interface BrainContext {
@@ -59,11 +60,6 @@ export function levelForXp(xp: number): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-function localDateKey(now: number): string {
-  const d = new Date(now);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /**

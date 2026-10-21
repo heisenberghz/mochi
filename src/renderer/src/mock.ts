@@ -20,6 +20,10 @@ export function mockSnapshot(): AppSnapshot {
       round: 1,
       totalRounds: FOCUS_DEFAULTS.rounds,
       completedToday: 0,
+      focusedMsToday: 0,
+      streakDays: 0,
+      pauseReason: null,
+      startedAtMs: null,
       config: { ...FOCUS_DEFAULTS },
     },
     settings: {

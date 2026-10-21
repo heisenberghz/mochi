@@ -34,6 +34,8 @@ function focus(action: FocusAction): Promise<OkResult> {
       return ipcRenderer.invoke('focus:pause');
     case 'resume':
       return ipcRenderer.invoke('focus:resume');
+    case 'skip':
+      return ipcRenderer.invoke('focus:skip');
     case 'stop':
       return ipcRenderer.invoke('focus:stop');
   }

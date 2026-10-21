@@ -357,6 +357,27 @@ saved data can be destroyed, then the write cadence.*
   correctly recomputed from XP).
 - 77 tests passing (13 new). typecheck, build and smoke all green.
 
+**B1 — the focus timer, rebuilt as pure domain logic** *(working tree, not committed)*
+- The timer now runs on a **monotonic clock**, so changing the system clock can no longer
+  stretch or shrink a session.
+- Pausing now records **why** it is paused: user, idle, lock, suspend, or recovered.
+- "Today" now means today. The counters roll over at local midnight, and minutes are
+  credited to the day they were actually spent on — a block running across midnight is split
+  between the two days.
+- **Streaks** are counted from the daily totals, and only move on the first completed block
+  of a day.
+- **Skip** a phase from the pet menu, tray or Den: no XP, no session, no streak.
+- **Partial credit**: ending a block early keeps the minutes; at half or more it counts,
+  below that it does not, and either way it is not a completed block.
+- Starting while a break is waiting now starts the **break**, instead of throwing the break
+  away and starting a new block of work.
+- The timer can be **saved and restored**, and a restored session comes back **paused** —
+  never running, because the monotonic clock starts again with the process.
+- The product limits (focus 5–120 minutes and so on) are now checked at the boundary where
+  the user can be told why a value was refused, instead of inside the domain where they
+  silently changed what the code did.
+- 105 tests passing (28 new). typecheck, build and smoke all green.
+
 ### 2026-10-20 — Second pass: full doc audit, diagnosis, and re-plan
 - Read all 20 documents in `docs/` and every line of source, via three parallel audits.
 - Measured the code against all 88 functional requirements: **17 done, 40 partial, 31 missing**.
