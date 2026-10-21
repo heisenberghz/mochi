@@ -48,6 +48,9 @@ const api: MochiApi = {
   bootstrap: () => ipcRenderer.invoke('app:bootstrap') as Promise<AppSnapshot>,
   onState,
   onBubble,
+  ackWelcome: () => ipcRenderer.invoke('app:ackWelcome') as Promise<OkResult>,
+  setReducedMotion: (active: boolean) =>
+    ipcRenderer.invoke('window:setReducedMotion', active) as Promise<OkResult>,
   setInteractive: (interactive: boolean) =>
     ipcRenderer.invoke('window:setInteractive', interactive) as Promise<OkResult>,
   poke: () => ipcRenderer.invoke('pet:poke') as Promise<OkResult>,

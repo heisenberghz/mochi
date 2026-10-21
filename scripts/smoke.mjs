@@ -107,9 +107,9 @@ async function main() {
   check(flow.paused === 'paused', 'Focus did not pause.', flow.paused);
   check(flow.stopped === 'idle', 'Focus did not stop.', flow.stopped);
   check(
-    result.state?.pet?.behavior === 'idle',
+    flow.behaviorAfterStop === 'idle',
     'Pet stayed in focus after stop.',
-    result.state?.pet?.behavior,
+    flow.behaviorAfterStop,
   );
   check(
     flow.configWorkMin === 50,
@@ -118,6 +118,68 @@ async function main() {
   );
 
   console.log('Phase 1 assertions passed.');
+
+  // --- The window and the pet's behaviour ----------------------------------
+
+  const win = result.windowChecks ?? {};
+  check(!win.error, 'The window checks threw.', win.error);
+
+  // The pet must never sit over the taskbar.
+  check(
+    win.taskbar?.y <= win.taskbar?.maxY,
+    'The pet can be parked over the taskbar.',
+    win.taskbar,
+  );
+
+  // The pet must keep living while it is hidden.
+  check(
+    (win.hiddenBroadcasts ?? 0) > 0,
+    'The pet stopped living while it was hidden.',
+    win.hiddenBroadcasts,
+  );
+
+  // Reduced motion must stop the window moving.
+  check(win.reducedMotion?.active === true, 'Reduced motion was not reported.', win.reducedMotion);
+  check(
+    win.reducedMotion?.moved === 0,
+    'The pet still walked with reduced motion on.',
+    win.reducedMotion,
+  );
+
+  // With motion on, the pet must walk at the documented speed.
+  const walkSpeed = (win.walk?.distance ?? 0) / ((win.walk?.durationMs ?? 1) / 1000);
+  check(
+    walkSpeed >= 60 && walkSpeed <= 90,
+    'The pet is not walking at the documented speed.',
+    { speed: walkSpeed, ...win.walk },
+  );
+
+  // Dropping near a corner must glide, not teleport.
+  const snap = win.snap ?? {};
+  check(
+    snap.mid?.x !== snap.target?.x || snap.mid?.y !== snap.target?.y,
+    'The pet teleported into the corner instead of gliding.',
+    snap,
+  );
+  check(
+    snap.mid?.x > snap.target?.x && snap.mid?.x < snap.start?.x,
+    'The pet did not glide towards the corner.',
+    snap,
+  );
+  check(
+    snap.end?.x === snap.target?.x && snap.end?.y === snap.target?.y,
+    'The pet did not end up in the corner.',
+    snap,
+  );
+
+  // The Den must not be able to claim the welcome message.
+  check(
+    win.welcomeFromDen?.ok === false,
+    'The Den was able to claim the welcome message.',
+    win.welcomeFromDen,
+  );
+
+  console.log('Window and behaviour assertions passed.');
 
   // --- The power events ----------------------------------------------------
 

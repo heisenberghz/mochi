@@ -56,6 +56,15 @@ export function PetApp() {
   const bubbleRef = useRef<BubbleSpec | null>(null);
   const reducedMotion = useReducedMotion(snapshot);
 
+  // The main process cannot read the system's motion preference, so it is told
+  // what the effective setting is. Without this, reduced motion would only
+  // quiet the CSS and the pet would still walk across the screen.
+  useEffect(() => {
+    const api = window.mochi;
+    if (!api) return;
+    void api.setReducedMotion(reducedMotion);
+  }, [reducedMotion]);
+
   bubbleRef.current = bubble;
 
   const showBubble = useCallback((next: BubbleSpec) => {
@@ -97,6 +106,8 @@ export function PetApp() {
             action: { id: 'start-focus', label: 'Start a 25-minute focus' },
             durationMs: 12_000,
           });
+          // The pet owns the welcome message, so it is the pet that claims it.
+          void window.mochi.ackWelcome();
         }
       })
       .catch((error: unknown) => {

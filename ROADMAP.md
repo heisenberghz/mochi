@@ -138,159 +138,94 @@ A spec is a contract with the future team, not a checklist to complete. These ar
 
 ## 4. The stages
 
-### Stage 1A — Close the live holes
-*Security first (they're open right now and cost almost nothing), then the three ways your
-saved data can be destroyed, then the write cadence.*
+**54 items, grouped into 7 commits.** Each one is reviewed before the next starts.
 
-#### Security (open today, cheap to close)
-- [ ] **Block navigation and popups.** No `will-navigate` or `setWindowOpenHandler` is
-      registered anywhere, so nothing stops a renderer from navigating away. (NFR-SEC-03)
-- [ ] **DevTools off in the Den** for packaged builds. It's currently on. (NFR-SEC-01)
-- [ ] **Tighten the production CSP.** The current policy allows any `ws://` host.
-      (NFR-SEC-02)
+Nothing is dropped — only grouped. I still implement in small steps and run the tests after
+each one; the commit is simply where you review.
 
-#### Data loss (three real ways your file can be destroyed)
-- [ ] **Never truncate the good file.** When the atomic rename fails, the code writes
-      straight onto the primary — which can destroy your only good copy. (FR-DAT-02)
-- [ ] **Never overwrite a newer schema.** A file from a future version is skipped, then the
-      next save replaces it. A downgrade silently destroys data. (FR-DAT-04)
-- [ ] **Quarantine instead of silently starting from zero.** When both files are unreadable
-      the code currently discards them with no notice and no way to get them back.
-      (FR-DAT-03)
+### Commit 1 — The shell and the window *(6 items)*
+*Small fixes to how the pet window behaves.*
 
-#### Write cadence
-- [ ] **Flush at most 2 seconds after a change**, not every 30 seconds, so a force-kill
-      can't lose much. (FR-DAT-10, NFR-REL-03)
-- [ ] **Flush when the pet is hidden**, not just on quit. (FR-DAT-10)
-- [ ] Unique temp file name, `fsync` before rename, retry the rename instead of falling
-      back to a destructive write. (FR-DAT-02)
+- [ ] The welcome message can't be stolen — the Den opening first currently consumes it
+- [ ] The pet stops freezing when hidden
+- [ ] Reduced motion stops the window moving, not just the CSS
+- [ ] The pet stays off the taskbar
+- [ ] Corner snap glides instead of teleporting
+- [ ] Walking speed matches the spec
 
-#### Also in 1A
-- [ ] **A small rotating local log** in `userData/logs` — no personal data, no network — and
-      an install id so exports can be traced. (FR-OPS-06, NFR-PRIV-02)
-- [ ] **Zod validates every message** in both directions. Zod is already installed and has
-      **never been imported anywhere**. (NFR-SEC-04)
-- [ ] **Typed error codes** so the renderer can branch on what went wrong.
-- [ ] **Unknown settings keys rejected**, not silently ignored. (FR-DAT-09)
+### Commit 2 — The pet's geometry and behaviour *(9 items)*
+*Where the pet is, and what it decides to do.*
 
----
+- [ ] Hit region derived from the art, not hand-typed
+- [ ] Per-state hit ellipses
+- [ ] A live guard against the CSS and the hit region drifting apart
+- [ ] The reduced-motion rule for the speech bubble, which never matched anything
+- [ ] The scarf swinging ~85 px off its anchor
+- [ ] Timing brought in line with the motion spec
+- [ ] A celebration can no longer stomp on a walk
+- [ ] A behaviour that never ends can no longer get stuck with no way out
+- [ ] The 10-second celebrate cooldown
 
-### Stage 1B — Make the timer trustworthy
-*The thing users actually touch.*
+### Commit 3 — The pet's mind and poses *(9 items)*
+*Turn "a blob that moves" into "a pet".*
 
-- [ ] **Monotonic clock** so a system clock change can't stretch or shrink a block.
-      (FR-FOC-04)
-- [ ] **Suspend doesn't count.** Close the lid for 30 minutes mid-block → same time left on
-      wake. Also handle lock and unlock. (FR-FOC-07, FR-WIN-16)
-- [ ] **Auto-pause after 3 minutes of no input**, and offer Resume or End when you come
-      back. (FR-FOC-05, FR-FOC-06)
-- [ ] **Persist the running session** so a crash or force-kill can offer "Resume block"
-      instead of losing the whole thing. (FR-FOC-08)
-- [ ] **"Today" means today.** Blocks and minutes reset at local midnight, and a block
-      running across midnight splits between the two days. (FR-FOC-13)
-- [ ] **Partial credit.** End a block at 60% → prorated XP, no session count, streak
-      untouched. At 40% → nothing. (FR-FOC-11)
-- [ ] **Skip** a phase from the pet menu, tray and Den. (FR-INT-07, FR-FOC-01)
-- [ ] **Focus durations become editable** with limits (5–120 / 1–30 / 5–60 / 2–8), saved
-      between restarts, and a change during a session applies to the next phase.
-      (FR-FOC-02)
-- [ ] **Break XP and mood awards** for completed phases and breaks.
-- [ ] **Store schema v2 with a real migration chain** — v1 files upgrade automatically and
-      running the upgrade twice changes nothing. (FR-DAT-04)
-- [ ] **The welcome message can't be stolen** — the Den opening first currently consumes the
-      pet's welcome bubble.
-- [ ] **The pet stops freezing when hidden.** Hiding it currently pauses its whole brain.
-- [ ] **Reduced motion stops the window moving**, not just the CSS. Right now the pet still
-      walks across your screen with reduced motion on. (FR-ANI-12, NFR-A11Y-02)
-- [ ] **The pet stays off the taskbar.** The window's vertical position is never clamped to
-      the bottom of the work area. (FR-WIN-09, AC-04)
-- [ ] **Corner snap glides** over ~180 ms instead of teleporting. (FR-WIN-08)
-- [ ] **Walking speed matches the spec** (60–90 px/s). The speed constant exists in the code
-      but is never used. (FR-ANI-04)
+- [ ] Idle micro-behaviours: look-around, stretch, ear-flick
+- [ ] Offline catch-up after 12 hours away
+- [ ] Mood decay and the mood awards
+- [ ] Energy and mood driving the art
+- [ ] Sleep curls into a proper oval; the body stretches when carried
+- [ ] The tail goes still during focus; the scarf bounces when waving
+- [ ] The celebration squash is right
+- [ ] The walk cycle at 0.9 s, matched to speed, with the drop settle
+- [ ] `ADR-0010` superseding the two Rive ADRs, so the spec describes the renderer that
+      actually ships
 
----
+### Commit 4 — Progression and feel *(6 items)*
+*What you get for playing, and how it feels to play.*
 
-### Stage 1C — Boundaries and polish
-- [ ] **Hit region derived from the art** instead of hand-typed numbers, with a live check
-      that warns if the CSS and the hit region ever drift apart. (FR-WIN-06, FR-WIN-10)
-- [ ] **Reduced-motion rule for the speech bubble fixed** — the rule never matches anything
-      because the bubble is a sibling of the sprite, not a child. (FR-A11Y-02)
-- [ ] **Scarf animation bug fixed** — the scarf swings ~85 px off its anchor because of a
-      `transform-box` mistake.
-- [ ] **Timing brought in line with the motion spec** — blink becomes random (2.5–7 s) instead
-      of a fixed 5.4 s, plus a real ear flick. (FR-ANI-02)
-- [ ] **Focus duration editor** in the Den with inline validation errors. (FR-FOC-02)
-- [ ] **Pause reason shown** — "paused because you went idle / locked / slept".
-- [ ] **Real daily numbers** — blocks, minutes and streak read from disk, not from memory.
-- [ ] **Skip button** on the focus view.
-- [ ] **"Settings" added to the tray menu**. (FR-WIN-13)
-- [ ] **Behaviour priority and a watchdog** — a celebration can no longer stomp on a walk,
-      and a behaviour that never ends can no longer get stuck with no way out.
-      (FR-ANI-08, FR-ANI-11)
+- [ ] Level up does something: a wave, a bubble, something new to wear
+- [ ] The Locker — cosmetics unlock by level, no pressure mechanics
+- [ ] The speech bubble behaves: one unasked bubble every 5 minutes, 6 per hour, gone in 4–8 s
+- [ ] A poke reacts within 100 ms
+- [ ] Hovering makes Mochi look at your cursor
+- [ ] High contrast mode for the pet and the Den
 
----
-
-### Stage 2 — Feel Alive
-*Turn "a blob that moves" into "a pet". This is the difference between a demo and Mochi.*
-
-- [ ] **Idle micro-behaviours** — look-around, stretch, ear-flick — picked from a catalog on
-      a 4–12 second timer so the pet never looks frozen. (FR-ANI-03)
-- [ ] **Per-state poses fixed to match the spec** — sleep curls into a proper oval, the body
-      stretches when carried, the tail goes still during focus, the celebration squash is
-      right, the scarf bounces when waving.
-- [ ] **Energy and mood drive the art** — droopy eyes when tired, a smile when happy. The
-      renderer currently ignores both numbers.
-- [ ] **Offline catch-up** — if you were away 12 hours, Mochi recovers properly and doesn't
-      celebrate about it. (FR-ANI-10)
-- [ ] **Mood decay and awards** match the spec.
-- [ ] **Level up actually does something** — a wave, a bubble, and something new to wear.
-- [ ] **Locker** — cosmetics unlock by level, no pressure mechanics. (FR-DEN-06)
-- [ ] **Drop settle and snap animations**, walk cycle at 0.9 s matched to speed.
-- [ ] **Speech bubble behaves** — max one unasked bubble every 5 minutes, 6 per hour, always
-      disappears in 4–8 seconds. (FR-INT-04, FR-INT-05)
-- [ ] **Poke reacts within 100 ms**, and hovering makes Mochi look at your cursor.
-      (FR-INT-01, FR-INT-06)
-- [ ] **High contrast mode** for the pet and the Den. (FR-A11Y-05)
-
----
-
-### Stage 3 — The Product
+### Commit 5 — The Product *(9 items)*
 *Everything the spec promises that isn't a pet behaviour.*
 
-- [ ] **Insights tab** — 7-day and 30-day minutes, sessions, breaks, current and longest
-      streak, recent sessions, and an honest empty state. (FR-DEN-02, FR-DEN-04)
-- [ ] **Full settings** — the spec lists about thirty preferences across six groups. Today
-      there are five. We ship 12–15 that all work, grouped.
-- [ ] **Completion toast** plus a sound, with quiet hours honoured. (FR-FOC-10)
-- [ ] **Global hotkeys** — `Ctrl+Alt+P` / `F` / `D`, failing gracefully on conflict.
-      (FR-WIN-14)
-- [ ] **"Bring Mochi here"** and **hide in fullscreen**. (FR-WIN-18, FR-WIN-17)
-- [ ] **Export your data** and **reset** with confirmation. (FR-DAT-05, FR-DAT-06)
-- [ ] **Keyboard and screen-reader pass** on the Den, with Escape handling and focus
-      management. (FR-DEN-07, NFR-A11Y-01)
-- [ ] **Dark theme for the Den**, following the OS. (FR-DEN-08)
-- [ ] **View transitions** in the Den, and the bubble gets an exit animation.
+- [ ] The Insights tab — 7-day and 30-day minutes, sessions, breaks, current and longest
+      streak, recent sessions, and an honest empty state
+- [ ] The full settings inventory — 12–15 that all work, grouped
+- [ ] Dark theme for the Den, following the OS
+- [ ] View transitions in the Den, and the bubble gets an exit animation
+- [ ] A toast and a sound when a block ends, with quiet hours honoured
+- [ ] Global hotkeys — `Ctrl+Alt+P` / `F` / `D`, failing gracefully on conflict
+- [ ] "Bring Mochi here" and hide in fullscreen
+- [ ] Export your data and reset, with confirmation
+- [ ] A keyboard and screen-reader pass over the Den
 
----
-
-### Stage 4 — Ship It
+### Commit 6 — Ship It *(8 items)*
 *Turn it from "runs on my machine" into "installable, updatable, and verifiable".*
 
-- [ ] **CI** — lint, typecheck, test, build, on every push.
-- [ ] **ESLint** with a rule that blocks the domain layer from importing Electron, React or
-      Node I/O. (NFR-MAINT-01)
-- [ ] **electron-builder NSIS installer** — per-user, no admin rights required.
-- [ ] **A real app icon** at every DPI, not just the 16px tray dot.
-- [ ] **Auto-update** with staged rollout and signature checking.
-- [ ] **Security hardening** — Electron fuses, ASAR integrity, IPC fuzzing.
-      (NFR-SEC-05, NFR-SEC-06)
-- [ ] **Performance harness** — CPU, memory and frame pacing measured against the spec's
-      budgets, with the idle and battery numbers actually proven.
-- [ ] **Fault injection** — renderer crash, corrupt state, display unplugged, failed update.
-- [ ] **Visual QA** — light, dark and busy wallpapers, 100–200% scaling, two monitors.
-- [ ] **About, licences, privacy policy and known limitations.**
+- [ ] CI — lint, typecheck, test, build, on every push
+- [ ] ESLint with a rule that blocks the domain layer from importing Electron, React or
+      Node I/O
+- [ ] An NSIS installer, per-user, no admin rights required
+- [ ] A real app icon at every DPI
+- [ ] Auto-update with staged rollout and signature checking
+- [ ] Electron fuses, ASAR integrity, IPC fuzzing
+- [ ] A performance harness against the spec's CPU, memory and frame-pacing budgets
+- [ ] Fault injection — renderer crash, corrupt state, display unplugged, failed update
 
----
+### Commit 7 — The last mile *(6 items)*
+*Make the spec tell the truth, and check the thing by eye.*
+
+- [ ] Visual QA over light, dark and busy wallpapers, 100–200% scaling, two monitors
+- [ ] Every hardcoded number moved into `shared/constants.ts`
+- [ ] A "Solo track" note in `roadmap.md`
+- [ ] The risk register closed where it should be
+- [ ] The root `README.md` status line and stack table fixed
+- [ ] The two doc contradictions the audit found, reconciled
 
 ### Parked — only if a designer appears
 - [ ] **Rive renderer** — replace the SVG with a real `.riv`, build the view-model bridge, and
@@ -306,9 +241,69 @@ saved data can be destroyed, then the write cadence.*
 
 ---
 
-## 6. Status log
+## 6. Who verifies what
+
+Most of this is mine to prove. These are the parts that need you, and I will not ask for
+them until the automated checks for the same item are already green.
+
+| Needs you | Why | When |
+| --- | --- | --- |
+| The signing certificate and update hosting (O-2/O-3) | Money and an account | **Now — it has a lead time in days** |
+| Real support and privacy URLs | Only you know where they live | Before Commit 5 |
+| A Windows 10 22H2 machine | I can only test your one machine | Before Commit 6 |
+| Eyeballing the pet at 150/200% scaling, on a busy wallpaper, in dark mode | Only a pair of eyes catches this | Commit 7 |
+| Closing the lid mid-block, and changing the system clock | I can simulate the events, not the real hardware | Once, near the end of Stage 1B |
+
+Everything else — the data safety, the timer, the pet's behaviour, the Den, the packaging —
+I verify with the 138 unit tests and the two-phase smoke harness before asking you to look.
+
+---
+
+## 7. Status log
 
 *Newest first. I add an entry after each piece of work.*
+
+### 2026-10-21 — Commit 1: the shell and the window
+
+All six items are done and **all six are verified automatically** — the smoke harness
+measures each one, so none of them needs a person.
+
+- **The welcome message can't be stolen.** Reading the state no longer changes it, and only the
+  pet window may claim it. The smoke test asks the Den to claim it and checks that it is
+  refused.
+- **The pet stops freezing when hidden.** The behaviour tick no longer stops when the window
+  is hidden, so the pet keeps living, ageing and wandering in your pocket. The smoke test
+  counts the broadcasts while the pet is hidden.
+- **Reduced motion stops the window moving.** The main process cannot read the system's
+  motion preference, so the pet now reports the effective setting to it — and every path
+  that moves the window goes through one gate.
+- **The pet stays off the taskbar.** The window's vertical clamp was wrong: the pet could be
+  dragged more than 260 px over the taskbar. The whole window now stays inside the work
+  area vertically.
+- **Corner snap glides** over 180 ms instead of teleporting. The walk and the snap now share
+  one motion helper.
+- **Walking speed matches the spec** — the step is derived from the speed constant, so the
+  pet moves at 70 px/s instead of drifting between 32 and 65.
+
+**Measured by the smoke harness:**
+
+| Check | Result |
+| --- | --- |
+| Window pulled back below the taskbar | y 504, the exact bottom of the work area |
+| Broadcasts while the pet is hidden | 3 in 1.4 s — the brain is still ticking |
+| Distance moved with reduced motion on | 0 px |
+| Walking speed | 252 px in 3.6 s = **70 px/s** |
+| Corner snap | (46,46) → (30,30) → (16,16) — it glided |
+| The Den claiming the welcome message | refused |
+
+**Two bugs the new tests found:**
+- Forcing a walk bypassed the reduced-motion gate. The gate now sits in the one place every
+  moving path goes through, so the tray menu, the brain and the smoke test all get the same
+  answer.
+- The pet's posture was being asserted at the end of the run, where a later step had
+  deliberately woken it up. It is now captured at the moment it matters.
+
+138 tests passing. typecheck, build and both smoke phases green.
 
 ### 2026-10-20 — Stage 1A started
 

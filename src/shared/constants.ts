@@ -9,6 +9,9 @@ export const DRAG_THRESHOLD = 4;
 export const CLICK_MAX_DURATION = 400;
 export const SNAP_DISTANCE = 48;
 
+/** How long the pet takes to glide into a corner when it is dropped near one. */
+export const SNAP_DURATION_MS = 180;
+
 export const SLEEP_AFTER_IDLE_SECONDS = 600;
 export const QUIET_SLEEP_AFTER_IDLE_SECONDS = 300;
 

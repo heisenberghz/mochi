@@ -39,11 +39,16 @@ function clampToDisplay(x: number, y: number): { x: number; y: number } {
   const bounds = { x, y, width: PET_WINDOW.width, height: PET_WINDOW.height };
   const display = screen.getDisplayMatching(bounds);
   const area = display.workArea;
+
   return {
     x: Math.round(
       Math.min(area.x + area.width - 96, Math.max(area.x - PET_WINDOW.width + 96, x)),
     ),
-    y: Math.round(Math.min(area.y + area.height - 96, Math.max(area.y - 60, y))),
+    // The pet's feet must never reach the taskbar, so the whole window stays
+    // inside the work area vertically.
+    y: Math.round(
+      Math.min(area.y + area.height - PET_WINDOW.height, Math.max(area.y, y)),
+    ),
   };
 }
 

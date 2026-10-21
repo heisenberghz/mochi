@@ -136,6 +136,10 @@ export interface MochiApi {
   bootstrap(): Promise<AppSnapshot>;
   onState(cb: (snapshot: AppSnapshot) => void): () => void;
   onBubble(cb: (bubble: BubbleSpec) => void): () => void;
+  /** The pet claims the welcome message. Only the pet window may call this. */
+  ackWelcome(): Promise<OkResult>;
+  /** The pet reports whether reduced motion is actually in effect. */
+  setReducedMotion(active: boolean): Promise<OkResult>;
   setInteractive(interactive: boolean): Promise<OkResult>;
   poke(): Promise<OkResult>;
   dragStart(cursor: Point): Promise<OkResult>;

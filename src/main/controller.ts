@@ -24,6 +24,8 @@ import {
   FOCUS_XP_PER_MINUTE,
   IDLE_AUTO_PAUSE_SECONDS,
   SNAP_DISTANCE,
+  SNAP_DURATION_MS,
+  WALK_SPEED_DIP_PER_SECOND,
 } from '../shared/constants';
 import type {
   AppSnapshot,
@@ -76,6 +78,7 @@ interface SmokeFocusFlow {
   paused?: string;
   stop?: unknown;
   stopped?: string;
+  behaviorAfterStop?: string;
   configWorkMin?: number;
   error?: string;
 }
@@ -109,7 +112,7 @@ export class MochiController {
 
   private behaviorTimer: NodeJS.Timeout | null = null;
   private focusTimer: NodeJS.Timeout | null = null;
-  private walkTimer: NodeJS.Timeout | null = null;
+  private motionTimer: NodeJS.Timeout | null = null;
   private dragTimer: NodeJS.Timeout | null = null;
   private dragWatchdog: NodeJS.Timeout | null = null;
   private dragOffset: Point | null = null;
@@ -121,6 +124,8 @@ export class MochiController {
   /** Whether the idle pause has already been offered to the user. */
   private idlePauseOffered = false;
   private lastIdleCheckAt = 0;
+  /** Whether reduced motion is actually in effect, as the pet reports it. */
+  private reducedMotionActive = false;
 
   constructor(store: Store, smoke = false, smokeRecover = false) {
     this.store = store;
@@ -241,6 +246,7 @@ export class MochiController {
     let denDom: unknown = null;
     let denCapture = { pngBytes: 0, empty: true, diagnostics: [] as string[] };
     const tabs: Record<string, unknown> = {};
+    const windowChecks: Record<string, unknown> = {};
     const focusFlow: SmokeFocusFlow = {};
     const powerFlow: SmokePowerFlow = {
       beforeSleep: 0,
@@ -288,6 +294,9 @@ export class MochiController {
           "window.mochi.focus('stop')",
         );
         focusFlow.stopped = this.snapshot().focus.status;
+        // The pet's posture, captured here rather than at the end, because
+        // later steps deliberately wake it up.
+        focusFlow.behaviorAfterStop = this.brain.snapshot().behavior;
 
         // Change the session length, so the next launch can prove it stuck.
         await den.webContents.executeJavaScript(
@@ -296,6 +305,112 @@ export class MochiController {
         focusFlow.configWorkMin = this.focus.getConfig().workMin;
       } catch (error) {
         focusFlow.error = String(error);
+      }
+
+      // The window and the pet's behaviour. Everything here is checked by the
+      // smoke script, so none of it needs a person.
+      try {
+        const win = this.petWindow;
+        const area = screen.getPrimaryDisplay().workArea;
+        const size = win?.getBounds();
+
+        // The pet must never be able to sit over the taskbar.
+        if (win && size) {
+          win.setBounds({
+            x: area.x + 40,
+            y: area.y + area.height - 40,
+            width: size.width,
+            height: size.height,
+          });
+          clampPlacement(win);
+          const after = win.getBounds();
+          windowChecks.taskbar = { y: after.y, maxY: area.y + area.height - after.height };
+        }
+
+        // The pet must keep living while it is hidden. Counting the broadcasts
+        // is the proof that the behaviour tick is still running — before the
+        // fix it stopped dead the moment the window was hidden.
+        let broadcasts = 0;
+        const originalBroadcast = this.broadcast.bind(this);
+        (this as unknown as { broadcast: () => void }).broadcast = (): void => {
+          broadcasts += 1;
+          originalBroadcast();
+        };
+
+        this.hidePet();
+        await this.sleep(1400);
+        windowChecks.hiddenBroadcasts = broadcasts;
+
+        (this as unknown as { broadcast: () => void }).broadcast = originalBroadcast;
+        this.showPet();
+
+        // Reduced motion must stop the window moving, not just the CSS.
+        await den.webContents.executeJavaScript(
+          "window.mochi.updateSettings({ reducedMotion: 'on' })",
+        );
+        await this.sleep(500);
+        const beforeMotion = win?.getBounds().x ?? 0;
+        this.simulateWalk();
+        await this.sleep(1400);
+        windowChecks.reducedMotion = {
+          active: this.reducedMotionActive,
+          moved: Math.abs((win?.getBounds().x ?? 0) - beforeMotion),
+        };
+
+        // With motion back on, the pet should walk at the documented speed.
+        await den.webContents.executeJavaScript(
+          "window.mochi.updateSettings({ reducedMotion: 'off' })",
+        );
+        await this.sleep(500);
+        if (win && size) {
+          win.setBounds({
+            x: Math.round(area.x + (area.width - size.width) / 2),
+            y: area.y + area.height - size.height,
+            width: size.width,
+            height: size.height,
+          });
+        }
+        const walkStart = win?.getBounds().x ?? 0;
+        this.simulateWalk();
+        await this.sleep(4000);
+        windowChecks.walk = {
+          distance: Math.abs((win?.getBounds().x ?? 0) - walkStart),
+          durationMs: 3600,
+        };
+
+        // Dropping the pet near a corner should glide into it, not teleport.
+        if (win && size) {
+          const corner = { x: area.x + 16, y: area.y + 16 };
+          // Close enough to snap to, but far enough that a jump would show.
+          const offset = 30;
+          win.setBounds({
+            x: corner.x + offset,
+            y: corner.y + offset,
+            width: size.width,
+            height: size.height,
+          });
+          this.simulateDrop();
+          await this.sleep(80);
+          const mid = win.getBounds();
+          windowChecks.snap = {
+            start: { x: corner.x + offset, y: corner.y + offset },
+            mid: { x: mid.x, y: mid.y },
+            target: corner,
+          };
+          await this.sleep(500);
+          const end = win.getBounds();
+          windowChecks.snap = {
+            ...(windowChecks.snap as Record<string, unknown>),
+            end: { x: end.x, y: end.y },
+          };
+        }
+
+        // The Den must not be able to claim the welcome message.
+        windowChecks.welcomeFromDen = await den.webContents.executeJavaScript(
+          "window.mochi.ackWelcome()",
+        );
+      } catch (error) {
+        windowChecks.error = String(error);
       }
 
       // The power events. A session must not lose time while the machine is
@@ -390,6 +505,7 @@ export class MochiController {
         : null,
       focusFlow,
       powerFlow,
+      windowChecks,
       state: this.petWindow ? this.snapshot() : null,
     };
     writeFileSync(
@@ -480,7 +596,7 @@ export class MochiController {
     this.persistNow();
     if (this.behaviorTimer) clearInterval(this.behaviorTimer);
     if (this.focusTimer) clearInterval(this.focusTimer);
-    this.stopWalk();
+    this.stopMotion();
     this.stopDrag();
     this.tray?.destroy();
     this.tray = null;
@@ -519,7 +635,7 @@ export class MochiController {
   }
 
   private behaviorTick(): void {
-    if (!this.petWindow || !this.petWindow.isVisible()) return;
+    if (!this.petWindow) return;
     const now = Date.now();
     const focusState = this.focus.state();
     const hour = new Date(now).getHours();
@@ -530,7 +646,9 @@ export class MochiController {
       // means nobody is there anyway.
       focusActive: focusState.status === 'running' && focusState.phase === 'work',
       quietHours: hour >= 22 || hour < 7,
-      canRoam: this.store.state.settings.roam,
+      // Reduced motion is not only about the CSS. The window must stop moving
+      // too, or the pet still walks across the screen.
+      canRoam: this.store.state.settings.roam && !this.reducedMotionActive,
     });
 
     if (result.walkStart) {
@@ -611,6 +729,18 @@ export class MochiController {
         this.onUnlock();
         return;
     }
+  }
+
+  /** Make the pet walk now. Only the smoke test can use this. */
+  simulateWalk(): void {
+    if (!this.smoke) return;
+    this.walkNow();
+  }
+
+  /** Drop the pet where it is, as if the user let go. Only the smoke test can use this. */
+  simulateDrop(): void {
+    if (!this.smoke) return;
+    this.endDrag(false);
   }
 
   /**
@@ -726,7 +856,7 @@ export class MochiController {
 
   private hidePet(): void {
     if (!this.petWindow) return;
-    this.stopWalk();
+    this.stopMotion();
     this.petWindow.setIgnoreMouseEvents(true, { forward: true });
     this.petWindow.hide();
     this.persistNow();
@@ -773,7 +903,7 @@ export class MochiController {
 
     switch (action) {
       case 'start':
-        this.stopWalk();
+        this.stopMotion();
         this.focus.start(now);
         this.showBubble({
           id: `focus-start-${wallNow}`,
@@ -826,58 +956,90 @@ export class MochiController {
 
   private startWalk(walk: WalkStart): void {
     if (!this.petWindow) return;
-    this.stopWalk();
+    this.stopMotion();
+
+    // Reduced motion means the window stays where it is, whether the pet
+    // decided to wander on its own or was asked to. The pet still walks on
+    // screen; the window just does not move.
+    if (this.reducedMotionActive) return;
+
     const win = this.petWindow;
     const bounds = win.getBounds();
     const display = screen.getDisplayMatching(bounds);
     const area = display.workArea;
     const startX = bounds.x;
 
-    let targetX = startX + walk.facing * 170;
+    // The distance comes from the speed the pet is supposed to walk at, so the
+    // step and the stride always agree.
+    const duration = Math.max(600, walk.durationMs);
+    const step = Math.round(WALK_SPEED_DIP_PER_SECOND * (duration / 1000));
+
+    let targetX = startX + walk.facing * step;
     const minX = area.x + 8;
     const maxX = area.x + area.width - bounds.width - 8;
 
     if (targetX < minX || targetX > maxX) {
-      targetX = startX - walk.facing * 170;
+      targetX = startX - walk.facing * step;
       this.brain.flipFacing();
     }
     targetX = Math.round(Math.min(maxX, Math.max(minX, targetX)));
 
     if (Math.abs(targetX - startX) < 30) return;
 
-    const startedAt = performance.now();
-    const duration = Math.max(600, walk.durationMs);
+    this.glideTo(targetX, bounds.y, duration);
+  }
 
-    this.walkTimer = setInterval(() => {
+  /**
+   * Move the window to a place over `durationMs`, easing as it goes.
+   *
+   * The bounds are only written when the rounded position actually changes,
+   * and the new placement is saved when it arrives.
+   */
+  private glideTo(targetX: number, targetY: number, durationMs: number): void {
+    const win = this.petWindow;
+    if (!win || win.isDestroyed()) return;
+
+    const start = win.getBounds();
+    const duration = Math.max(80, durationMs);
+    const startedAt = performance.now();
+    let lastX = start.x;
+    let lastY = start.y;
+
+    const timer = setInterval(() => {
       if (!this.petWindow || this.petWindow.isDestroyed()) {
-        this.stopWalk();
+        clearInterval(timer);
         return;
       }
+
       const t = Math.min(1, (performance.now() - startedAt) / duration);
       const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      const x = Math.round(startX + (targetX - startX) * eased);
-      this.petWindow.setBounds({
-        x,
-        y: bounds.y,
-        width: bounds.width,
-        height: bounds.height,
-      });
+      const x = Math.round(start.x + (targetX - start.x) * eased);
+      const y = Math.round(start.y + (targetY - start.y) * eased);
+
+      if (x !== lastX || y !== lastY) {
+        lastX = x;
+        lastY = y;
+        this.petWindow.setBounds({ x, y, width: start.width, height: start.height });
+      }
+
       if (t >= 1) {
-        this.stopWalk();
-        this.store.setPlacement(x, bounds.y);
+        clearInterval(timer);
+        this.store.setPlacement(lastX, lastY);
         this.store.flush();
       }
     }, 16);
+
+    this.motionTimer = timer;
   }
 
-  private stopWalk(): void {
-    if (this.walkTimer) clearInterval(this.walkTimer);
-    this.walkTimer = null;
+  private stopMotion(): void {
+    if (this.motionTimer) clearInterval(this.motionTimer);
+    this.motionTimer = null;
   }
 
   private startDrag(): void {
     if (!this.petWindow) return;
-    this.stopWalk();
+    this.stopMotion();
     const win = this.petWindow;
     const bounds = win.getBounds();
     const cursor = screen.getCursorScreenPoint();
@@ -898,9 +1060,11 @@ export class MochiController {
         area.x + area.width - 96,
         Math.max(area.x - width + 96, current.x - this.dragOffset.x),
       );
+      // The pet's feet must never reach the taskbar, so the window stays
+      // inside the work area vertically.
       const y = Math.min(
-        area.y + area.height - 96,
-        Math.max(area.y - 60, current.y - this.dragOffset.y),
+        area.y + area.height - height,
+        Math.max(area.y, current.y - this.dragOffset.y),
       );
       this.petWindow.setBounds({
         x: Math.round(x),
@@ -924,6 +1088,8 @@ export class MochiController {
 
     const win = this.petWindow;
     const bounds = win.getBounds();
+    let corner: Point | null = null;
+
     if (!canceled) {
       const display = screen.getDisplayMatching(bounds);
       const area = display.workArea;
@@ -937,17 +1103,22 @@ export class MochiController {
           y: area.y + area.height - bounds.height - margin,
         },
       ];
-      const nearest = corners.reduce((best, corner) =>
-        distance(bounds, corner) < distance(bounds, best) ? corner : best,
+      const nearest = corners.reduce((best, candidate) =>
+        distance(bounds, candidate) < distance(bounds, best) ? candidate : best,
       );
       if (distance(bounds, nearest) <= SNAP_DISTANCE) {
-        win.setPosition(Math.round(nearest.x), Math.round(nearest.y));
+        corner = { x: Math.round(nearest.x), y: Math.round(nearest.y) };
       }
     }
 
-    const finalBounds = win.getBounds();
-    this.store.setPlacement(finalBounds.x, finalBounds.y);
-    this.store.flush();
+    if (corner) {
+      // The pet glides into the corner rather than teleporting.
+      this.glideTo(corner.x, corner.y, SNAP_DURATION_MS);
+    } else {
+      this.store.setPlacement(bounds.x, bounds.y);
+      this.store.flush();
+    }
+
     this.brain.endDrag(Date.now());
     win.setIgnoreMouseEvents(true, { forward: true });
     this.broadcast();
@@ -1007,7 +1178,7 @@ export class MochiController {
   }
 
   private walkNow(): void {
-    this.stopWalk();
+    this.stopMotion();
     const walk = this.brain.forceWalk(Date.now());
     this.startWalk(walk);
     this.broadcast();
@@ -1119,13 +1290,28 @@ export class MochiController {
 
     ipcMain.handle('app:bootstrap', (event) => {
       if (!fromApp(event)) return { error: 'unauthorized' };
-      const snapshot = this.snapshot();
-      if (this.welcome) {
-        this.welcome = false;
-        this.store.markWelcomeSeen();
-        this.store.flush();
-      }
-      return snapshot;
+      // Reading the state never changes it. The welcome message belongs to the
+      // pet, so the Den cannot consume it by opening first.
+      return this.snapshot();
+    });
+
+    ipcMain.handle('app:ackWelcome', (event): OkResult => {
+      // Only the pet may claim the welcome message.
+      if (!fromPet(event)) return { ok: false };
+      if (!this.welcome) return { ok: true };
+
+      this.welcome = false;
+      this.store.markWelcomeSeen();
+      this.store.flush();
+      return { ok: true };
+    });
+
+    ipcMain.handle('window:setReducedMotion', (event, value: unknown): OkResult => {
+      if (!fromPet(event) || typeof value !== 'boolean') return { ok: false };
+      // The main process cannot read the system's motion preference, so the
+      // pet tells it what the effective setting is.
+      this.reducedMotionActive = value;
+      return { ok: true };
     });
 
     ipcMain.handle('window:setInteractive', (event, value: unknown): OkResult => {
