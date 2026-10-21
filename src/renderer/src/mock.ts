@@ -11,6 +11,7 @@ export function mockSnapshot(): AppSnapshot {
       xp: 0,
       level: 1,
       facing: 1,
+      animationPaused: false,
     },
     focus: {
       status: 'idle',

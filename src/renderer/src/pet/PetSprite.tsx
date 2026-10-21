@@ -1,32 +1,41 @@
+import type { RefObject } from 'react';
 import type { Behavior } from '../../../shared/types';
 
 interface PetSpriteProps {
   behavior: Behavior;
   facing: -1 | 1;
-  reducedMotion: boolean;
   poked: boolean;
   interactive: boolean;
+  /** The pet is settling after being put down. */
+  settling: boolean;
+  /** The pet's animation has stopped working, so it stands still. */
+  animationPaused: boolean;
+  /** The art itself, so it can be checked against the click target. */
+  spriteRef?: RefObject<HTMLDivElement | null>;
 }
 
 export function PetSprite({
   behavior,
   facing,
-  reducedMotion,
   poked,
   interactive,
+  settling,
+  animationPaused,
+  spriteRef,
 }: PetSpriteProps) {
   const classes = [
     'pet-sprite',
     `behavior-${behavior}`,
-    reducedMotion ? 'reduced' : '',
     poked ? 'poked' : '',
     interactive ? 'interactive' : '',
+    settling ? 'settling' : '',
+    animationPaused ? 'paused' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
   return (
-    <div className={classes} aria-hidden="true">
+    <div className={classes} aria-hidden="true" ref={spriteRef}>
       <svg viewBox="0 0 200 220" className="pet-svg" role="presentation">
         <defs>
           <linearGradient id="body-fill" x1="0" y1="0" x2="0" y2="1">

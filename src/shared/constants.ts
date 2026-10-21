@@ -1,7 +1,9 @@
 export const PET_WINDOW = { width: 320, height: 360 } as const;
 
-/** Hit ellipse in window-local DIP coordinates. */
-export const HIT_ELLIPSE = { cx: 160, cy: 242, rx: 84, ry: 100 } as const;
+/**
+ * How much bigger the hit region grows when the cursor is moving onto the
+ * pet, so it does not flicker at the edge.
+ */
 export const HIT_HYSTERESIS = 8;
 export const INTERACTIVE_EXIT_DELAY = 150;
 
@@ -11,6 +13,15 @@ export const SNAP_DISTANCE = 48;
 
 /** How long the pet takes to glide into a corner when it is dropped near one. */
 export const SNAP_DURATION_MS = 180;
+
+/**
+ * How long the speech bubble takes to fade out. It matches the
+ * `--motion-fast` token in the stylesheet.
+ */
+export const BUBBLE_EXIT_MS = 120;
+
+/** How long the pet takes to settle after being put down. */
+export const SETTLE_DURATION_MS = 250;
 
 export const SLEEP_AFTER_IDLE_SECONDS = 600;
 export const QUIET_SLEEP_AFTER_IDLE_SECONDS = 300;

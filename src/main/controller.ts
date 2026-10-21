@@ -229,7 +229,13 @@ export class MochiController {
           sprite: document.querySelector('.pet-sprite')?.className ?? null,
           bodyBackground: getComputedStyle(document.body).backgroundColor,
           rects: document.querySelectorAll('svg *').length,
-          text: document.body.innerText.slice(0, 120)
+          text: document.body.innerText.slice(0, 120),
+          spriteRect: (() => {
+            const rect = document.querySelector('.pet-sprite')?.getBoundingClientRect();
+            return rect
+              ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+              : null;
+          })()
         })`,
       );
     } catch (error) {
@@ -1044,7 +1050,7 @@ export class MochiController {
     const bounds = win.getBounds();
     const cursor = screen.getCursorScreenPoint();
     this.dragOffset = { x: cursor.x - bounds.x, y: cursor.y - bounds.y };
-    this.brain.startDrag();
+    this.brain.startDrag(Date.now());
     win.setIgnoreMouseEvents(false);
     this.broadcast();
 

@@ -263,6 +263,58 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 
 *Newest first. I add an entry after each piece of work.*
 
+### 2026-10-21 — Commit 2: the pet's geometry and behaviour
+
+All nine items are done, and **all nine are verified automatically.**
+
+**Geometry**
+- The hit region is now **derived from the art** rather than typed in by hand: the sprite
+  box, the stage and the region per behaviour all live in one place, and the offset into the
+  window is calculated, not written down. A test proves the derived region lands exactly
+  where the old hand-written one did, so the pet's click target has not moved.
+- **Per-state hit regions** — the pet curls up to sleep, hangs when it is carried and grows
+  sparkles when it celebrates, so the clickable area follows its shape.
+- Entering uses the larger region and leaving the smaller one, so the pet no longer stays
+  grabbable when the cursor is sitting on its edge.
+- A **live drift guard** measures the art against the click target every time the window
+  resizes and warns when they disagree. The smoke harness collects console messages, so
+  drift fails the run.
+
+**Motion**
+- The reduced-motion rule now **lives on the root instead of the sprite**. It never matched
+  anything before, because the speech bubble is a sibling of the sprite and not a child of
+  it — so the bubble kept animating with reduced motion on.
+- Reduced motion is now **gentler**: the blink slows down rather than stopping, and a wave
+  becomes a small nod instead of nothing, so the pet still says hello.
+- The **scarf no longer swings away from its neck**. Its transform origin was measured from
+  its own box rather than the artboard, which put the pivot most of a body-width to the
+  right of it.
+- The timing now matches the spec: breathing 3.6 s, tail 4.2 s, walk cycle 0.9 s, the
+  scarf lagging behind the body, and a 600 ms settle into sleep.
+- **Blinking is no longer on a metronome.** It runs on a long uneven cycle, so the pet never
+  blinks in time with itself, and one in ten is a double blink.
+- An **ear flick** every 45 seconds, a **bubble that fades out** instead of vanishing, and a
+  **settle** when the pet is put down.
+
+**Behaviour**
+- There is now a **priority order**. Being carried beats focusing, focusing beats sleeping,
+  and a celebration cannot stomp on a session or on the pet being carried.
+- **One celebration every ten seconds**, so a burst of finished blocks is not a burst of
+  confetti.
+- **The pet goes back to what it was doing after being put down.** Picking it up during a
+  focus session used to drop it out of focus for good.
+- A **watchdog** rescues the pet if a behaviour runs far too long — being carried with the
+  pointerup lost is the real case — and stops the animation entirely if it keeps having to.
+
+**Measured by the smoke harness:**
+
+| Check | Result |
+| --- | --- |
+| The art's position and size | left 60, top 134, 200 × 220 — exactly where the click target expects |
+| Drift warnings | none |
+
+162 tests passing (10 new). typecheck, build and both smoke phases green.
+
 ### 2026-10-21 — Commit 1: the shell and the window
 
 All six items are done and **all six are verified automatically** — the smoke harness

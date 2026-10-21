@@ -113,12 +113,27 @@ describe('PetBrain', () => {
   it('handles drag start and end', () => {
     const now = 1_000_000;
     const brain = new PetBrain({ now, rng: () => 0 });
-    brain.startDrag();
+    brain.startDrag(now);
 
     expect(brain.tick(now + 1000, context).state.behavior).toBe('drag');
 
     brain.endDrag(now + 2000);
     expect(brain.tick(now + 2500, context).state.behavior).toBe('idle');
+  });
+
+  it('goes back to what it was doing after being put down', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.tick(now + 500, { ...context, focusActive: true });
+    expect(brain.snapshot().mode).toBe('focus');
+
+    brain.startDrag(now + 1000);
+    expect(brain.snapshot().behavior).toBe('drag');
+
+    brain.endDrag(now + 2000);
+    expect(brain.snapshot().mode).toBe('focus');
+    expect(brain.snapshot().behavior).toBe('focus');
   });
 
   it('adds XP and derives levels from the documented thresholds', () => {
@@ -133,5 +148,122 @@ describe('PetBrain', () => {
     brain.addXp(90); // 160 total = level 3 threshold
     expect(brain.snapshot().level).toBe(3);
     expect(levelForXp(1350)).toBe(10);
+  });
+});
+
+describe('PetBrain priority', () => {
+  it('does not let a celebration interrupt a focus session', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.tick(now + 500, { ...context, focusActive: true });
+    expect(brain.snapshot().behavior).toBe('focus');
+
+    brain.celebrate(now + 1000);
+    expect(brain.snapshot().behavior).toBe('focus');
+  });
+
+  it('does not let a celebration interrupt being carried', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.startDrag(now);
+    brain.celebrate(now + 1000);
+
+    expect(brain.snapshot().behavior).toBe('drag');
+  });
+
+  it('does not let a wave interrupt a focus session', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.tick(now + 500, { ...context, focusActive: true });
+    brain.wave(now + 1000);
+
+    expect(brain.snapshot().behavior).toBe('focus');
+  });
+
+  it('does not let one celebration interrupt another', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.celebrate(now + 1000);
+    expect(brain.snapshot().behavior).toBe('celebrate');
+
+    brain.celebrate(now + 2000);
+    expect(brain.snapshot().behavior).toBe('celebrate');
+  });
+
+  it('waits ten seconds between celebrations', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.celebrate(now + 1000);
+    // The celebration finishes, then another one is refused.
+    brain.tick(now + 5000, context);
+    brain.celebrate(now + 5000);
+    expect(brain.snapshot().behavior).toBe('idle');
+
+    // Ten seconds later it is allowed again.
+    brain.celebrate(now + 12_000);
+    expect(brain.snapshot().behavior).toBe('celebrate');
+  });
+});
+
+describe('PetBrain watchdog', () => {
+  // The pet is kept from wandering, so the only thing that happens in these
+  // tests is the watchdog.
+  const still = { ...context, canRoam: false };
+
+  it('rescues the pet when it is left being carried', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.startDrag(now);
+    expect(brain.snapshot().behavior).toBe('drag');
+
+    // Nobody let go.
+    brain.tick(now + 60_000, still);
+    expect(brain.snapshot().behavior).toBe('idle');
+    expect(brain.snapshot().mode).toBe('awake');
+  });
+
+  it('leaves a focus session alone, however long it runs', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    brain.tick(now + 500, { ...still, focusActive: true });
+    brain.tick(now + 60 * 60_000, { ...still, focusActive: true });
+
+    expect(brain.snapshot().behavior).toBe('focus');
+  });
+
+  it('stops the animation when it keeps having to rescue the pet', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      brain.startDrag(now + attempt * 60_000);
+      brain.tick(now + attempt * 60_000 + 60_000, still);
+    }
+
+    expect(brain.snapshot().animationPaused).toBe(true);
+  });
+
+  it('starts the animation again once the pet behaves', () => {
+    const now = 1_000_000;
+    const brain = new PetBrain({ now, rng: () => 0 });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      brain.startDrag(now + attempt * 60_000);
+      brain.tick(now + attempt * 60_000 + 60_000, still);
+    }
+    expect(brain.snapshot().animationPaused).toBe(true);
+
+    // The pet settles down and does something deliberate again.
+    brain.wave(now + 200_000);
+    brain.tick(now + 201_000, still);
+
+    expect(brain.snapshot().animationPaused).toBe(false);
   });
 });

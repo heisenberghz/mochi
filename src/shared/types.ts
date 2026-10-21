@@ -29,6 +29,8 @@ export interface PetView {
   xp: number;
   level: number;
   facing: -1 | 1;
+  /** True when the pet's animation has stopped working and it is standing still. */
+  animationPaused: boolean;
 }
 
 export interface FocusConfig {

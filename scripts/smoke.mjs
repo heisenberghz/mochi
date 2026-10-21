@@ -67,6 +67,25 @@ async function main() {
   check(result.dom?.svg, 'Pet renderer did not mount.');
   check(result.pngBytes > 0 && !result.captureEmpty, 'Pet renderer produced no pixels.');
 
+  // The art must sit exactly where the click target expects it.
+  const rect = result.dom?.spriteRect;
+  check(
+    rect?.left === 60 && rect?.top === 134,
+    'The pet art is not where the click target expects it.',
+    rect,
+  );
+  check(
+    rect?.width === 200 && rect?.height === 220,
+    'The pet art is not the size the click target expects.',
+    rect,
+  );
+
+  // The drift guard warns when the art and the click target disagree.
+  const drift = (result.diagnostics ?? []).filter((line) =>
+    String(line).includes('drifted'),
+  );
+  check(drift.length === 0, 'The pet art has drifted from the click target.', drift);
+
   const den = result.den;
   check(den, 'Den window did not open.');
   check(den.visible, 'Den window did not open.');

@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  BUBBLE_EXIT_MS,
   CLICK_MAX_DURATION,
   DRAG_THRESHOLD,
-  HIT_ELLIPSE,
-  HIT_HYSTERESIS,
   INTERACTIVE_EXIT_DELAY,
+  SETTLE_DURATION_MS,
 } from '../../../shared/constants';
-import type { AppSnapshot, BubbleAction, BubbleSpec } from '../../../shared/types';
+import {
+  BUBBLE_REGION,
+  MAX_SPRITE_DRIFT_DIP,
+  isInsideHitRegion,
+  spriteOffsetDrift,
+} from '../../../shared/geometry';
+import type { AppSnapshot, Behavior, BubbleAction, BubbleSpec } from '../../../shared/types';
 import { mockSnapshot } from '../mock';
 import { PetSprite } from './PetSprite';
 
@@ -18,13 +24,29 @@ interface DragState {
   dragging: boolean;
 }
 
-function isInside(x: number, y: number, bubbleVisible: boolean): boolean {
-  const rx = HIT_ELLIPSE.rx + HIT_HYSTERESIS;
-  const ry = HIT_ELLIPSE.ry + HIT_HYSTERESIS;
-  const nx = (x - HIT_ELLIPSE.cx) / rx;
-  const ny = (y - HIT_ELLIPSE.cy) / ry;
-  if (nx * nx + ny * ny <= 1) return true;
-  if (bubbleVisible && x >= 16 && x <= 304 && y >= 4 && y <= 108) return true;
+/**
+ * Is a point on the pet, or on its speech bubble?
+ *
+ * Entering uses the larger region and leaving the smaller one, so the pet
+ * does not flicker at its edge and does not stay grabbable once the cursor
+ * has left it.
+ */
+function isInside(
+  x: number,
+  y: number,
+  behavior: Behavior,
+  bubbleVisible: boolean,
+  expanded: boolean,
+): boolean {
+  if (isInsideHitRegion(x, y, behavior, expanded)) return true;
+
+  if (bubbleVisible) {
+    const bubble = BUBBLE_REGION;
+    if (x >= bubble.x && x <= bubble.x + bubble.width) {
+      if (y >= bubble.y && y <= bubble.y + bubble.height) return true;
+    }
+  }
+
   return false;
 }
 
@@ -48,12 +70,22 @@ export function PetApp() {
   const [bubble, setBubble] = useState<BubbleSpec | null>(null);
   const [poked, setPoked] = useState(false);
   const [interactive, setInteractive] = useState(false);
+  /** The bubble is fading out rather than vanishing. */
+  const [bubbleLeaving, setBubbleLeaving] = useState(false);
+  /** The pet is settling after being put down. */
+  const [settling, setSettling] = useState(false);
 
   const interactiveRef = useRef(false);
   const exitTimer = useRef<number | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const pokeTimer = useRef<number | null>(null);
   const bubbleRef = useRef<BubbleSpec | null>(null);
+  /** Where the cursor last was, so the exit check knows where it went. */
+  const pointerRef = useRef({ x: 0, y: 0 });
+  /** The pet's current behaviour, which decides where its edges are. */
+  const behaviorRef = useRef<Behavior>('idle');
+  /** The art, so it can be checked against the click target. */
+  const spriteRef = useRef<HTMLDivElement | null>(null);
   const reducedMotion = useReducedMotion(snapshot);
 
   // The main process cannot read the system's motion preference, so it is told
@@ -123,11 +155,22 @@ export function PetApp() {
     };
   }, [showBubble]);
 
+  /**
+   * Close the bubble with a short fade rather than making it vanish.
+   */
+  const dismissBubble = useCallback(() => {
+    setBubbleLeaving(true);
+    window.setTimeout(() => {
+      setBubble(null);
+      setBubbleLeaving(false);
+    }, BUBBLE_EXIT_MS);
+  }, []);
+
   useEffect(() => {
     if (!bubble) return;
-    const timer = window.setTimeout(() => setBubble(null), bubble.durationMs);
+    const timer = window.setTimeout(() => dismissBubble(), bubble.durationMs);
     return () => window.clearTimeout(timer);
-  }, [bubble]);
+  }, [bubble, dismissBubble]);
 
   const setWindowInteractive = useCallback((next: boolean) => {
     if (interactiveRef.current === next) return;
@@ -146,11 +189,22 @@ export function PetApp() {
       if (exitTimer.current !== null) return;
       exitTimer.current = window.setTimeout(() => {
         exitTimer.current = null;
-        setWindowInteractive(false);
+        // Leaving uses the smaller region, so the pet is not left grabbable
+        // just because the cursor is sitting on its edge.
+        const stillInside = isInside(
+          pointerRef.current.x,
+          pointerRef.current.y,
+          behaviorRef.current,
+          bubbleRef.current !== null,
+          false,
+        );
+        if (!stillInside) setWindowInteractive(false);
       }, INTERACTIVE_EXIT_DELAY);
     };
 
     const onMove = (event: MouseEvent): void => {
+      pointerRef.current = { x: event.clientX, y: event.clientY };
+
       // A drag in progress must never lose the window's interactivity. If it
       // did, the pointerup would never arrive and the pet would stay stuck
       // being carried until the watchdog rescued it.
@@ -160,7 +214,13 @@ export function PetApp() {
         return;
       }
 
-      const inside = isInside(event.clientX, event.clientY, bubbleRef.current !== null);
+      const inside = isInside(
+        event.clientX,
+        event.clientY,
+        behaviorRef.current,
+        bubbleRef.current !== null,
+        true,
+      );
       if (inside) {
         clearExit();
         setWindowInteractive(true);
@@ -182,6 +242,32 @@ export function PetApp() {
       window.removeEventListener('mouseleave', onLeave);
     };
   }, [setWindowInteractive]);
+
+  /**
+   * Watch for the art drifting away from where the hit region expects it.
+   *
+   * If the CSS and the artwork ever disagree, the clickable area stops
+   * matching what the user can see. The warning shows up in the smoke
+   * harness, which collects console messages.
+   */
+  useEffect(() => {
+    const svg = spriteRef.current;
+    if (!svg) return;
+
+    const check = (): void => {
+      const rect = svg.getBoundingClientRect();
+      const drift = spriteOffsetDrift({ left: rect.left, top: rect.top });
+      if (drift > MAX_SPRITE_DRIFT_DIP) {
+        console.warn(
+          `[mochi] the pet's art has drifted ${drift.toFixed(1)}px from where the click target expects it`,
+        );
+      }
+    };
+
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const triggerPoke = useCallback(() => {
     if (!window.mochi) return;
@@ -228,6 +314,9 @@ export function PetApp() {
     }
 
     if (drag.dragging) {
+      // The pet settles for a moment after being put down.
+      setSettling(true);
+      window.setTimeout(() => setSettling(false), SETTLE_DURATION_MS);
       if (window.mochi) void window.mochi.dragEnd({ x: event.screenX, y: event.screenY });
       return;
     }
@@ -246,15 +335,20 @@ export function PetApp() {
       if (target.id === 'resume-focus') void window.mochi.focus('resume');
       if (target.id === 'end-focus') void window.mochi.focus('stop');
     }
-    setBubble(null);
+    dismissBubble();
   };
 
   const pet = snapshot?.pet ?? mockSnapshot().pet;
+  behaviorRef.current = pet.behavior;
 
   return (
-    <div className="pet-root">
+    <div className={`pet-root${reducedMotion ? ' reduced' : ''}`}>
       {bubble ? (
-        <div className="bubble" role="status" aria-live="polite">
+        <div
+          className={`bubble${bubbleLeaving ? ' bubble-leaving' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
           <p className="bubble-text">{bubble.text}</p>
           <div className="bubble-row">
             {action ? (
@@ -281,7 +375,7 @@ export function PetApp() {
               type="button"
               className="bubble-close"
               aria-label="Dismiss"
-              onClick={() => setBubble(null)}
+              onClick={() => dismissBubble()}
             >
               ×
             </button>
@@ -310,9 +404,11 @@ export function PetApp() {
           <PetSprite
             behavior={pet.behavior}
             facing={pet.facing}
-            reducedMotion={reducedMotion}
             poked={poked}
             interactive={interactive}
+            settling={settling}
+            animationPaused={pet.animationPaused}
+            spriteRef={spriteRef}
           />
         </div>
       </div>
