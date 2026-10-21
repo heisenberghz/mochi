@@ -1,5 +1,6 @@
 import {
   closeSync,
+  copyFileSync,
   existsSync,
   fsyncSync,
   mkdirSync,
@@ -11,9 +12,14 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
-import { CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS } from '../shared/constants';
+import { CURRENT_SCHEMA_VERSION } from '../shared/constants';
 import type { PetView, RecoveryNotice, Settings } from '../shared/types';
-import type { StoredPet } from '../domain/pet-brain';
+import {
+  defaultPersistedState,
+  migrateState,
+  todayKey,
+  type PersistedState,
+} from '../domain/persistence-schema';
 import { nodeFileOps, writeFileAtomically, type AtomicFileOps } from './atomic-write';
 
 /** A temp file older than this is left over from a crash and is safe to drop. */
@@ -40,63 +46,6 @@ const fileOps: AtomicFileOps = {
   },
 };
 
-interface PersistedState {
-  version: number;
-  pet: StoredPet;
-  placement: { x: number; y: number } | null;
-  settings: Settings;
-  hasSeenWelcome: boolean;
-}
-
-const DEFAULT_STATE: PersistedState = {
-  version: CURRENT_SCHEMA_VERSION,
-  pet: { energy: 80, mood: 70, xp: 0, level: 1, facing: 1 },
-  placement: null,
-  settings: { ...DEFAULT_SETTINGS },
-  hasSeenWelcome: false,
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function sanitizePet(value: unknown): StoredPet {
-  if (!isRecord(value)) return { ...DEFAULT_STATE.pet };
-  const num = (key: string, fallback: number, min: number, max: number): number => {
-    const raw = value[key];
-    return typeof raw === 'number' && Number.isFinite(raw)
-      ? Math.min(max, Math.max(min, raw))
-      : fallback;
-  };
-  const facing = value.facing === -1 ? -1 : 1;
-  return {
-    energy: num('energy', DEFAULT_STATE.pet.energy, 0, 100),
-    mood: num('mood', DEFAULT_STATE.pet.mood, 20, 100),
-    xp: Math.max(0, Math.round(num('xp', 0, 0, 10_000_000))),
-    level: Math.max(1, Math.round(num('level', 1, 1, 20))),
-    facing,
-  };
-}
-
-function sanitizeSettings(value: unknown): Settings {
-  const base = { ...DEFAULT_STATE.settings };
-  if (!isRecord(value)) return base;
-  return {
-    petName:
-      typeof value.petName === 'string' && value.petName.trim()
-        ? value.petName.trim().slice(0, 20)
-        : base.petName,
-    roam: typeof value.roam === 'boolean' ? value.roam : base.roam,
-    reducedMotion:
-      value.reducedMotion === 'on' || value.reducedMotion === 'off' || value.reducedMotion === 'system'
-        ? value.reducedMotion
-        : base.reducedMotion,
-    sound: typeof value.sound === 'boolean' ? value.sound : base.sound,
-    launchAtLogin:
-      typeof value.launchAtLogin === 'boolean' ? value.launchAtLogin : base.launchAtLogin,
-  };
-}
-
 /** Single-writer JSON store. Small state, atomic replace, one backup. */
 export class Store {
   private readonly filePath: string;
@@ -112,6 +61,10 @@ export class Store {
   private lastWriteAt = Date.now();
   /** The exact bytes last written, so an unchanged state costs no disk write. */
   private lastWrittenPayload: string | null = null;
+
+  /** The version the file on disk was at before it was migrated. */
+  private migratedFromVersion: number | null = null;
+  private preMigrationBackupTaken = false;
 
   state: PersistedState;
 
@@ -137,6 +90,7 @@ export class Store {
   }
 
   private load(): PersistedState {
+    const today = todayKey();
     const candidates = [this.filePath, `${this.filePath}.bak`];
     const quarantined: string[] = [];
     let newerVersionPath: string | null = null;
@@ -153,31 +107,25 @@ export class Store {
         continue;
       }
 
-      if (!isRecord(parsed)) {
-        quarantined.push(this.quarantineFile(candidate));
-        continue;
-      }
-
-      const version = typeof parsed.version === 'number' ? parsed.version : 0;
-
-      if (version > CURRENT_SCHEMA_VERSION) {
-        // A newer Mochi owns this file. Reading it would mean guessing at
-        // fields we do not know, and writing over it would destroy data we
-        // cannot recreate.
+      // A file from a newer Mochi owns itself. Reading it would mean guessing
+      // at fields we do not know, and writing over it would destroy data we
+      // cannot recreate.
+      if (versionOf(parsed) > CURRENT_SCHEMA_VERSION) {
         newerVersionPath = candidate;
         continue;
       }
 
-      if (version < CURRENT_SCHEMA_VERSION) {
-        // This needs a migration rather than a guess. The migration chain
-        // arrives with schema v2; until then an unreadable older file is
-        // kept rather than silently discarded.
+      try {
+        const outcome = migrateState(parsed, today);
+        if (outcome.applied.length > 0) {
+          this.migratedFromVersion = outcome.applied[0]! - 1;
+        }
+        loaded = outcome.state;
+        break;
+      } catch {
         quarantined.push(this.quarantineFile(candidate));
         continue;
       }
-
-      loaded = this.fromRecord(parsed);
-      break;
     }
 
     if (newerVersionPath !== null) {
@@ -201,54 +149,7 @@ export class Store {
 
     if (loaded !== null) return loaded;
 
-    return {
-      ...DEFAULT_STATE,
-      pet: { ...DEFAULT_STATE.pet },
-      settings: { ...DEFAULT_STATE.settings },
-    };
-  }
-
-  private fromRecord(parsed: Record<string, unknown>): PersistedState {
-    const placement = isRecord(parsed.placement)
-      ? {
-          x: Number(parsed.placement.x) || 0,
-          y: Number(parsed.placement.y) || 0,
-        }
-      : null;
-
-    return {
-      version: CURRENT_SCHEMA_VERSION,
-      pet: sanitizePet(parsed.pet),
-      placement,
-      settings: sanitizeSettings(parsed.settings),
-      hasSeenWelcome: parsed.hasSeenWelcome === true,
-    };
-  }
-
-  /**
-   * Move an unreadable file out of the way instead of letting the next save
-   * overwrite it. The file is kept, never deleted, so the user can still get
-   * at whatever was in it.
-   */
-  private quarantineFile(path: string): string {
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const dir = dirname(path);
-    let target = join(dir, `state.corrupt-${stamp}-${basename(path)}`);
-
-    let counter = 2;
-    while (existsSync(target)) {
-      target = join(dir, `state.corrupt-${stamp}-${counter}-${basename(path)}`);
-      counter += 1;
-    }
-
-    try {
-      renameSync(path, target);
-      return target;
-    } catch {
-      // It could not be moved. Leave it where it is — it is still the user's
-      // to look at, and we will not write over it.
-      return path;
-    }
+    return defaultPersistedState(today);
   }
 
   /**
@@ -312,6 +213,8 @@ export class Store {
     this.lastWrittenPayload = payload;
     this.lastWriteAt = Date.now();
 
+    this.writePreMigrationBackup();
+
     try {
       mkdirSync(dirname(this.filePath), { recursive: true });
     } catch {
@@ -329,10 +232,55 @@ export class Store {
     }
   }
 
+  /**
+   * Keep the file as it was before it was migrated, so the old version can
+   * still be read if the migration turns out to be wrong.
+   */
+  private writePreMigrationBackup(): void {
+    if (this.migratedFromVersion === null || this.preMigrationBackupTaken) return;
+    this.preMigrationBackupTaken = true;
+
+    try {
+      if (!existsSync(this.filePath)) return;
+      copyFileSync(
+        this.filePath,
+        join(dirname(this.filePath), `state.pre-v${this.migratedFromVersion}.bak`),
+      );
+    } catch {
+      // Best effort. The migration itself does not depend on this copy.
+    }
+  }
+
   private warnReadOnly(): void {
     if (this.warnedAboutReadOnly) return;
     this.warnedAboutReadOnly = true;
     console.error('[mochi] not writing state: a newer version of Mochi owns this file');
+  }
+
+  /**
+   * Move an unreadable file out of the way instead of letting the next save
+   * overwrite it. The file is kept, never deleted, so the user can still get
+   * at whatever was in it.
+   */
+  private quarantineFile(path: string): string {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const dir = dirname(path);
+    let target = join(dir, `state.corrupt-${stamp}-${basename(path)}`);
+
+    let counter = 2;
+    while (existsSync(target)) {
+      target = join(dir, `state.corrupt-${stamp}-${counter}-${basename(path)}`);
+      counter += 1;
+    }
+
+    try {
+      renameSync(path, target);
+      return target;
+    } catch {
+      // It could not be moved. Leave it where it is — it is still the user's
+      // to look at, and we will not write over it.
+      return path;
+    }
   }
 
   /**
@@ -385,4 +333,10 @@ export class Store {
   markWelcomeSeen(): void {
     this.state.hasSeenWelcome = true;
   }
+}
+
+function versionOf(value: unknown): number {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return -1;
+  const version = (value as Record<string, unknown>).version;
+  return typeof version === 'number' && Number.isFinite(version) ? version : -1;
 }

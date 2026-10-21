@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "pet": {
+    "energy": 72.5,
+    "mood": 64,
+    "xp": 310,
+    "level": 3,
+    "facing": -1
+  },
+  "placement": {
+    "x": 1180,
+    "y": 512
+  },
+  "settings": {
+    "petName": "Mochi",
+    "roam": true,
+    "reducedMotion": "system",
+    "sound": true,
+    "launchAtLogin": false
+  },
+  "hasSeenWelcome": true
+}

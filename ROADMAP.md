@@ -378,6 +378,26 @@ saved data can be destroyed, then the write cadence.*
   silently changed what the code did.
 - 105 tests passing (28 new). typecheck, build and smoke all green.
 
+**B2 — the store schema v2 with a real migration chain** *(working tree, not committed)*
+- The saved file now has a **focus section** — the timer's configuration, daily totals, a
+  session history and the active session that can be recovered after a crash.
+- A file from the current build is **upgraded automatically** instead of being discarded.
+  Previously any file whose version was not exactly `1` was skipped, and the next save
+  overwrote it.
+- The migration is **sequential, pure and idempotent**: running it twice changes nothing,
+  and running it on an already-current file changes nothing.
+- The file as it was **before** the migration is kept as `state.pre-v1.bak`, so the old
+  version can still be read if the migration turns out to be wrong.
+- Every field is sanitised on the way in: impossible pet numbers, out-of-range focus
+  settings, a rubbish session history and a nonsense active session are all corrected
+  rather than trusted.
+- An active session always comes back **paused**, never running — the same rule the timer
+  applies, so the two can never disagree.
+- Verified end to end: a real version 1 file on disk was upgraded to version 2 with the
+  name, XP, placement and welcome flag all intact, the old file kept, and the level
+  recomputed from XP.
+- 127 tests passing (22 new). typecheck, build and smoke all green.
+
 ### 2026-10-20 — Second pass: full doc audit, diagnosis, and re-plan
 - Read all 20 documents in `docs/` and every line of source, via three parallel audits.
 - Measured the code against all 88 functional requirements: **17 done, 40 partial, 31 missing**.

@@ -11,6 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import v1Fixture from '../domain/fixtures/state-v1.json';
 import { Store } from './store';
 
 let dir: string;
@@ -27,9 +28,10 @@ describe('Store', () => {
   it('starts from defaults when there is no file yet', () => {
     const store = new Store(dir);
 
-    expect(store.state.version).toBe(1);
+    expect(store.state.version).toBe(2);
     expect(store.state.settings.petName).toBe('Mochi');
     expect(store.state.hasSeenWelcome).toBe(false);
+    expect(store.state.focus.active).toBeNull();
   });
 
   it('writes state that it can read back', () => {
@@ -397,5 +399,49 @@ describe('Store write scheduling', () => {
 
     const reloaded = new Store(dir);
     expect(reloaded.state.settings.petName).toBe('Fresh');
+  });
+
+  it('upgrades a version 1 file on disk', () => {
+    writeFileSync(join(dir, 'state.json'), JSON.stringify(v1Fixture));
+
+    const store = new Store(dir);
+
+    expect(store.state.version).toBe(2);
+    expect(store.state.pet.xp).toBe(310);
+    expect(store.state.settings.petName).toBe('Mochi');
+    expect(store.state.focus.config.workMin).toBe(25);
+    expect(store.recovery).toBeNull();
+  });
+
+  it('keeps a copy of the file as it was before the migration', () => {
+    writeFileSync(join(dir, 'state.json'), JSON.stringify(v1Fixture));
+
+    const store = new Store(dir);
+    store.flush();
+
+    const backupPath = join(dir, 'state.pre-v1.bak');
+    expect(existsSync(backupPath)).toBe(true);
+
+    const backup = JSON.parse(readFileSync(backupPath, 'utf8')) as { version: number };
+    expect(backup.version).toBe(1);
+  });
+
+  it('writes the upgraded file so the migration only happens once', () => {
+    writeFileSync(join(dir, 'state.json'), JSON.stringify(v1Fixture));
+
+    const store = new Store(dir);
+    store.flush();
+
+    const onDisk = JSON.parse(readFileSync(join(dir, 'state.json'), 'utf8')) as {
+      version: number;
+    };
+    expect(onDisk.version).toBe(2);
+  });
+
+  it('does not take a pre-migration copy of a file that was already current', () => {
+    const store = new Store(dir);
+    store.flush();
+
+    expect(existsSync(join(dir, 'state.pre-v1.bak'))).toBe(false);
   });
 });

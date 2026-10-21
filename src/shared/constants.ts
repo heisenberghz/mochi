@@ -63,7 +63,7 @@ export const FOCUS_BREAK_XP = 2;
  * The schema version this build writes. Bump it whenever the persisted shape
  * changes, and add a migration for the previous version.
  */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export const DEFAULT_SETTINGS = {
   petName: 'Mochi',
