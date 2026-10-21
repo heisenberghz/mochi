@@ -53,6 +53,15 @@
   display: block;
 }
 
+/*
+ * The pet turns around its own centre. The origin comes from the component,
+ * so it always matches the character anchor in the art contract.
+ */
+.pet-sprite[data-facing='-1'] .facing {
+  transform: scaleX(-1);
+  transform-origin: var(--flip-origin, 100px 140px);
+}
+
 .pet-svg {
   overflow: visible;
 }

@@ -279,6 +279,28 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 
 *Newest first. I add an entry after each piece of work.*
 
+### 2026-10-21 — Mochi redrawn, and the artwork is now a real file
+
+- **Mochi is redrawn** to the contract: a distinct head on a body, with a neck between
+  them. The face is where the spec says it is, the scarf is at the neck rather than across
+  the belly, and the pet stands on the ground instead of floating above it.
+- **The artwork is now `assets/pet/mochi.svg`** — a real file you can open in a browser or
+  a drawing tool and edit directly, rather than 200 lines of SVG buried in a component. It
+  is injected rather than linked, because the animations in `pet.css` reach inside it and a
+  linked file would be sealed off from them.
+- The **"Zzz" is drawn rather than typed**, because the design rules forbid text in the
+  artboard.
+- The artwork now has the **layer structure** the contract asks for, so a hat has somewhere
+  to sit and a mug has a paw to sit in.
+- **A test keeps the file honest**: it checks the artwork is the right size, that every
+  class the animations hook onto is still there, that it is drawn in the design system's
+  colours, that the contact shadow is on the ground anchor, that the eyes are on the face
+  anchor, that the scarf is tied at the knot, that it holds no text, and that nothing
+  reaches outside the artboard.
+- The turning-around-the-centre flip moved from an inline style into the stylesheet, where
+  it takes its origin from the character anchor.
+- 184 tests passing (8 new). typecheck, build and both smoke phases green.
+
 ### 2026-10-21 — The character art contract, and the art moved to the front
 
 - **The order changed.** The character is now the **first** commit, not a stage after
