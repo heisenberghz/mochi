@@ -510,7 +510,7 @@
 
 .stat-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -679,6 +679,67 @@
 
 .select-input {
   width: 100%;
+}
+
+/* Focus configuration fields */
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.number-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.number-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.number-input {
+  appearance: none;
+  width: 84px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fffefa;
+  color: var(--ink);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.number-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.number-input.has-issue {
+  border-color: #b4544c;
+  background: #fdf3f2;
+}
+
+.number-input.has-issue:focus {
+  outline-color: #b4544c;
+}
+
+.number-suffix {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.field-issue {
+  margin: 0;
+  color: #b4544c;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 /* Switch */

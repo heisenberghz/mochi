@@ -398,6 +398,30 @@ saved data can be destroyed, then the write cadence.*
   recomputed from XP.
 - 127 tests passing (22 new). typecheck, build and smoke all green.
 
+**B3 — the timer is wired to the store, and the Den can finally drive it** *(working tree, not committed)*
+- The running session is **saved and restored**. A crash or a force-kill no longer loses
+  the block: it comes back paused, with its remaining time intact, and Mochi offers to
+  pick it up.
+- The session length is **editable in the Den** — focus, short break, long break and rounds
+  — with the limits (5–120 / 1–30 / 5–60 / 2–8) checked before anything is saved, and the
+  reason shown next to the field that caused it.
+- A change made **during** a session applies to the next phase, not the one in progress.
+- The Den now has a **Skip** button, and **End session** keeps the minutes you actually
+  focused rather than throwing them away.
+- The Den shows **why** the session is paused — you paused it, you went away, the computer
+  was locked, it was asleep, or it was saved when Mochi closed.
+- The Den's numbers are now real: **minutes focused today** and the **current streak**,
+  read from the saved data instead of from memory.
+- **The smoke test now runs in two phases.** The first leaves a session running; the second
+  launches the app again and checks that the session came back paused with its time intact
+  and its configuration unchanged. This is the first automated proof that a session
+  survives a restart.
+- **Bug found and fixed along the way:** moving the cursor away from the pet *while
+  dragging it* made the window go click-through, so the pointerup never arrived and the
+  pet was left stuck in the carried pose for fifteen seconds. The window now stays
+  interactive for as long as a drag is in progress.
+- 138 tests passing (11 new). typecheck, build and smoke all green.
+
 ### 2026-10-20 — Second pass: full doc audit, diagnosis, and re-plan
 - Read all 20 documents in `docs/` and every line of source, via three parallel audits.
 - Measured the code against all 88 functional requirements: **17 done, 40 partial, 31 missing**.

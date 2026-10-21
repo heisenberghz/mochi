@@ -14,6 +14,7 @@ import {
 import { basename, dirname, join } from 'node:path';
 import { CURRENT_SCHEMA_VERSION } from '../shared/constants';
 import type { PetView, RecoveryNotice, Settings } from '../shared/types';
+import type { FocusPersisted } from '../domain/focus-timer';
 import {
   defaultPersistedState,
   migrateState,
@@ -328,6 +329,10 @@ export class Store {
 
   setSettings(settings: Settings): void {
     this.state.settings = { ...settings };
+  }
+
+  setFocus(focus: FocusPersisted): void {
+    this.state.focus = focus;
   }
 
   markWelcomeSeen(): void {

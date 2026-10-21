@@ -4,7 +4,14 @@ import { MochiController } from './controller';
 import { denyAllPermissions } from './hardening';
 import { Store } from './store';
 
-const smoke = process.argv.includes('--smoke-test');
+/**
+ * `--smoke-test` runs the automated check. `--smoke-test=recover` runs the
+ * second half of it: launching again to prove a session left running by the
+ * first launch comes back.
+ */
+const smokeArg = process.argv.find((arg) => arg.startsWith('--smoke-test'));
+const smoke = smokeArg !== undefined;
+const smokeRecover = smokeArg === '--smoke-test=recover';
 
 // Keep automated runs away from the real user profile.
 if (smoke) {
@@ -31,7 +38,7 @@ if (!hasLock) {
     denyAllPermissions(session.defaultSession);
 
     const store = new Store(app.getPath('userData'));
-    controller = new MochiController(store, smoke);
+    controller = new MochiController(store, smoke, smokeRecover);
     await controller.start();
 
     app.on('before-quit', () => {

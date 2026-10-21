@@ -140,6 +140,15 @@ export function PetApp() {
     };
 
     const onMove = (event: MouseEvent): void => {
+      // A drag in progress must never lose the window's interactivity. If it
+      // did, the pointerup would never arrive and the pet would stay stuck
+      // being carried until the watchdog rescued it.
+      if (dragRef.current) {
+        clearExit();
+        setWindowInteractive(true);
+        return;
+      }
+
       const inside = isInside(event.clientX, event.clientY, bubbleRef.current !== null);
       if (inside) {
         clearExit();
@@ -150,6 +159,7 @@ export function PetApp() {
     };
 
     const onLeave = (): void => {
+      if (dragRef.current) return;
       if (interactiveRef.current) scheduleExit();
     };
 
@@ -219,8 +229,9 @@ export function PetApp() {
 
   const onBubbleAction = (): void => {
     if (!action) return;
-    if (action.id === 'start-focus' && window.mochi) {
-      void window.mochi.focus('start');
+    if (window.mochi) {
+      if (action.id === 'start-focus') void window.mochi.focus('start');
+      if (action.id === 'resume-focus') void window.mochi.focus('resume');
     }
     setBubble(null);
   };

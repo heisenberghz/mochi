@@ -40,6 +40,12 @@ export interface FocusConfig {
   autoStartWork: boolean;
 }
 
+/** One thing wrong with a proposed focus configuration. */
+export interface FocusConfigIssue {
+  field: keyof FocusConfig;
+  message: string;
+}
+
 export interface FocusView {
   status: FocusStatus;
   phase: FocusPhase;
@@ -91,7 +97,7 @@ export interface AppSnapshot {
 }
 
 export interface BubbleAction {
-  id: 'start-focus' | 'dismiss';
+  id: 'start-focus' | 'resume-focus' | 'dismiss';
   label: string;
 }
 
@@ -113,6 +119,11 @@ export interface SettingsResult extends OkResult {
   settings: Settings;
 }
 
+export interface FocusConfigResult extends OkResult {
+  config: FocusConfig;
+  issues: FocusConfigIssue[];
+}
+
 export interface MochiApi {
   readonly v: 1;
   bootstrap(): Promise<AppSnapshot>;
@@ -126,6 +137,7 @@ export interface MochiApi {
   openDen(): Promise<OkResult>;
   openDataFolder(): Promise<OkResult>;
   focus(action: FocusAction): Promise<OkResult>;
+  updateFocusConfig(patch: Partial<FocusConfig>): Promise<FocusConfigResult>;
   updateSettings(patch: Partial<Settings>): Promise<SettingsResult>;
   setPetVisible(visible: boolean): Promise<OkResult>;
 }

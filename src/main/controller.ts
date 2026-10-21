@@ -28,10 +28,13 @@ import type {
   AppSnapshot,
   BubbleSpec,
   FocusAction,
+  FocusConfig,
+  FocusConfigResult,
   OkResult,
   Point,
   Settings,
 } from '../shared/types';
+import { focusConfigIssues } from '../shared/focus-config';
 import { Store } from './store';
 import { monotonicNow, systemFocusClock } from './clock';
 import { clampPlacement, createDenWindow, createPetWindow } from './windows';
@@ -66,12 +69,14 @@ interface SmokeFocusFlow {
   paused?: string;
   stop?: unknown;
   stopped?: string;
+  configWorkMin?: number;
   error?: string;
 }
 
 export class MochiController {
   private readonly store: Store;
   private readonly smoke: boolean;
+  private readonly smokeRecover: boolean;
 
   private petWindow: BrowserWindow | null = null;
   private denWindow: BrowserWindow | null = null;
@@ -92,12 +97,16 @@ export class MochiController {
   private lastTrayKey = '';
   private timersStarted = false;
 
-  constructor(store: Store, smoke = false) {
+  constructor(store: Store, smoke = false, smokeRecover = false) {
     this.store = store;
     this.smoke = smoke;
+    this.smokeRecover = smokeRecover;
     this.brain = new PetBrain({ now: Date.now() });
     this.brain.restore(store.state.pet);
     this.focus = new FocusTimer(FOCUS_DEFAULTS, systemFocusClock);
+    // A session that was running when the app last closed comes back paused,
+    // ready for the user to pick up or abandon.
+    this.focus.restore(this.store.state.focus);
     this.welcome = !store.state.hasSeenWelcome;
   }
 
@@ -127,7 +136,21 @@ export class MochiController {
       setTimeout(() => {
         if (!this.petWindow?.isVisible()) this.showPet();
       }, 120);
-      setTimeout(() => this.brain.wave(Date.now()), 900);
+      setTimeout(() => {
+        this.brain.wave(Date.now());
+
+        // A session that was running when the app last closed comes back
+        // paused. Offer to pick it up rather than quietly dropping it.
+        const focus = this.focus.state();
+        if (focus.status === 'paused' && focus.pauseReason === 'recovered') {
+          this.showBubble({
+            id: `focus-recovered-${Date.now()}`,
+            text: 'I kept your last session. Ready to carry on?',
+            durationMs: 12_000,
+            action: { id: 'resume-focus', label: 'Resume' },
+          });
+        }
+      }, 900);
     });
 
     powerMonitor.on('suspend', () => this.persistNow());
@@ -145,6 +168,11 @@ export class MochiController {
   }
 
   async runSmoke(): Promise<void> {
+    if (this.smokeRecover) {
+      await this.runSmokeRecover();
+      return;
+    }
+
     const win = this.petWindow;
     if (!win) return;
 
@@ -185,6 +213,7 @@ export class MochiController {
     const den = await this.waitForDen(6000);
     let denDom: unknown = null;
     let denCapture = { pngBytes: 0, empty: true, diagnostics: [] as string[] };
+    const tabs: Record<string, unknown> = {};
     const focusFlow: SmokeFocusFlow = {};
 
     if (den) {
@@ -197,7 +226,9 @@ export class MochiController {
             title: document.querySelector('.den-title')?.textContent ?? null,
             ring: document.querySelector('.ring-time')?.textContent ?? null,
             cards: document.querySelectorAll('.card').length,
-            recovery: document.querySelector('.banner-recovery')?.textContent ?? null
+            recovery: document.querySelector('.banner-recovery')?.textContent ?? null,
+            fields: document.querySelectorAll('.number-field').length,
+            buttons: Array.from(document.querySelectorAll('.btn')).map((b) => b.textContent.trim())
           })`,
         );
       } catch (error) {
@@ -223,8 +254,31 @@ export class MochiController {
           "window.mochi.focus('stop')",
         );
         focusFlow.stopped = this.snapshot().focus.status;
+
+        // Change the session length, so the next launch can prove it stuck.
+        await den.webContents.executeJavaScript(
+          "window.mochi.updateFocusConfig({ workMin: 50 })",
+        );
+        focusFlow.configWorkMin = this.focus.getConfig().workMin;
       } catch (error) {
         focusFlow.error = String(error);
+      }
+
+      // Walk through the Den's tabs, so each one is known to render.
+      for (const tabName of ['Focus', 'Settings']) {
+        await den.webContents.executeJavaScript(
+          `Array.from(document.querySelectorAll('.nav-item'))
+             .find((n) => n.textContent === ${JSON.stringify(tabName)})?.click()`,
+        );
+        await this.sleep(350);
+        tabs[tabName] = await den.webContents.executeJavaScript(
+          `({
+            fields: document.querySelectorAll('.number-field').length,
+            buttons: Array.from(document.querySelectorAll('.btn')).map((b) => b.textContent.trim()),
+            inputs: document.querySelectorAll('input, select').length,
+            cards: document.querySelectorAll('.card').length
+          })`,
+        );
       }
 
       denCapture = await this.captureWindow(den, 'smoke-den.png');
@@ -248,6 +302,7 @@ export class MochiController {
             visible: den.isVisible(),
             bounds: den.getBounds(),
             dom: denDom,
+            tabs,
             pngBytes: denCapture.pngBytes,
             captureEmpty: denCapture.empty,
             diagnostics: denCapture.diagnostics,
@@ -262,6 +317,18 @@ export class MochiController {
       'utf8',
     );
     console.log(`SMOKE_RESULT ${JSON.stringify(result)}`);
+
+    // Leave a session running, so the second launch can prove that a session
+    // left behind comes back rather than being lost.
+    if (den) {
+      try {
+        await den.webContents.executeJavaScript("window.mochi.focus('start')");
+        await this.sleep(300);
+      } catch {
+        // The recovery check will notice.
+      }
+    }
+
     // app.exit() skips before-quit, so the pending write is flushed by hand.
     this.persistNow();
     app.exit(0);
@@ -269,6 +336,30 @@ export class MochiController {
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * The second half of the smoke check: launch again and report what was
+   * recovered from disk. A session that was running when the app closed must
+   * come back paused, with its time intact, and the configuration it was
+   * using must still be there.
+   */
+  private async runSmokeRecover(): Promise<void> {
+    await this.sleep(1200);
+
+    const result = {
+      focus: this.focus.state(),
+      config: this.focus.getConfig(),
+      welcome: this.welcome,
+    };
+
+    writeFileSync(
+      join(process.cwd(), 'smoke-recover.json'),
+      `${JSON.stringify(result, null, 2)}\n`,
+      'utf8',
+    );
+    console.log(`SMOKE_RECOVER ${JSON.stringify(result)}`);
+    app.exit(0);
   }
 
   private async waitForDen(timeoutMs: number): Promise<BrowserWindow | null> {
@@ -847,7 +938,11 @@ export class MochiController {
 
     ipcMain.handle('window:setInteractive', (event, value: unknown): OkResult => {
       if (!fromPet(event) || typeof value !== 'boolean') return { ok: false };
-      this.petWindow?.setIgnoreMouseEvents(!value, { forward: true });
+      // During the smoke test the real mouse would make the pet flaky, so the
+      // window stays click-through and only the app itself drives it.
+      if (!this.smoke) {
+        this.petWindow?.setIgnoreMouseEvents(!value, { forward: true });
+      }
       return { ok: true };
     });
 
@@ -919,6 +1014,28 @@ export class MochiController {
       if (!fromApp(event)) return { ok: false };
       return this.handleFocus('resume');
     });
+    ipcMain.handle('focus:updateConfig', (event, payload: unknown): FocusConfigResult => {
+      if (!fromApp(event)) {
+        return { ok: false, config: this.focus.getConfig(), issues: [] };
+      }
+      if (typeof payload !== 'object' || payload === null) {
+        return { ok: false, config: this.focus.getConfig(), issues: [] };
+      }
+
+      const patch = payload as Partial<FocusConfig>;
+      const issues = focusConfigIssues(patch);
+      if (issues.length > 0) {
+        // Nothing is saved when something is out of range, and the Den shows
+        // the message next to the field that caused it.
+        return { ok: false, config: this.focus.getConfig(), issues };
+      }
+
+      this.focus.setConfig(patch);
+      this.persistNow();
+      this.broadcast();
+      return { ok: true, config: this.focus.getConfig(), issues: [] };
+    });
+
     ipcMain.handle('focus:skip', (event): OkResult => {
       if (!fromApp(event)) return { ok: false };
       return this.handleFocus('skip');
@@ -972,12 +1089,14 @@ export class MochiController {
 
   private persist(): void {
     this.store.setPet(this.brain.snapshot());
+    this.store.setFocus(this.focus.serialize());
     this.store.save();
   }
 
   /** Write the state to disk right now, for moments where a lost change shows. */
   private persistNow(): void {
     this.store.setPet(this.brain.snapshot());
+    this.store.setFocus(this.focus.serialize());
     this.store.flush();
   }
 }

@@ -3,6 +3,8 @@ import type {
   AppSnapshot,
   BubbleSpec,
   FocusAction,
+  FocusConfig,
+  FocusConfigResult,
   MochiApi,
   OkResult,
   Point,
@@ -58,6 +60,8 @@ const api: MochiApi = {
   openDen: () => ipcRenderer.invoke('window:openDen') as Promise<OkResult>,
   openDataFolder: () => ipcRenderer.invoke('app:openDataFolder') as Promise<OkResult>,
   focus,
+  updateFocusConfig: (patch: Partial<FocusConfig>) =>
+    ipcRenderer.invoke('focus:updateConfig', patch) as Promise<FocusConfigResult>,
   updateSettings: (patch: Partial<Settings>) =>
     ipcRenderer.invoke('settings:update', patch) as Promise<SettingsResult>,
   setPetVisible: (visible: boolean) =>

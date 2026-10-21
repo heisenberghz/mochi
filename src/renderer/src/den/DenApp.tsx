@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } 
 import type {
   AppSnapshot,
   FocusAction,
+  FocusConfig,
+  FocusConfigIssue,
+  FocusPauseReason,
   FocusPhase,
   Settings,
 } from '../../../shared/types';
@@ -30,6 +33,15 @@ const BEHAVIOR_LABEL: Record<AppSnapshot['pet']['behavior'], string> = {
   focus: 'focusing with you',
   celebrate: 'celebrating',
   drag: 'being carried',
+};
+
+/** Why the session is not running, in words a person can read. */
+const PAUSE_REASON: Record<FocusPauseReason, string> = {
+  user: 'you paused it',
+  idle: 'you went away for a while',
+  lock: 'the computer was locked',
+  suspend: 'the computer was asleep',
+  recovered: 'it was saved when Mochi closed',
 };
 
 function greeting(): string {
@@ -99,6 +111,178 @@ function Meter({ label, value }: { label: string; value: number }) {
 
 function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <section className={`card ${className}`.trim()}>{children}</section>;
+}
+
+interface NumberFieldProps {
+  id: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  suffix?: string;
+  issue?: FocusConfigIssue;
+  onCommit: (value: number) => void;
+}
+
+function NumberField({
+  id,
+  label,
+  value,
+  min,
+  max,
+  suffix,
+  issue,
+  onCommit,
+}: NumberFieldProps) {
+  const [draft, setDraft] = useState(String(value));
+
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+
+  const commit = (): void => {
+    const parsed = Number(draft);
+    if (!Number.isFinite(parsed)) {
+      setDraft(String(value));
+      return;
+    }
+    if (parsed === value) return;
+    onCommit(parsed);
+  };
+
+  return (
+    <div className="number-field">
+      <label className="setting-label" htmlFor={id}>
+        {label}
+      </label>
+      <div className="number-input-row">
+        <input
+          id={id}
+          className={`number-input${issue ? ' has-issue' : ''}`}
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur();
+          }}
+          aria-invalid={issue ? true : undefined}
+          aria-describedby={issue ? `${id}-issue` : undefined}
+        />
+        {suffix ? <span className="number-suffix">{suffix}</span> : null}
+      </div>
+      {issue ? (
+        <p className="field-issue" id={`${id}-issue`} role="alert">
+          {issue.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+interface FocusConfigEditorProps {
+  config: FocusConfig;
+  onSaved: (config: FocusConfig) => void;
+}
+
+function FocusConfigEditor({ config, onSaved }: FocusConfigEditorProps) {
+  const [issues, setIssues] = useState<FocusConfigIssue[]>([]);
+
+  const issueFor = useCallback(
+    (field: keyof FocusConfig): FocusConfigIssue | undefined =>
+      issues.find((issue) => issue.field === field),
+    [issues],
+  );
+
+  const update = useCallback(
+    async (patch: Partial<FocusConfig>) => {
+      const api = window.mochi;
+      if (!api) return;
+      try {
+        const result = await api.updateFocusConfig(patch);
+        setIssues(result.issues);
+        if (result.ok) onSaved(result.config);
+      } catch {
+        setIssues([]);
+      }
+    },
+    [onSaved],
+  );
+
+  return (
+    <Card>
+      <div className="card-head">
+        <span className="eyebrow">Session lengths</span>
+      </div>
+
+      <div className="field-grid">
+        <NumberField
+          id="work-min"
+          label="Focus"
+          value={config.workMin}
+          min={5}
+          max={120}
+          suffix="min"
+          issue={issueFor('workMin')}
+          onCommit={(value) => void update({ workMin: value })}
+        />
+        <NumberField
+          id="short-break-min"
+          label="Short break"
+          value={config.shortBreakMin}
+          min={1}
+          max={30}
+          suffix="min"
+          issue={issueFor('shortBreakMin')}
+          onCommit={(value) => void update({ shortBreakMin: value })}
+        />
+        <NumberField
+          id="long-break-min"
+          label="Long break"
+          value={config.longBreakMin}
+          min={5}
+          max={60}
+          suffix="min"
+          issue={issueFor('longBreakMin')}
+          onCommit={(value) => void update({ longBreakMin: value })}
+        />
+        <NumberField
+          id="rounds"
+          label="Rounds"
+          value={config.rounds}
+          min={2}
+          max={8}
+          issue={issueFor('rounds')}
+          onCommit={(value) => void update({ rounds: value })}
+        />
+      </div>
+
+      <Toggle
+        label="Start breaks automatically"
+        description="A break begins the moment a block ends."
+        checked={config.autoStartBreak}
+        onChange={(value) => void update({ autoStartBreak: value })}
+      />
+      <Toggle
+        label="Start the next block automatically"
+        description="Work begins by itself after a break."
+        checked={config.autoStartWork}
+        onChange={(value) => void update({ autoStartWork: value })}
+      />
+    </Card>
+  );
+}
+
+/** Minutes and hours, for the day so far. */
+function formatMinutes(ms: number): string {
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 }
 
 export function DenApp() {
@@ -395,10 +579,19 @@ export function DenApp() {
                     <span className="stat-label">focus blocks</span>
                   </div>
                   <div className="stat">
+                    <span className="stat-value">{formatMinutes(focus.focusedMsToday)}</span>
+                    <span className="stat-label">focused today</span>
+                  </div>
+                  <div className="stat">
                     <span className="stat-value">{pet.level}</span>
                     <span className="stat-label">level</span>
                   </div>
                 </div>
+                {focus.streakDays > 0 ? (
+                  <p className="tip">
+                    {focus.streakDays} day{focus.streakDays === 1 ? '' : 's'} in a row.
+                  </p>
+                ) : null}
                 <Meter label="Energy" value={pet.energy} />
                 <Meter label="Mood" value={pet.mood} />
               </Card>
@@ -473,11 +666,25 @@ export function DenApp() {
                       type="button"
                       className="btn btn-ghost"
                       disabled={!connected || focus.status === 'idle' || busy}
+                      onClick={() => void runFocus('skip')}
+                    >
+                      Skip
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      disabled={!connected || focus.status === 'idle' || busy}
                       onClick={() => void runFocus('stop')}
                     >
                       End session
                     </button>
                   </div>
+
+                  {focus.status === 'paused' ? (
+                    <p className="focus-note">
+                      Paused — {PAUSE_REASON[focus.pauseReason ?? 'user']}.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </Card>
@@ -523,6 +730,13 @@ export function DenApp() {
                   a small bonus. You are on {pet.xp} XP right now.
                 </p>
               </Card>
+
+              <FocusConfigEditor
+                config={focus.config}
+                onSaved={(config) => {
+                  setSnapshot((prev) => ({ ...prev, focus: { ...prev.focus, config } }));
+                }}
+              />
             </div>
           </div>
         ) : null}

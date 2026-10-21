@@ -1,10 +1,7 @@
 import { FOCUS_LIMITS } from './constants';
-import type { FocusConfig } from './types';
+import type { FocusConfig, FocusConfigIssue } from './types';
 
-export interface FocusConfigIssue {
-  field: keyof FocusConfig;
-  message: string;
-}
+export type { FocusConfigIssue };
 
 const RANGE_FIELDS = {
   workMin: FOCUS_LIMITS.workMin,
