@@ -138,12 +138,28 @@ A spec is a contract with the future team, not a checklist to complete. These ar
 
 ## 4. The stages
 
-**54 items, grouped into 7 commits.** Each one is reviewed before the next starts.
+**54 items, grouped into 8 commits.** Each one is reviewed before the next starts.
 
 Nothing is dropped — only grouped. I still implement in small steps and run the tests after
 each one; the commit is simply where you review.
 
-### Commit 1 — The shell and the window *(6 items)*
+**The character comes first.** The poses and the accessories are both built on the artwork,
+so redrawing Mochi after them would mean drawing them twice. The design is proposed here and
+polished at the end, once everything else is finished.
+
+### Commit 1 — The character ★ *(the art)*
+*Redraw Mochi to a written contract, with every anchor in the right place.*
+
+- [ ] The **character art contract** written down, and the anchors shared with the code so
+      a redraw has a target and the art and the code cannot drift apart
+- [ ] A **distinct head** sitting on the body, so the face is where the spec says it is and
+      there is a neck for the scarf to sit at
+- [ ] The **scarf at the neck** rather than across the body
+- [ ] The pet **standing on the ground** rather than floating above it
+- [ ] The "Zzz" drawn as shapes rather than text
+- [ ] The art using the spec's palette, and leaving room for the accessories
+
+### Commit 2 — The shell and the window *(6 items)*
 *Small fixes to how the pet window behaves.*
 
 - [ ] The welcome message can't be stolen — the Den opening first currently consumes it
@@ -153,7 +169,7 @@ each one; the commit is simply where you review.
 - [ ] Corner snap glides instead of teleporting
 - [ ] Walking speed matches the spec
 
-### Commit 2 — The pet's geometry and behaviour *(9 items)*
+### Commit 3 — The pet's geometry and behaviour *(9 items)*
 *Where the pet is, and what it decides to do.*
 
 - [ ] Hit region derived from the art, not hand-typed
@@ -166,7 +182,7 @@ each one; the commit is simply where you review.
 - [ ] A behaviour that never ends can no longer get stuck with no way out
 - [ ] The 10-second celebrate cooldown
 
-### Commit 3 — The pet's mind and poses *(9 items)*
+### Commit 4 — The pet's mind and poses *(9 items)*
 *Turn "a blob that moves" into "a pet".*
 
 - [ ] Idle micro-behaviours: look-around, stretch, ear-flick
@@ -180,7 +196,7 @@ each one; the commit is simply where you review.
 - [ ] `ADR-0010` superseding the two Rive ADRs, so the spec describes the renderer that
       actually ships
 
-### Commit 4 — Progression and feel *(6 items)*
+### Commit 5 — Progression and feel *(6 items)*
 *What you get for playing, and how it feels to play.*
 
 - [ ] Level up does something: a wave, a bubble, something new to wear
@@ -190,7 +206,7 @@ each one; the commit is simply where you review.
 - [ ] Hovering makes Mochi look at your cursor
 - [ ] High contrast mode for the pet and the Den
 
-### Commit 5 — The Product *(9 items)*
+### Commit 6 — The Product *(9 items)*
 *Everything the spec promises that isn't a pet behaviour.*
 
 - [ ] The Insights tab — 7-day and 30-day minutes, sessions, breaks, current and longest
@@ -204,7 +220,7 @@ each one; the commit is simply where you review.
 - [ ] Export your data and reset, with confirmation
 - [ ] A keyboard and screen-reader pass over the Den
 
-### Commit 6 — Ship It *(8 items)*
+### Commit 7 — Ship It *(8 items)*
 *Turn it from "runs on my machine" into "installable, updatable, and verifiable".*
 
 - [ ] CI — lint, typecheck, test, build, on every push
@@ -217,7 +233,7 @@ each one; the commit is simply where you review.
 - [ ] A performance harness against the spec's CPU, memory and frame-pacing budgets
 - [ ] Fault injection — renderer crash, corrupt state, display unplugged, failed update
 
-### Commit 7 — The last mile *(6 items)*
+### Commit 8 — The last mile *(6 items)*
 *Make the spec tell the truth, and check the thing by eye.*
 
 - [ ] Visual QA over light, dark and busy wallpapers, 100–200% scaling, two monitors
@@ -262,6 +278,29 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 ## 7. Status log
 
 *Newest first. I add an entry after each piece of work.*
+
+### 2026-10-21 — The character art contract, and the art moved to the front
+
+- **The order changed.** The character is now the **first** commit, not a stage after
+  Commit 4. The poses and the accessories are both built on the artwork, so redrawing Mochi
+  after them would mean drawing them twice. The design is proposed now and polished at the
+  end, once everything else is finished.
+- **The contract is written down** — `docs/03-design/character-art-contract.md` — and it
+  replaces the Rive authoring contract once `ADR-0010` lands.
+- **The anchors now live in code** (`src/shared/art-anchors.ts`), so the drawing and the
+  code read the same numbers and cannot drift apart quietly. That is exactly what happened
+  to the old hand-written hit region.
+- **The proposal:** a distinct **head on a body**, with a neck between them. That closes three
+  faults at once — the face ends up where the spec says it is, the scarf has a real neck to
+  sit at, and the silhouette reads at a glance.
+- The contract lists **every fault in the current drawing**: the face 32 px too low, the
+  scarf knot 31 px too low, the pet floating 5 px above the ground, the shadow 7 px high,
+  the paw anchor 5 px off, and the "Zzz" being text, which the design rules forbid.
+- The art's **colours come from the design system** rather than being invented, and the
+  drawing leaves room for all seven accessories.
+- Two violations are already closed: the contact shadow now sits on the ground anchor, and the
+  facing flip uses the character anchor.
+- 176 tests passing (14 new). typecheck, build and both smoke phases green.
 
 ### 2026-10-21 — Commit 2: the pet's geometry and behaviour
 

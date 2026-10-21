@@ -1,4 +1,5 @@
 import type { RefObject } from 'react';
+import { ANCHORS, ART, ART_PALETTE } from '../../../shared/art-anchors';
 import type { Behavior } from '../../../shared/types';
 
 interface PetSpriteProps {
@@ -51,11 +52,11 @@ export function PetSprite({
 
         <ellipse
           className="contact-shadow"
-          cx="100"
-          cy="209"
-          rx="58"
-          ry="8"
-          fill="#2A2622"
+          cx={ART.centreX}
+          cy={ART.shadow}
+          rx="60"
+          ry="9"
+          fill={ART_PALETTE.ink}
           opacity="0.12"
         />
 
@@ -63,7 +64,7 @@ export function PetSprite({
           className="facing"
           style={{
             transform: facing === 1 ? 'scaleX(1)' : 'scaleX(-1)',
-            transformOrigin: '100px 110px',
+            transformOrigin: `${ANCHORS.character.x}px ${ANCHORS.character.y}px`,
           }}
         >
           <g className="character">
