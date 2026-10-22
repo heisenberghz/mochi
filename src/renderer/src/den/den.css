@@ -835,3 +835,24 @@
     display: none;
   }
 }
+
+.den-root.high-contrast {
+  --bg: #000;
+  --surface: #0a0a0a;
+  --surface-2: #141414;
+  --border: #fff;
+  --border-strong: #fff;
+  --text: #fff;
+  --text-muted: #bbb;
+  --accent: #ffd700;
+}
+
+.den-root.high-contrast .card,
+.den-root.high-contrast .meter-track {
+  background: #0a0a0a;
+  border-color: #fff;
+}
+
+.den-root.high-contrast .pet-svg {
+  filter: contrast(1.5) saturate(1.4);
+}

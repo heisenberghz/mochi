@@ -16,6 +16,8 @@ import { join } from 'node:path';
 import { PetBrain, type WalkStart } from '../domain/pet-brain';
 import { FocusTimer } from '../domain/focus-timer';
 import {
+  BUBBLE_UNSOLICITED_MAX_PER_HOUR,
+  BUBBLE_UNSOLICITED_MIN_GAP_MS,
   BEHAVIOR_TICK_MS,
   FOCUS_BREAK_XP,
   FOCUS_DEFAULTS,
@@ -123,6 +125,10 @@ export class MochiController {
   private timersStarted = false;
   /** Whether the idle pause has already been offered to the user. */
   private idlePauseOffered = false;
+  /** Rate limiting for bubbles the pet shows on its own. */
+  private lastUnsolicitedBubbleAt = 0;
+  private unsolicitedThisHour = 0;
+  private bubbleHourKey = 0;
   private lastIdleCheckAt = 0;
   /** Whether reduced motion is actually in effect, as the pet reports it. */
   private reducedMotionActive = false;
@@ -669,21 +675,39 @@ export class MochiController {
   }
 
   /**
+   * Unsolicited bubbles (idle pause, wake-up, level-up) are rate-limited so
+   * they never nag: at most one every five minutes, six per hour.
+   */
+  private canShowUnsolicitedBubble(now: number): boolean {
+    const hourKey = Math.floor(now / 3_600_000);
+    if (this.bubbleHourKey !== hourKey) {
+      this.bubbleHourKey = hourKey;
+      this.unsolicitedThisHour = 0;
+    }
+    if (this.unsolicitedThisHour >= BUBBLE_UNSOLICITED_MAX_PER_HOUR) return false;
+    if (now - this.lastUnsolicitedBubbleAt < BUBBLE_UNSOLICITED_MIN_GAP_MS) return false;
+    return true;
+  }
+
+  /**
    * Offer to carry on after the session paused itself.
    */
   private offerToResume(reason: FocusPauseReason): void {
     const focus = this.focus.state();
     if (focus.status !== 'paused' || focus.pauseReason !== reason) return;
 
-    this.showBubble({
-      id: `focus-paused-${reason}-${Date.now()}`,
-      text:
-        reason === 'lock'
-          ? 'Your computer was locked, so I paused. Carry on?'
-          : 'Your computer was asleep, so I paused. Carry on?',
-      durationMs: 12_000,
-      action: { id: 'resume-focus', label: 'Resume' },
-    });
+    this.showBubble(
+      {
+        id: `focus-paused-${reason}-${Date.now()}`,
+        text:
+          reason === 'lock'
+            ? 'Your computer was locked, so I paused. Carry on?'
+            : 'Your computer was asleep, so I paused. Carry on?',
+        durationMs: 6000,
+        action: { id: 'resume-focus', label: 'Resume' },
+      },
+      true,
+    );
   }
 
   /** The machine went to sleep. The session stops here and picks up later. */
@@ -796,10 +820,23 @@ export class MochiController {
     this.autoPauseIfIdle(wallNow);
 
     if (result.completedWork) {
+      const before = this.brain.snapshot().level;
       const xp = Math.max(1, Math.round(config.workMin)) * FOCUS_XP_PER_MINUTE + FOCUS_PHASE_BONUS_XP;
       this.brain.addXp(xp);
       this.brain.rewardFocusPhase();
       this.brain.celebrate(wallNow);
+      if (this.brain.snapshot().level > before) {
+        // Level up: wave and tell the user something new is in the locker.
+        this.brain.wave(wallNow);
+        this.showBubble(
+          {
+            id: `level-up-${wallNow}`,
+            text: `Level ${this.brain.snapshot().level}! Something new in the locker.`,
+            durationMs: 6000,
+          },
+          true,
+        );
+      }
       this.showBubble({
         id: `work-complete-${wallNow}`,
         text: `${Math.round(config.workMin)} minutes. That's a good block.`,
@@ -809,8 +846,22 @@ export class MochiController {
     }
 
     if (result.completedBreak) {
-      this.brain.addXp(FOCUS_BREAK_XP);
+      const before = this.brain.snapshot().level;
+      const xp = Math.max(1, Math.round(config.workMin)) * FOCUS_XP_PER_MINUTE + FOCUS_PHASE_BONUS_XP;
+      this.brain.addXp(xp);
       this.brain.rewardBreak();
+      this.brain.celebrate(wallNow);
+      if (this.brain.snapshot().level > before) {
+        this.brain.wave(wallNow);
+        this.showBubble(
+          {
+            id: `level-up-${wallNow}`,
+            text: `Level ${this.brain.snapshot().level}! Something new in the locker.`,
+            durationMs: 6000,
+          },
+          true,
+        );
+      }
       this.showBubble({
         id: `break-complete-${wallNow}`,
         text: "Break's over. Ready when you are.",
@@ -848,9 +899,18 @@ export class MochiController {
     this.updateTray();
   }
 
-  private showBubble(bubble: BubbleSpec): void {
+  /**
+   * Send a bubble to the pet window. Unsolicited bubbles (idle pause, wake-up,
+   * level-up) are rate-limited so they never nag.
+   */
+  private showBubble(bubble: BubbleSpec, unsolicited = false): void {
     if (!this.petWindow || !this.petWindow.isVisible()) return;
+    if (unsolicited && !this.canShowUnsolicitedBubble(Date.now())) return;
     this.petWindow.webContents.send('pet:bubble', bubble);
+    if (unsolicited) {
+      this.lastUnsolicitedBubbleAt = Date.now();
+      this.unsolicitedThisHour += 1;
+    }
   }
 
   private showPet(): void {

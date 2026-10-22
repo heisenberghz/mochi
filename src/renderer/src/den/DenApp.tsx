@@ -8,6 +8,7 @@ import type {
   FocusPhase,
   Settings,
 } from '../../../shared/types';
+import { COSMETICS, unlockedCosmetics } from '../../../shared/constants';
 import { formatTime, mockSnapshot } from '../mock';
 
 type Tab = 'home' | 'focus' | 'settings';
@@ -294,6 +295,7 @@ export function DenApp() {
   const [snapshot, setSnapshot] = useState<AppSnapshot>(() => mockSnapshot());
   const [connected, setConnected] = useState(false);
   const [tab, setTab] = useState<Tab>('home');
+const [highContrast, setHighContrast] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [nameDraft, setNameDraft] = useState<string | null>(null);
@@ -387,6 +389,7 @@ export function DenApp() {
   }, []);
 
   const { pet, focus, settings } = snapshot;
+  const cosmetics = unlockedCosmetics(pet.level);
   const recovery = snapshot.recovery;
   const phase = PHASE_LABEL[focus.phase];
   const totalMs = Math.max(1, focus.phaseDurationMs);
@@ -400,7 +403,7 @@ export function DenApp() {
   const isWorking = focus.phase === 'work';
 
   return (
-    <div className="den-root">
+    <div className={`den-root${highContrast ? ' high-contrast' : ''}`}>
       <aside className="den-sidebar">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true">
@@ -599,6 +602,35 @@ export function DenApp() {
                 ) : null}
                 <Meter label="Energy" value={pet.energy} />
                 <Meter label="Mood" value={pet.mood} />
+              </Card>
+
+              <Card>
+                <div className="card-head">
+                  <span className="eyebrow">Locker</span>
+                </div>
+                <div className="locker-grid">
+                  {COSMETICS.map((cosmetic) => {
+                    const unlocked = cosmetics.includes(cosmetic.id);
+                    return (
+                      <div
+                        key={cosmetic.id}
+                        className={`cosmetic ${unlocked ? 'unlocked' : 'locked'}`}
+                      >
+                        <div className={`cosmetic-icon cosmetic-${cosmetic.id}`} />
+                        <div className="cosmetic-info">
+                          <span className="cosmetic-label">{cosmetic.label}</span>
+                          <span className="cosmetic-level">
+                            {unlocked ? 'Unlocked' : `Level ${cosmetic.unlockLevel}`}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="tip">
+                  Cosmetics unlock as {settings.petName} gains levels — no pressure, no
+                  currency, just something new to wear.
+                </p>
               </Card>
 
               <Card>
@@ -831,6 +863,18 @@ export function DenApp() {
                     <option value="off">Full</option>
                   </select>
                 </div>
+              </Card>
+
+              <Card>
+                <div className="card-head">
+                  <span className="eyebrow">Display</span>
+                </div>
+                <Toggle
+                  label="High contrast"
+                  description="Stronger contrast for the Den."
+                  checked={highContrast}
+                  onChange={setHighContrast}
+                />
               </Card>
 
               <Card>

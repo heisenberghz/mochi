@@ -89,6 +89,32 @@ export const MOOD_FOCUS_REWARD = 6;
 export const MOOD_BREAK_REWARD = 3;
 export const MOOD_LEVEL_REWARD = 2;
 
+/** What Mochi can wear, unlocked by level. No currency, no countdowns, no
+ * pressure mechanics — the pet just earns them by being your companion. */
+export interface Cosmetic {
+  id: 'glasses' | 'leaf-hat' | 'mug' | 'bed';
+  label: string;
+  unlockLevel: number;
+  /** Where it hangs on the artboard. */
+  slot: 'face' | 'head' | 'paw' | 'ground';
+}
+
+export const COSMETICS: readonly Cosmetic[] = [
+  { id: 'glasses', label: 'Glasses', unlockLevel: 1, slot: 'face' },
+  { id: 'leaf-hat', label: 'Leaf hat', unlockLevel: 2, slot: 'head' },
+  { id: 'mug', label: 'Mug', unlockLevel: 5, slot: 'paw' },
+  { id: 'bed', label: 'Bed', unlockLevel: 10, slot: 'ground' },
+];
+
+/** What the pet has earned so far, derived from level (no separate save needed). */
+export function unlockedCosmetics(level: number): string[] {
+  return COSMETICS.filter((c) => c.unlockLevel <= level).map((c) => c.id);
+}
+
+/** Bubbles the pet shows on its own are rate-limited so they never nag. */
+export const BUBBLE_UNSOLICITED_MIN_GAP_MS = 5 * 60_000;
+export const BUBBLE_UNSOLICITED_MAX_PER_HOUR = 6;
+
 /** XP for each minute of a finished work phase. */
 export const FOCUS_XP_PER_MINUTE = 1;
 

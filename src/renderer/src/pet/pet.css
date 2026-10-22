@@ -156,6 +156,8 @@
 .pet-svg .head {
   transform-box: view-box;
   transform-origin: 100px 116px;
+  transform: rotate(var(--look-angle, 0deg));
+  transition: transform 0.15s ease-out;
 }
 
 .behavior-lookLeft .head {
@@ -786,6 +788,12 @@
 .pet-sprite.paused .sparkle {
   animation: none !important;
 }
+
+/* Accessories: hidden by default, shown when the level unlocks them. */
+.accessory { display: none; }
+.pet-sprite[data-cosmetics~="leaf-hat"] .accessory.leaf-hat { display: block; }
+.pet-sprite[data-cosmetics~="mug"] .accessory.mug { display: block; }
+.pet-sprite[data-cosmetics~="bed"].behavior-sleep .accessory.bed { display: block; }
 
 /*
  * Reduced motion: every state stays readable, without continuous movement.

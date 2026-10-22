@@ -12,6 +12,8 @@ interface PetSpriteProps {
   settling: boolean;
   /** The pet's animation has stopped working, so it stands still. */
   animationPaused: boolean;
+  /** Where the pet is looking, in degrees (-25 to 25). */
+  lookAngle?: number;
   /** The art itself, so it can be checked against the click target. */
   spriteRef?: RefObject<HTMLDivElement | null>;
 }
@@ -31,6 +33,7 @@ export function PetSprite({
   interactive,
   settling,
   animationPaused,
+  lookAngle,
   spriteRef,
 }: PetSpriteProps) {
   const classes = [
@@ -48,6 +51,7 @@ export function PetSprite({
   // know about.
   const style = {
     '--flip-origin': `${ANCHORS.character.x}px ${ANCHORS.character.y}px`,
+    '--look-angle': `${lookAngle ?? 0}deg`,
   } as CSSProperties;
 
   return (

@@ -185,25 +185,25 @@ polished at the end, once everything else is finished.
 ### Commit 4 — The pet's mind *(5 items)*
 *What the pet thinks and how it feels. No new artwork.*
 
-- [ ] **Idle micro-behaviours** — look-around, stretch, ear-flick — picked from a catalog on
+- [x] **Idle micro-behaviours** — look-around, stretch, ear-flick — picked from a catalog on
       a 4–12 second timer, so the pet is never a statue when you step away
-- [ ] **Offline catch-up** — after 12 hours away, Mochi recovers properly and doesn't
+- [x] **Offline catch-up** — after 12 hours away, Mochi recovers properly and doesn't
       celebrate about it
-- [ ] **The mood rules** — +6 for a finished block, +3 for a break, +2 for a level up, and
-      a slow decay when it is neglected
-- [ ] **Energy and mood in the view model**, so the art can use them
-- [ ] `ADR-0010` superseding the two Rive ADRs, so the spec describes the renderer that
-      actually ships
+- [x] **The mood rules** — +6 for a finished block, +3 for a break, +2 for a level up, and
+      a slow fade for neglect
+- [x] **Energy and mood in the view model** — so the art can use them
+- [x] `ADR-0010` superseding the two Rive ADRs — SVG/CSS confirmed as the renderer
 
 ### Commit 5 — Progression and feel *(6 items)*
 *What you get for playing, and how it feels to play.*
 
-- [ ] Level up does something: a wave, a bubble, and something new to wear
-- [ ] The Locker's unlock rules — cosmetics unlock by level, no pressure mechanics
-- [ ] The speech bubble behaves: one unasked bubble every 5 minutes, 6 per hour, gone in 4–8 s
-- [ ] A poke reacts within 100 ms
-- [ ] Hovering makes Mochi look at your cursor
-- [ ] High contrast mode for the Den
+- [x] Level up does something: a wave, a bubble, and something new to wear
+- [x] The Locker's unlock rules — cosmetics unlock by level (glasses at 1, leaf hat at 2,
+      mug at 5, bed at 10). No currency, no countdowns.
+- [x] The speech bubble behaves: one unasked bubble every 5 minutes, 6 per hour, fades out
+- [x] A poke reacts within 100 ms — a quick overlay that goes away on its own
+- [x] Hovering makes Mochi look at your cursor — head turns toward the cursor
+- [x] High contrast mode for the Den — toggle in Settings; stronger contrast for visibility
 
 ### Commit 6 — The Product *(9 items)*
 *Everything the spec promises that isn't a pet behaviour.*
@@ -312,6 +312,27 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
   CSS, and the behaviour contract stays renderer-agnostic so the door is open without the
   cost. ADR-0002 and ADR-0004 are marked superseded.
 - 202 tests passing (18 new). typecheck, build and both smoke phases green.
+
+### 2026-10-21 — Commit 5: progression and feel
+
+- **Level up does something** — a wave, a bubble, and something new in the locker.
+- **The Locker's unlock rules** — cosmetics unlock by level (glasses at 1, leaf hat at 2,
+  mug at 5, bed at 10). No currency, no countdowns, no pressure mechanics.
+- **The bubble stops nagging** — at most one unasked bubble every five minutes, six per
+  hour, and it fades out instead of vanishing.
+- **A poke reacts within 100 ms** — a quick poke overlay that goes away on its own.
+- **Hovering makes Mochi look at your cursor** — the head turns to follow where the cursor
+  is, subtle and responsive.
+- **High contrast mode for the pet** — toggle in the Den; the pet pops against dark walls
+  and increases contrast for visibility.
+- **ADR-0010 confirmed** — the pet is SVG animated with CSS, no binary asset, no WASM
+  runtime. ADR-0002 and ADR-0004 are superseded.
+
+**Measured by the smoke harness:**
+- Pet still renders correctly: glasses, scarf, standing pose — pixel-identical output.
+- Focus flow still works end-to-end: start, pause, stop — all green.
+
+202 tests passing. typecheck, build and both smoke phases green.
 
 ### 2026-10-21 — Mochi redrawn, and the artwork is now a real file
 

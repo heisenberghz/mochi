@@ -5,6 +5,7 @@ import {
   DRAG_THRESHOLD,
   INTERACTIVE_EXIT_DELAY,
   SETTLE_DURATION_MS,
+  unlockedCosmetics,
 } from '../../../shared/constants';
 import {
   BUBBLE_REGION,
@@ -74,6 +75,8 @@ export function PetApp() {
   const [bubbleLeaving, setBubbleLeaving] = useState(false);
   /** The pet is settling after being put down. */
   const [settling, setSettling] = useState(false);
+  /** Which way the pet is looking, in degrees (-25 to 25). */
+  const [lookAngle, setLookAngle] = useState(0);
 
   const interactiveRef = useRef(false);
   const exitTimer = useRef<number | null>(null);
@@ -112,7 +115,7 @@ export function PetApp() {
           id: 'welcome',
           text: "Hi, I'm Mochi.",
           action: { id: 'start-focus', label: 'Start a 25-minute focus' },
-          durationMs: 12_000,
+          durationMs: 6000,
         });
       }
       return;
@@ -136,7 +139,7 @@ export function PetApp() {
             id: 'welcome',
             text: "Hi, I'm Mochi.",
             action: { id: 'start-focus', label: 'Start a 25-minute focus' },
-            durationMs: 12_000,
+            durationMs: 6000,
           });
           // The pet owns the welcome message, so it is the pet that claims it.
           void window.mochi.ackWelcome();
@@ -224,6 +227,10 @@ export function PetApp() {
       if (inside) {
         clearExit();
         setWindowInteractive(true);
+        // When the cursor is over the pet, Mochi turns its head to look at it.
+        const angle =
+          Math.atan2(event.clientY - 274, event.clientX - 160) * (180 / Math.PI);
+        setLookAngle(Math.max(-25, Math.min(25, angle)));
       } else if (interactiveRef.current) {
         scheduleExit();
       }
@@ -231,7 +238,10 @@ export function PetApp() {
 
     const onLeave = (): void => {
       if (dragRef.current) return;
-      if (interactiveRef.current) scheduleExit();
+      if (interactiveRef.current) {
+        setLookAngle(0);
+        scheduleExit();
+      }
     };
 
     window.addEventListener('mousemove', onMove);
@@ -342,7 +352,10 @@ export function PetApp() {
   behaviorRef.current = pet.behavior;
 
   return (
-    <div className={`pet-root${reducedMotion ? ' reduced' : ''}`}>
+    <div
+      className={`pet-root${reducedMotion ? ' reduced' : ''}`}
+      data-cosmetics={unlockedCosmetics(pet.level).join(' ')}
+    >
       {bubble ? (
         <div
           className={`bubble${bubbleLeaving ? ' bubble-leaving' : ''}`}
@@ -408,6 +421,7 @@ export function PetApp() {
             interactive={interactive}
             settling={settling}
             animationPaused={pet.animationPaused}
+            lookAngle={lookAngle}
             spriteRef={spriteRef}
           />
         </div>
