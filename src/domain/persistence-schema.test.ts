@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CURRENT_SCHEMA_VERSION, FOCUS_DEFAULTS } from '../shared/constants';
 import v1Fixture from './fixtures/state-v1.json';
 import v2Fixture from './fixtures/state-v2.json';
+import v3Fixture from './fixtures/state-v3.json';
 import {
   migrateState,
   SchemaError,
@@ -15,7 +16,7 @@ describe('migrateState', () => {
   it('upgrades a version 1 file', () => {
     const outcome = migrateState(v1Fixture, TODAY);
 
-    expect(outcome.applied).toEqual([2, 3]);
+    expect(outcome.applied).toEqual([2, 3, 4]);
     expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
   });
 
@@ -50,6 +51,7 @@ describe('migrateState', () => {
     expect(state.focus.aggregates.completedToday).toBe(0);
     expect(state.focus.aggregates.focusedMsToday).toBe(0);
     expect(state.focus.aggregates.focusedByDay).toEqual({});
+    expect(state.focus.aggregates.completedByDay).toEqual({});
     expect(state.focus.aggregates.streakDays).toBe(0);
     expect(state.focus.aggregates.lastCompletedDay).toBeNull();
     expect(state.focus.sessions).toEqual([]);
@@ -237,7 +239,7 @@ describe('the version 2 to 3 migration', () => {
   it('upgrades a version 2 file', () => {
     const outcome = migrateState(v2Fixture, TODAY);
 
-    expect(outcome.applied).toEqual([3]);
+    expect(outcome.applied).toEqual([3, 4]);
     expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
   });
 
@@ -258,11 +260,51 @@ describe('the version 2 to 3 migration', () => {
   });
 });
 
+describe('the version 3 to 4 migration', () => {
+  it('upgrades a version 3 file', () => {
+    const outcome = migrateState(v3Fixture, TODAY);
+
+    expect(outcome.applied).toEqual([4]);
+    expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
+  });
+
+  it('keeps everything a version 3 file had', () => {
+    const { state } = migrateState(v3Fixture, TODAY);
+
+    expect(state.pet.xp).toBe(v3Fixture.pet.xp);
+    expect(state.pet.lastSeenAt).toBe(v3Fixture.pet.lastSeenAt);
+    expect(state.pet.mood).toBe(v3Fixture.pet.mood);
+    expect(state.focus.config).toEqual(v3Fixture.focus.config);
+    expect(state.focus.aggregates.completedToday).toBe(2);
+    expect(state.focus.aggregates.streakDays).toBe(3);
+    expect(state.focus.sessions).toHaveLength(1);
+  });
+
+  it('gives the aggregates a per-day completion history, starting empty', () => {
+    const { state } = migrateState(v3Fixture, TODAY);
+    expect(state.focus.aggregates.completedByDay).toEqual({});
+  });
+
+  it('keeps a completion history a half-migrated file already had', () => {
+    const { state } = migrateState(
+      {
+        version: 3,
+        focus: {
+          aggregates: { completedByDay: { '2026-03-09': 2 } },
+        },
+      },
+      TODAY,
+    );
+
+    expect(state.focus.aggregates.completedByDay).toEqual({ '2026-03-09': 2 });
+  });
+});
+
 describe('the whole chain', () => {
   it('takes a version 1 file all the way to the current version', () => {
     const outcome = migrateState(v1Fixture, TODAY);
 
-    expect(outcome.applied).toEqual([2, 3]);
+    expect(outcome.applied).toEqual([2, 3, 4]);
     expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
     expect(outcome.state.focus.config).toEqual(FOCUS_DEFAULTS);
     expect(outcome.state.pet.lastSeenAt).toBeNull();

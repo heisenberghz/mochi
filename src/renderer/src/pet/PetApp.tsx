@@ -66,6 +66,44 @@ function useReducedMotion(snapshot: AppSnapshot | null): boolean {
   return setting === 'on' || (setting === 'system' && systemPrefers);
 }
 
+/**
+ * A two-note chime, made on the spot — nothing to ship, nothing to load.
+ *
+ * Quiet by construction: a low gain on a soft sine, gone within a second.
+ */
+let chimeContext: AudioContext | null = null;
+
+function playChime(): void {
+  try {
+    const Ctor = window.AudioContext;
+    if (!Ctor) return;
+    chimeContext = chimeContext ?? new Ctor();
+    const ctx = chimeContext;
+    if (ctx.state === 'suspended') void ctx.resume();
+
+    const now = ctx.currentTime;
+    // C5 then G5 — a small rising pair, like a day ending well.
+    const notes = [523.25, 783.99];
+    notes.forEach((frequency, index) => {
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.16;
+
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.08, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.8);
+
+      oscillator.connect(gain).connect(ctx.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.9);
+    });
+  } catch {
+    // No audio is no tragedy; the celebration in the pet still happens.
+  }
+}
+
 export function PetApp() {
   const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
   const [bubble, setBubble] = useState<BubbleSpec | null>(null);
@@ -128,6 +166,9 @@ export function PetApp() {
     const unsubscribeBubble = window.mochi.onBubble((next) => {
       if (alive) showBubble(next);
     });
+    const unsubscribeSound = window.mochi.onSound((sound) => {
+      if (alive && sound.kind === 'chime') playChime();
+    });
 
     window.mochi
       .bootstrap()
@@ -154,6 +195,7 @@ export function PetApp() {
       alive = false;
       unsubscribeState();
       unsubscribeBubble();
+      unsubscribeSound();
       void window.mochi.setInteractive(false);
     };
   }, [showBubble]);

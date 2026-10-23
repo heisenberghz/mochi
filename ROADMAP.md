@@ -208,16 +208,16 @@ polished at the end, once everything else is finished.
 ### Commit 6 — The Product *(9 items)*
 *Everything the spec promises that isn't a pet behaviour.*
 
-- [ ] The Insights tab — 7-day and 30-day minutes, sessions, breaks, current and longest
+- [x] The Insights tab — 7-day and 30-day minutes, sessions, breaks, current and longest
       streak, recent sessions, and an honest empty state
-- [ ] The full settings inventory — 12–15 that all work, grouped
-- [ ] Dark theme for the Den, following the OS
-- [ ] View transitions in the Den, and the bubble gets an exit animation
-- [ ] A toast and a sound when a block ends, with quiet hours honoured
-- [ ] Global hotkeys — `Ctrl+Alt+P` / `F` / `D`, failing gracefully on conflict
-- [ ] "Bring Mochi here" and hide in fullscreen
-- [ ] Export your data and reset, with confirmation
-- [ ] A keyboard and screen-reader pass over the Den
+- [x] The full settings inventory — 12–15 that all work, grouped
+- [x] Dark theme for the Den, following the OS
+- [x] View transitions in the Den, and the bubble gets an exit animation
+- [x] A toast and a sound when a block ends, with quiet hours honoured
+- [x] Global hotkeys — `Ctrl+Alt+P` / `F` / `D`, failing gracefully on conflict
+- [x] "Bring Mochi here" and hide in fullscreen
+- [x] Export your data and reset, with confirmation
+- [x] A keyboard and screen-reader pass over the Den
 
 ### Commit 7 — Ship It *(8 items)*
 *Turn it from "runs on my machine" into "installable, updatable, and verifiable".*
@@ -333,6 +333,46 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 - Focus flow still works end-to-end: start, pause, stop — all green.
 
 202 tests passing. typecheck, build and both smoke phases green.
+
+### 2026-10-22 — Commit 6: the product
+
+- **The Den finally has all five tabs** — Home, Focus, Insights, Locker, Settings. The
+  Locker got its own tab instead of squatting on Home.
+- **The Insights tab is real.** A 7-day / 30-day toggle drives a bar chart of focus
+  minutes per day (quiet days show as nothing), plus totals, best day, active days,
+  current and **longest** streak, and the last eight sessions with completed/partial
+  tags. When there is nothing to show it says so plainly and offers to start a block
+  — no fake numbers here.
+- **The numbers behind it are honest.** The chair-time totals already counted breaks,
+  so schema v4 adds per-day break time and per-day finished blocks (`breakByDay`,
+  `breaksByDay`, `completedByDay`, migration chain now [2,3,4], v3 fixture + tests).
+  Focus minutes = chair time minus break time, never a negative day.
+- **Settings now has 12 controls that all work**, grouped: quiet hours with configurable
+  start/end, **hide in fullscreen**, **global hotkeys** on/off, export, reset, and the
+  seven that were already there.
+- **A block that finishes now speaks up** — one Windows toast (clickable, opens the
+  Den) and one two-note chime played by the pet window's WebAudio. Nothing to ship: the
+  chime is generated on the spot. Mute silences the sound but not the celebration;
+  quiet hours take away both the toast and the sound but never the pet's own joy.
+- **Three global hotkeys** — `Ctrl+Alt+P` (show/hide Mochi), `Ctrl+Alt+F` (start or
+  pause focus), `Ctrl+Alt+D` (open the Den). An accelerator another program already
+  owns is reported in Settings; the actions remain reachable from the tray. Unregistered
+  on quit and when switched off.
+- **"Bring Mochi here"** — tray menu and pet context menu move the pet to the screen the
+  cursor is on, clamped inside the work area. **Hide in fullscreen** is best effort and
+  honest about it: on Windows an exclusive-fullscreen app hides the taskbar, so a display
+  whose work area equals its size is probably showing one.
+- **Export and reset.** The export shows the exact payload in the Den before anything is
+  written (a timestamped JSON via the save dialog) and contains the same data the save
+  file holds — no secrets. Reset lives behind a confirmation dialog that Escape closes,
+  and starts a truly fresh pet.
+- **Keyboard and screen-reader pass** — live-region toast, labelled dialog, focus-visible
+  outlines everywhere, the chart has a text description, and the panel animations honour
+  reduced motion.
+- **Dark theme for the Den**, following the OS via `prefers-color-scheme`, with its own
+  warm-dark palette (not just inverted colours).
+- 226 tests passing (13 new: insights, quiet hours, per-day aggregates, schema v4).
+  typecheck, build and both smoke phases green.
 
 ### 2026-10-21 — Mochi redrawn, and the artwork is now a real file
 

@@ -1,0 +1,54 @@
+{
+  "version": 3,
+  "pet": {
+    "energy": 66,
+    "mood": 58,
+    "xp": 240,
+    "level": 3,
+    "facing": 1,
+    "lastSeenAt": 1772900000000
+  },
+  "placement": {
+    "x": 400,
+    "y": 300
+  },
+  "settings": {
+    "petName": "Mochi",
+    "roam": true,
+    "reducedMotion": "system",
+    "sound": true,
+    "launchAtLogin": false,
+    "pauseWhenLocked": true,
+    "autoResume": false
+  },
+  "hasSeenWelcome": true,
+  "focus": {
+    "config": {
+      "workMin": 45,
+      "shortBreakMin": 8,
+      "longBreakMin": 20,
+      "rounds": 3,
+      "autoStartBreak": true,
+      "autoStartWork": false
+    },
+    "aggregates": {
+      "dayKey": "2026-03-09",
+      "completedToday": 2,
+      "focusedMsToday": 2700000,
+      "focusedByDay": {
+        "2026-03-09": 2700000
+      },
+      "streakDays": 3,
+      "lastCompletedDay": "2026-03-09"
+    },
+    "sessions": [
+      {
+        "dayKey": "2026-03-09",
+        "phase": "work",
+        "focusedMs": 2700000,
+        "completed": true
+      }
+    ],
+    "active": null
+  }
+}

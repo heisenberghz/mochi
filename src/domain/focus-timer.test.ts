@@ -256,6 +256,52 @@ describe('FocusTimer day and streak', () => {
   });
 });
 
+describe('FocusTimer insights accounting', () => {
+  it('remembers finished blocks per day, so a longest streak can be worked out', () => {
+    const { clock, timer } = makeTimer({
+      workMin: 1,
+      shortBreakMin: 1,
+      autoStartBreak: false,
+      autoStartWork: false,
+    });
+    let t = 0;
+
+    timer.start(t);
+    t += MINUTE;
+    timer.tick(t); // one block done on 2026-03-10
+    timer.start(t);
+    t += MINUTE;
+    timer.tick(t); // the waiting break runs and ends
+
+    clock.day = '2026-03-11';
+    timer.start(t);
+    t += MINUTE;
+    timer.tick(t); // one block done on 2026-03-11
+
+    const aggregates = timer.serialize().aggregates;
+    expect(aggregates.completedByDay['2026-03-10']).toBe(1);
+    expect(aggregates.completedByDay['2026-03-11']).toBe(1);
+  });
+
+  it('records a finished break separately, without confusing it with focus', () => {
+    const { timer } = makeTimer({ workMin: 1, shortBreakMin: 2, autoStartBreak: true });
+
+    timer.start(0);
+    timer.tick(MINUTE); // the work phase ends; the break starts by itself
+    timer.tick(3 * MINUTE); // the break ends
+
+    const aggregates = timer.serialize().aggregates;
+    expect(aggregates.breaksByDay['2026-03-10']).toBe(1);
+    expect(aggregates.breakByDay['2026-03-10']).toBe(2 * MINUTE);
+    // The chair-time total holds both, so Insights can subtract cleanly.
+    expect(aggregates.focusedByDay['2026-03-10']).toBe(3 * MINUTE);
+    // The break shows up in the recent sessions list too.
+    expect(
+      timer.serialize().sessions.some((session) => session.phase === 'shortBreak'),
+    ).toBe(true);
+  });
+});
+
 describe('FocusTimer skip', () => {
   it('skipping a work phase earns nothing', () => {
     const { timer } = makeTimer({ workMin: 25 });

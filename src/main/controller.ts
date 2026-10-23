@@ -1,9 +1,12 @@
 import {
   app,
   BrowserWindow,
+  dialog,
+  globalShortcut,
   Menu,
   type MenuItemConstructorOptions,
   nativeImage,
+  Notification,
   powerMonitor,
   screen,
   shell,
@@ -14,21 +17,29 @@ import {
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PetBrain, type WalkStart } from '../domain/pet-brain';
-import { FocusTimer } from '../domain/focus-timer';
+import { FocusTimer, type FocusAggregates, type FocusPersisted } from '../domain/focus-timer';
+import { computeInsights } from '../domain/insights';
+import { isQuietHour, type QuietHoursConfig } from '../domain/quiet-hours';
 import {
   BUBBLE_UNSOLICITED_MAX_PER_HOUR,
   BUBBLE_UNSOLICITED_MIN_GAP_MS,
   BEHAVIOR_TICK_MS,
+  CURRENT_SCHEMA_VERSION,
   FOCUS_BREAK_XP,
   FOCUS_DEFAULTS,
   FOCUS_PHASE_BONUS_XP,
   FOCUS_TICK_MS,
   FOCUS_XP_PER_MINUTE,
+  HOTKEY_DEFAULTS,
   IDLE_AUTO_PAUSE_SECONDS,
+  QUIET_MINUTE_MAX,
+  QUIET_MINUTE_MIN,
   SNAP_DISTANCE,
   SNAP_DURATION_MS,
   WALK_SPEED_DIP_PER_SECOND,
 } from '../shared/constants';
+import { localDateKey } from '../shared/dates';
+import { defaultPersistedState, type PersistedState } from '../domain/persistence-schema';
 import type {
   AppSnapshot,
   BubbleSpec,
@@ -36,6 +47,7 @@ import type {
   FocusConfig,
   FocusConfigResult,
   FocusPauseReason,
+  InsightsView,
   OkResult,
   Point,
   Settings,
@@ -53,7 +65,31 @@ const SETTINGS_KEYS: (keyof Settings)[] = [
   'launchAtLogin',
   'pauseWhenLocked',
   'autoResume',
+  'quietHoursEnabled',
+  'quietStartMin',
+  'quietEndMin',
+  'hideInFullscreen',
+  'globalHotkeys',
 ];
+
+/** How often the pet checks whether a fullscreen app has taken the screen. */
+const FULLSCREEN_CHECK_MS = 1000;
+
+/** Margins kept between Mochi and the edge of the work area. */
+const WINDOW_EDGE_MARGIN = 24;
+
+/** Insights needs a zero history to show an honest empty state. */
+const EMPTY_AGGREGATES: FocusAggregates = {
+  dayKey: '1970-01-01',
+  completedToday: 0,
+  focusedMsToday: 0,
+  focusedByDay: {},
+  completedByDay: {},
+  breakByDay: {},
+  breaksByDay: {},
+  streakDays: 0,
+  lastCompletedDay: null,
+};
 
 function isPoint(value: unknown): value is Point {
   if (typeof value !== 'object' || value === null) return false;
@@ -109,8 +145,9 @@ export class MochiController {
   private denWindow: BrowserWindow | null = null;
   private tray: Tray | null = null;
 
-  private readonly brain: PetBrain;
-  private readonly focus: FocusTimer;
+  /** Replaced wholesale when the user resets everything. */
+  private brain: PetBrain;
+  private focus: FocusTimer;
 
   private behaviorTimer: NodeJS.Timeout | null = null;
   private focusTimer: NodeJS.Timeout | null = null;
@@ -130,6 +167,12 @@ export class MochiController {
   private unsolicitedThisHour = 0;
   private bubbleHourKey = 0;
   private lastIdleCheckAt = 0;
+  /** Global hotkeys that failed to register, shown in Settings. */
+  private hotkeyConflicts: string[] = [];
+  private registeredHotkeys = new Map<string, Electron.Accelerator>();
+  /** Set when Mochi hid itself because a fullscreen game took the screen. */
+  private hiddenByFullscreen = false;
+  private fullscreenTimer: NodeJS.Timeout | null = null;
   /** Whether reduced motion is actually in effect, as the pet reports it. */
   private reducedMotionActive = false;
 
@@ -160,6 +203,7 @@ export class MochiController {
 
     if (!this.smoke) {
       this.createTray();
+      this.applyHotkeys();
     }
 
     this.petWindow.webContents.once('did-finish-load', () => {
@@ -608,6 +652,9 @@ export class MochiController {
     this.persistNow();
     if (this.behaviorTimer) clearInterval(this.behaviorTimer);
     if (this.focusTimer) clearInterval(this.focusTimer);
+    if (this.fullscreenTimer) clearInterval(this.fullscreenTimer);
+    this.fullscreenTimer = null;
+    globalShortcut.unregisterAll();
     this.stopMotion();
     this.stopDrag();
     this.tray?.destroy();
@@ -642,6 +689,7 @@ export class MochiController {
     this.timersStarted = true;
     this.behaviorTimer = setInterval(() => this.behaviorTick(), BEHAVIOR_TICK_MS);
     this.focusTimer = setInterval(() => this.focusTick(), FOCUS_TICK_MS);
+    this.fullscreenTimer = setInterval(() => this.checkFullscreen(), FULLSCREEN_CHECK_MS);
     this.behaviorTick();
     this.focusTick();
   }
@@ -650,14 +698,13 @@ export class MochiController {
     if (!this.petWindow) return;
     const now = Date.now();
     const focusState = this.focus.state();
-    const hour = new Date(now).getHours();
     const result = this.brain.tick(now, {
       idleSeconds: powerMonitor.getSystemIdleTime(),
       // Focus posture is for a running work phase and nothing else. On a break
       // the pet is awake and free to stretch and wander, and a paused session
       // means nobody is there anyway.
       focusActive: focusState.status === 'running' && focusState.phase === 'work',
-      quietHours: hour >= 22 || hour < 7,
+      quietHours: isQuietHour(now, this.quietConfig()),
       // Reduced motion is not only about the CSS. The window must stop moving
       // too, or the pet still walks across the screen.
       canRoam: this.store.state.settings.roam && !this.reducedMotionActive,
@@ -837,6 +884,11 @@ export class MochiController {
           true,
         );
       }
+      // One toast, one chime, one celebration. Quiet hours take the toast and
+      // the sound away, but the pet's own celebration is the in-pet cue that
+      // always happens.
+      this.notifyCompletion(`${Math.round(config.workMin)} minutes focused. That's a good block.`);
+      this.playChime();
       this.showBubble({
         id: `work-complete-${wallNow}`,
         text: `${Math.round(config.workMin)} minutes. That's a good block.`,
@@ -867,6 +919,8 @@ export class MochiController {
         text: "Break's over. Ready when you are.",
         durationMs: 5000,
       });
+      // No toast here: the work phase completing is the one toast the spec
+      // allows, and the pet's bubble already said the same thing.
     }
 
     if (
@@ -886,6 +940,7 @@ export class MochiController {
       settings: { ...this.store.state.settings },
       welcome: this.welcome,
       recovery: this.store.recovery,
+      hotkeyConflicts: [...this.hotkeyConflicts],
     };
   }
 
@@ -1229,6 +1284,7 @@ export class MochiController {
         enabled: focus.status === 'idle',
         click: () => this.walkNow(),
       },
+      { label: 'Bring Mochi here', click: () => this.bringHere() },
       {
         label: this.brain.snapshot().behavior === 'sleep' ? 'Wake Mochi' : 'Nap',
         click: () => {
@@ -1325,6 +1381,7 @@ export class MochiController {
         enabled: focus.status === 'idle',
         click: () => this.walkNow(),
       },
+      { label: 'Bring Mochi here', click: () => this.bringHere() },
       {
         label: snapshot.pet.behavior === 'sleep' ? 'Wake Mochi' : 'Nap',
         click: () => {
@@ -1513,12 +1570,76 @@ export class MochiController {
         if (key === 'launchAtLogin' && typeof value === 'boolean') next.launchAtLogin = value;
         if (key === 'pauseWhenLocked' && typeof value === 'boolean') next.pauseWhenLocked = value;
         if (key === 'autoResume' && typeof value === 'boolean') next.autoResume = value;
+        if (key === 'quietHoursEnabled' && typeof value === 'boolean') {
+          next.quietHoursEnabled = value;
+        }
+        if (key === 'quietStartMin' && typeof value === 'number' && Number.isFinite(value)) {
+          next.quietStartMin = Math.min(QUIET_MINUTE_MAX, Math.max(QUIET_MINUTE_MIN, value));
+        }
+        if (key === 'quietEndMin' && typeof value === 'number' && Number.isFinite(value)) {
+          next.quietEndMin = Math.min(QUIET_MINUTE_MAX, Math.max(QUIET_MINUTE_MIN, value));
+        }
+        if (key === 'hideInFullscreen' && typeof value === 'boolean') {
+          next.hideInFullscreen = value;
+        }
+        if (key === 'globalHotkeys' && typeof value === 'boolean') next.globalHotkeys = value;
       }
       this.store.setSettings(next);
       this.store.flush();
       this.applyLoginItem();
+      this.applyHotkeys();
       this.broadcast();
       return { ok: true, settings: { ...next } };
+    });
+
+    ipcMain.handle('insights:get', (event): InsightsView => {
+      if (!fromApp(event)) return computeInsights({
+        aggregates: EMPTY_AGGREGATES,
+        sessions: [],
+        today: localDateKey(Date.now()),
+      });
+      return this.insightsView();
+    });
+
+    // The export shows the payload in the Den before anything is written, so
+    // "your data" is never a mystery. Nothing here is secret: it is the same
+    // JSON the save file holds.
+    ipcMain.handle('data:exportPayload', (event): string => {
+      if (!fromApp(event)) return '';
+      return this.exportPayload();
+    });
+
+    ipcMain.handle(
+      'data:exportSave',
+      async (event): Promise<OkResult & { path?: string }> => {
+        if (!fromApp(event)) return { ok: false };
+        try {
+          const result = await dialog.showSaveDialog({
+            title: 'Export Mochi data',
+            defaultPath: `mochi-export-${localDateKey(Date.now())}.json`,
+            filters: [{ name: 'JSON', extensions: ['json'] }],
+          });
+          if (result.canceled || !result.filePath) return { ok: false };
+          writeFileSync(result.filePath, this.exportPayload(), 'utf8');
+          return { ok: true, path: result.filePath };
+        } catch (error) {
+          return { ok: false, error: String(error) };
+        }
+      },
+    );
+
+    // The Den is the only door, and it asks for confirmation on its own
+    // screen before this is reachable.
+    ipcMain.handle('data:reset', (event): OkResult => {
+      if (!fromApp(event)) return { ok: false };
+      this.resetAll();
+      return { ok: true };
+    });
+
+    ipcMain.handle('window:bringHere', (event): OkResult => {
+      if (!fromApp(event)) return { ok: false };
+      this.bringHere();
+      return { ok: true };
     });
 
   }
@@ -1533,6 +1654,182 @@ export class MochiController {
     } catch {
       // Autostart is best effort; the setting remains visible in the Den.
     }
+  }
+
+  /** The quiet-hours window the user configured, read from the settings. */
+  private quietConfig(): QuietHoursConfig {
+    const settings = this.store.state.settings;
+    return {
+      enabled: settings.quietHoursEnabled,
+      startMin: settings.quietStartMin,
+      endMin: settings.quietEndMin,
+    };
+  }
+
+  /**
+   * Global hotkeys: toggle the pet, start or pause focus, open the Den.
+   *
+   * Registration failure is never fatal. The accelerator another program has
+   * taken is reported to the Den, and the action stays reachable from the tray.
+   */
+  private applyHotkeys(): void {
+    globalShortcut.unregisterAll();
+    this.hotkeyConflicts = [];
+
+    if (!this.store.state.settings.globalHotkeys) return;
+
+    const bindings: Array<[string, () => void]> = [
+      [HOTKEY_DEFAULTS.pet, () => this.togglePet()],
+      [HOTKEY_DEFAULTS.focus, () => this.hotkeyFocus()],
+      [HOTKEY_DEFAULTS.den, () => this.openDen()],
+    ];
+
+    for (const [accelerator, action] of bindings) {
+      try {
+        if (!globalShortcut.register(accelerator, action)) {
+          this.hotkeyConflicts.push(accelerator);
+        }
+      } catch {
+        this.hotkeyConflicts.push(accelerator);
+      }
+    }
+  }
+
+  private hotkeyFocus(): void {
+    const status = this.focus.state().status;
+    if (status === 'running') this.handleFocus('pause');
+    else this.handleFocus('start');
+  }
+
+  /**
+   * One toast per phase completion.
+   *
+   * Quiet hours suppress the toast but keep the pet's celebration, which is
+   * the subtle in-pet cue the requirement asks for. Clicking the toast opens
+   * the Den, which is the only thing a toast is ever allowed to sell.
+   */
+  private notifyCompletion(text: string): void {
+    if (this.smoke) return;
+    if (isQuietHour(Date.now(), this.quietConfig())) return;
+    try {
+      const toast = new Notification({ title: 'Mochi', body: text, silent: true });
+      toast.on('click', () => this.openDen());
+      toast.show();
+    } catch {
+      // Toasts are best effort; the celebration in the pet window still happens.
+    }
+  }
+
+  /**
+   * The chime the pet renderer plays, if the user has sound on.
+   *
+   * The visual celebration is not muted; only the sound is.
+   */
+  private playChime(): void {
+    const settings = this.store.state.settings;
+    if (!settings.sound) return;
+    if (isQuietHour(Date.now(), this.quietConfig())) return;
+    try {
+      this.petWindow?.webContents.send('pet:sound', { kind: 'chime' });
+    } catch {
+      // A window that just went away cannot hear a chime; nothing is lost.
+    }
+  }
+
+  /**
+   * Best effort: on Windows an exclusive-fullscreen app hides the taskbar, so
+   * a display whose work area equals its full size is probably showing one.
+   * The setting's description is honest about the limitation.
+   */
+  private checkFullscreen(): void {
+    if (!this.store.state.settings.hideInFullscreen || this.isQuitting) {
+      if (this.hiddenByFullscreen) {
+        this.hiddenByFullscreen = false;
+        this.showPet();
+      }
+      return;
+    }
+
+    const exclusive = screen
+      .getAllDisplays()
+      .some(
+        (display) =>
+          display.workArea.width === display.size.width &&
+          display.workArea.height === display.size.height,
+      );
+
+    if (exclusive && !this.hiddenByFullscreen && this.petWindow?.isVisible()) {
+      this.hiddenByFullscreen = true;
+      this.petWindow.hide();
+    } else if (!exclusive && this.hiddenByFullscreen) {
+      this.hiddenByFullscreen = false;
+      this.showPet();
+    }
+  }
+
+  /** Move Mochi to the screen the cursor is on, at its bottom edge. */
+  bringHere(): void {
+    const win = this.petWindow;
+    if (!win) return;
+
+    const cursor = screen.getCursorScreenPoint();
+    const area = screen.getDisplayNearestPoint(cursor).workArea;
+    const bounds = win.getBounds();
+
+    const minX = area.x + WINDOW_EDGE_MARGIN;
+    const maxX = area.x + area.width - WINDOW_EDGE_MARGIN - bounds.width;
+    const x = Math.min(Math.max(Math.round(cursor.x - bounds.width / 2), minX), Math.max(minX, maxX));
+    const y = area.y + area.height - WINDOW_EDGE_MARGIN - bounds.height;
+
+    win.setPosition(x, y);
+    this.store.setPlacement(x, y);
+    this.showPet();
+  }
+
+  /** The exact bytes an export writes. No paths, no secrets. */
+  private exportPayload(): string {
+    const { pet, focus, settings, hasSeenWelcome } = this.store.state;
+    return JSON.stringify(
+      {
+        kind: 'mochi-data-export',
+        version: CURRENT_SCHEMA_VERSION,
+        exportedAt: new Date().toISOString(),
+        pet,
+        focus,
+        settings,
+        hasSeenWelcome,
+      },
+      null,
+      2,
+    );
+  }
+
+  /** Start over: the pet, the timer and the settings all forget everything. */
+  private resetAll(): void {
+    const fresh = defaultPersistedState(localDateKey(Date.now()));
+    this.store.state = fresh;
+    this.store.flush();
+
+    this.brain = new PetBrain({ now: Date.now() });
+    this.focus = new FocusTimer(FOCUS_DEFAULTS, systemFocusClock);
+    this.welcome = true;
+    this.idlePauseOffered = false;
+    this.lastUnsolicitedBubbleAt = 0;
+    this.unsolicitedThisHour = 0;
+    this.bubbleHourKey = 0;
+
+    this.applyLoginItem();
+    this.applyHotkeys();
+    this.broadcast();
+  }
+
+  private insightsView(): InsightsView {
+    const persisted: FocusPersisted = this.focus.serialize();
+    return computeInsights({
+      aggregates: persisted.aggregates,
+      sessions: persisted.sessions,
+      today: localDateKey(Date.now()),
+    });
   }
 
   private persist(): void {

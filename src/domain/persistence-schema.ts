@@ -74,6 +74,29 @@ const MIGRATIONS: Record<number, Migration> = {
       },
     };
   },
+
+  // 3 -> 4: finished blocks and break time are remembered per day, so
+  // Insights can show the longest streak and honest focus minutes (chair
+  // time minus break time).
+  4: (state) => {
+    const focus = isRecord(state.focus) ? state.focus : {};
+    const aggregates = isRecord(focus.aggregates) ? focus.aggregates : {};
+    const perDay = (key: string): Record<string, number> =>
+      isRecord(aggregates[key]) ? (aggregates[key] as Record<string, number>) : {};
+    return {
+      ...state,
+      version: 4,
+      focus: {
+        ...focus,
+        aggregates: {
+          ...aggregates,
+          completedByDay: perDay('completedByDay'),
+          breakByDay: perDay('breakByDay'),
+          breaksByDay: perDay('breaksByDay'),
+        },
+      },
+    };
+  },
 };
 
 export interface MigrationOutcome {
@@ -147,6 +170,9 @@ function defaultFocus(today: string): FocusPersisted {
       completedToday: 0,
       focusedMsToday: 0,
       focusedByDay: {},
+      completedByDay: {},
+      breakByDay: {},
+      breaksByDay: {},
       streakDays: 0,
       lastCompletedDay: null,
     },
@@ -211,7 +237,26 @@ export function sanitiseSettings(value: unknown): Settings {
     pauseWhenLocked:
       typeof value.pauseWhenLocked === 'boolean' ? value.pauseWhenLocked : base.pauseWhenLocked,
     autoResume: typeof value.autoResume === 'boolean' ? value.autoResume : base.autoResume,
+    quietHoursEnabled:
+      typeof value.quietHoursEnabled === 'boolean'
+        ? value.quietHoursEnabled
+        : base.quietHoursEnabled,
+    quietStartMin: clampQuietMin(value.quietStartMin, base.quietStartMin),
+    quietEndMin: clampQuietMin(value.quietEndMin, base.quietEndMin),
+    hideInFullscreen:
+      typeof value.hideInFullscreen === 'boolean'
+        ? value.hideInFullscreen
+        : base.hideInFullscreen,
+    globalHotkeys:
+      typeof value.globalHotkeys === 'boolean' ? value.globalHotkeys : base.globalHotkeys,
   };
+}
+
+/** Quiet-hour times live on 15-minute steps, within a full day. */
+function clampQuietMin(raw: unknown, fallback: number): number {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return fallback;
+  const step = Math.round(raw / 15) * 15;
+  return Math.min(24 * 60, Math.max(0, step));
 }
 
 function sanitisePlacement(value: unknown): { x: number; y: number } | null {
@@ -233,6 +278,9 @@ function sanitiseFocus(value: unknown, today: string): FocusPersisted {
       completedToday: countOr(aggregates.completedToday),
       focusedMsToday: countOr(aggregates.focusedMsToday),
       focusedByDay: sanitiseDayTotals(aggregates.focusedByDay),
+      completedByDay: sanitiseDayTotals(aggregates.completedByDay),
+      breakByDay: sanitiseDayTotals(aggregates.breakByDay),
+      breaksByDay: sanitiseDayTotals(aggregates.breaksByDay),
       streakDays: countOr(aggregates.streakDays),
       lastCompletedDay:
         typeof aggregates.lastCompletedDay === 'string' ? aggregates.lastCompletedDay : null,

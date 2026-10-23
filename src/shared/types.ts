@@ -84,6 +84,15 @@ export interface Settings {
   pauseWhenLocked: boolean;
   /** Carry on by itself after an idle pause, instead of asking. */
   autoResume: boolean;
+  /** Toast and sound go quiet between these hours, when enabled. */
+  quietHoursEnabled: boolean;
+  /** Minutes past midnight. `start` may be later than `end`, meaning overnight. */
+  quietStartMin: number;
+  quietEndMin: number;
+  /** Best effort: hide the pet while an exclusive-fullscreen app has the screen. */
+  hideInFullscreen: boolean;
+  /** The three global hotkeys (pet, focus, Den), as one switch. */
+  globalHotkeys: boolean;
 }
 
 export type RecoveryKind = 'quarantined' | 'newer-version';
@@ -98,6 +107,35 @@ export interface RecoveryNotice {
   files: string[];
 }
 
+/** One range (a week or a month) of focus history. */
+export interface InsightsRange {
+  /** Total time actually focused, in milliseconds. */
+  focusedMs: number;
+  /** Finished work blocks in the range. */
+  blocks: number;
+  /** Finished breaks in the range. */
+  breaks: number;
+  /** Days with at least some focus. */
+  activeDays: number;
+  /** The best day in the range, and how much was focused on it. */
+  bestDay: { dayKey: string; focusedMs: number } | null;
+  /** Focus minutes per day in the range, oldest first, zeros for quiet days. */
+  days: Array<{ dayKey: string; focusedMs: number }>;
+}
+
+export interface InsightsView {
+  week: InsightsRange;
+  month: InsightsRange;
+  /** Consecutive days with a finished block, up to today. */
+  streakDays: number;
+  /** The longest run of consecutive block-days ever recorded. */
+  longestStreakDays: number;
+  /** The last eight sessions, newest first. */
+  recent: Array<{ dayKey: string; phase: FocusPhase; focusedMs: number; completed: boolean }>;
+  /** True when there is nothing to show yet, so the Den can be honest about it. */
+  empty: boolean;
+}
+
 export interface AppSnapshot {
   pet: PetView;
   focus: FocusView;
@@ -105,6 +143,8 @@ export interface AppSnapshot {
   welcome: boolean;
   /** Set once, when saved data could not be used as-is. */
   recovery: RecoveryNotice | null;
+  /** Global hotkeys that failed to register, with the accelerator shown. */
+  hotkeyConflicts: string[];
 }
 
 export interface BubbleAction {
@@ -158,6 +198,18 @@ export interface MochiApi {
   updateFocusConfig(patch: Partial<FocusConfig>): Promise<FocusConfigResult>;
   updateSettings(patch: Partial<Settings>): Promise<SettingsResult>;
   setPetVisible(visible: boolean): Promise<OkResult>;
+  /** Listen for a sound the main process asks the pet to play. */
+  onSound(cb: (sound: { kind: 'chime' }) => void): () => void;
+  /** The Insights tab's numbers, worked out from the saved history. */
+  getInsights(): Promise<InsightsView>;
+  /** The exact payload an export would write, as pretty JSON. */
+  getExportPayload(): Promise<string>;
+  /** Ask for a path, then write the export there. */
+  exportData(): Promise<OkResult & { path?: string }>;
+  /** Erase everything. The Den asks for confirmation before calling this. */
+  resetData(): Promise<OkResult>;
+  /** Move Mochi to the screen the cursor is on. */
+  bringHere(): Promise<OkResult>;
 }
 
 declare global {

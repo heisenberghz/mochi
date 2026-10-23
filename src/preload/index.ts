@@ -5,6 +5,7 @@ import type {
   FocusAction,
   FocusConfig,
   FocusConfigResult,
+  InsightsView,
   MochiApi,
   OkResult,
   Point,
@@ -28,6 +29,14 @@ function onBubble(cb: (bubble: BubbleSpec) => void): () => void {
   return () => ipcRenderer.removeListener('pet:bubble', listener);
 }
 
+function onSound(cb: (sound: { kind: 'chime' }) => void): () => void {
+  const listener = (_event: Electron.IpcRendererEvent, sound: { kind: 'chime' }): void => {
+    cb(sound);
+  };
+  ipcRenderer.on('pet:sound', listener);
+  return () => ipcRenderer.removeListener('pet:sound', listener);
+}
+
 function focus(action: FocusAction): Promise<OkResult> {
   switch (action) {
     case 'start':
@@ -48,6 +57,7 @@ const api: MochiApi = {
   bootstrap: () => ipcRenderer.invoke('app:bootstrap') as Promise<AppSnapshot>,
   onState,
   onBubble,
+  onSound,
   ackWelcome: () => ipcRenderer.invoke('app:ackWelcome') as Promise<OkResult>,
   setReducedMotion: (active: boolean) =>
     ipcRenderer.invoke('window:setReducedMotion', active) as Promise<OkResult>,
@@ -69,6 +79,12 @@ const api: MochiApi = {
     ipcRenderer.invoke('settings:update', patch) as Promise<SettingsResult>,
   setPetVisible: (visible: boolean) =>
     ipcRenderer.invoke('window:setPetVisible', visible) as Promise<OkResult>,
+  getInsights: () => ipcRenderer.invoke('insights:get') as Promise<InsightsView>,
+  getExportPayload: () => ipcRenderer.invoke('data:exportPayload') as Promise<string>,
+  exportData: () =>
+    ipcRenderer.invoke('data:exportSave') as Promise<OkResult & { path?: string }>,
+  resetData: () => ipcRenderer.invoke('data:reset') as Promise<OkResult>,
+  bringHere: () => ipcRenderer.invoke('window:bringHere') as Promise<OkResult>,
 };
 
 contextBridge.exposeInMainWorld('mochi', api);

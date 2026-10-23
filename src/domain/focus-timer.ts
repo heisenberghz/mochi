@@ -39,6 +39,12 @@ export interface FocusAggregates {
   focusedMsToday: number;
   /** Focus time on each local day, so a block spanning midnight is split. */
   focusedByDay: Record<string, number>;
+  /** Finished blocks on each local day, so a longest streak can be worked out. */
+  completedByDay: Record<string, number>;
+  /** Break time on each local day, so the day's numbers can exclude it. */
+  breakByDay: Record<string, number>;
+  /** Finished breaks on each local day. */
+  breaksByDay: Record<string, number>;
   streakDays: number;
   /** The last day a block was completed on. */
   lastCompletedDay: string | null;
@@ -145,6 +151,9 @@ export class FocusTimer {
       completedToday: 0,
       focusedMsToday: 0,
       focusedByDay: {},
+      completedByDay: {},
+      breakByDay: {},
+      breaksByDay: {},
       streakDays: 0,
       lastCompletedDay: null,
     };
@@ -301,6 +310,7 @@ export class FocusTimer {
 
     if (this.phase === 'work') {
       this.aggregates.completedToday += 1;
+      this.recordCompletion(this.aggregates.dayKey);
       this.updateStreak();
       this.sessions.push({
         dayKey: this.aggregates.dayKey,
@@ -315,6 +325,17 @@ export class FocusTimer {
       return { state: this.state(), completedWork: true };
     }
 
+    // A finished break is recorded, so Insights can show breaks as well as
+    // work. It moves no streak and no XP — that is the controller's job.
+    this.aggregates.breaksByDay[this.aggregates.dayKey] =
+      (this.aggregates.breaksByDay[this.aggregates.dayKey] ?? 0) + 1;
+    this.sessions.push({
+      dayKey: this.aggregates.dayKey,
+      phase: this.phase,
+      focusedMs: this.phaseDurationMs,
+      completed: true,
+    });
+    this.trimSessions();
     const next = this.nextPhaseInfo();
     this.advanceTo(next.phase, next.round, now, this.config.autoStartWork);
     return { state: this.state(), completedBreak: true };
@@ -379,6 +400,9 @@ export class FocusTimer {
         completedToday: countOr(aggregates.completedToday),
         focusedMsToday: Math.max(0, countOr(aggregates.focusedMsToday)),
         focusedByDay: sanitiseDayTotals(aggregates.focusedByDay),
+        completedByDay: sanitiseDayTotals(aggregates.completedByDay),
+        breakByDay: sanitiseDayTotals(aggregates.breakByDay),
+        breaksByDay: sanitiseDayTotals(aggregates.breaksByDay),
         streakDays: countOr(aggregates.streakDays),
         lastCompletedDay:
           typeof aggregates.lastCompletedDay === 'string' ? aggregates.lastCompletedDay : null,
@@ -469,6 +493,9 @@ export class FocusTimer {
     this.aggregates.focusedMsToday += elapsed;
     this.aggregates.focusedByDay[dayKey] =
       (this.aggregates.focusedByDay[dayKey] ?? 0) + elapsed;
+    // Break time is inside the chair time above; keep it separately so the
+    // Den can show focus minutes that exclude it.
+    if (this.phase !== 'work') this.recordBreakMs(elapsed, dayKey);
     this.trimDays();
   }
 
@@ -497,6 +524,23 @@ export class FocusTimer {
     for (const day of days.slice(0, days.length - MAX_TRACKED_DAYS)) {
       delete this.aggregates.focusedByDay[day];
     }
+  }
+
+    /** Mark a day as having had a finished block, for the longest streak. */
+  private recordCompletion(dayKey: string): void {
+    this.aggregates.completedByDay[dayKey] = (this.aggregates.completedByDay[dayKey] ?? 0) + 1;
+    this.trimDays();
+  }
+
+  /**
+   * Account for break time. The totals in `focusedByDay` are all time in the
+   * chair, breaks included; the day's break time is kept alongside it so the
+   * numbers the Den shows can be honest about the difference.
+   */
+  private recordBreakMs(ms: number, dayKey: string): void {
+    if (ms <= 0) return;
+    this.aggregates.breakByDay[dayKey] = (this.aggregates.breakByDay[dayKey] ?? 0) + ms;
+    this.trimDays();
   }
 
   private updateStreak(): void {

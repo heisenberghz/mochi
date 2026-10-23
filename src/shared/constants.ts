@@ -128,7 +128,7 @@ export const FOCUS_BREAK_XP = 2;
  * The schema version this build writes. Bump it whenever the persisted shape
  * changes, and add a migration for the previous version.
  */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export const DEFAULT_SETTINGS = {
   petName: 'Mochi',
@@ -138,6 +138,29 @@ export const DEFAULT_SETTINGS = {
   launchAtLogin: false,
   pauseWhenLocked: true,
   autoResume: false,
+  /** A toast and a sound are quiet between these hours, when enabled. */
+  quietHoursEnabled: true,
+  /** Minutes past midnight; 1320 = 22:00, 420 = 07:00. */
+  quietStartMin: 22 * 60,
+  quietEndMin: 7 * 60,
+  /** Best effort: hide the pet while an exclusive-fullscreen app has the screen. */
+  hideInFullscreen: true,
+  /** The three global hotkeys control pet visibility, focus and the Den. */
+  globalHotkeys: true,
+} as const;
+
+/** Bound for quiet-hour times, in minutes past midnight, on 15-minute steps. */
+export const QUIET_MINUTE_MIN = 0;
+export const QUIET_MINUTE_MAX = 24 * 60;
+
+/**
+ * Hotkey defaults, shared by the main process (registration) and the Den
+ * (displaying them). Electron accelerators.
+ */
+export const HOTKEY_DEFAULTS = {
+  pet: 'Ctrl+Alt+P',
+  focus: 'Ctrl+Alt+F',
+  den: 'Ctrl+Alt+D',
 } as const;
 
 /**

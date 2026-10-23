@@ -35,9 +35,15 @@ export function mockSnapshot(): AppSnapshot {
       launchAtLogin: false,
       pauseWhenLocked: true,
       autoResume: false,
+      quietHoursEnabled: true,
+      quietStartMin: 22 * 60,
+      quietEndMin: 7 * 60,
+      hideInFullscreen: true,
+      globalHotkeys: true,
     },
     welcome: true,
     recovery: null,
+    hotkeyConflicts: [],
   };
 }
 

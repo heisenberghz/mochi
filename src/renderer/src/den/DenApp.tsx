@@ -6,16 +6,19 @@ import type {
   FocusConfigIssue,
   FocusPauseReason,
   FocusPhase,
+  InsightsView,
   Settings,
 } from '../../../shared/types';
-import { COSMETICS, unlockedCosmetics } from '../../../shared/constants';
+import { COSMETICS, HOTKEY_DEFAULTS, unlockedCosmetics } from '../../../shared/constants';
 import { formatTime, mockSnapshot } from '../mock';
 
-type Tab = 'home' | 'focus' | 'settings';
+type Tab = 'home' | 'focus' | 'insights' | 'locker' | 'settings';
 
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: 'home', label: 'Home' },
   { id: 'focus', label: 'Focus' },
+  { id: 'insights', label: 'Insights' },
+  { id: 'locker', label: 'Locker' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -25,8 +28,7 @@ const PHASE_LABEL: Record<FocusPhase, string> = {
   longBreak: 'Long break',
 };
 
-const BEHAVIOR_LABEL: Record<AppSnapshot['pet']['behavior'], string> = {
-  idle: 'hanging out',
+const BEHAVIOR_LABEL: Record<AppSnapshot['pet']['behavior'], string> = {  idle: 'hanging out',
   lookLeft: 'looking left',
   lookRight: 'looking right',
   earFlick: 'flicking an ear',
@@ -291,6 +293,21 @@ function formatMinutes(ms: number): string {
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 }
 
+/** A readable day, like "Mar 10". */
+function formatDay(dayKey: string | null): string {
+  if (!dayKey) return '—';
+  const [year, month, day] = dayKey.split('-').map((part) => Number(part));
+  const date = new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1);
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/** Quiet-hour times as clock text, like "22:00". */
+function formatQuiet(minute: number): string {
+  const hours = Math.floor(minute / 60);
+  const rest = minute % 60;
+  return `${String(hours).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+}
+
 export function DenApp() {
   const [snapshot, setSnapshot] = useState<AppSnapshot>(() => mockSnapshot());
   const [connected, setConnected] = useState(false);
@@ -300,6 +317,10 @@ const [highContrast, setHighContrast] = useState(false);
   const [busy, setBusy] = useState(false);
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const [recoveryDismissed, setRecoveryDismissed] = useState(false);
+  const [insights, setInsights] = useState<InsightsView | null>(null);
+  const [insightsRange, setInsightsRange] = useState<7 | 30>(7);
+  const [exportPreview, setExportPreview] = useState<string | null>(null);
+  const [resetArmed, setResetArmed] = useState(false);
 
   useEffect(() => {
     const api = window.mochi;
@@ -332,6 +353,43 @@ const [highContrast, setHighContrast] = useState(false);
     const timer = window.setTimeout(() => setNotice(null), 5000);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  // The reset dialog closes on Escape, like every dialog should.
+  useEffect(() => {
+    if (!resetArmed) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setResetArmed(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [resetArmed]);
+
+  // Insights are read when the tab opens and quietly refreshed while it
+  // stays open. They are never fetched otherwise — no chatty background work.
+  useEffect(() => {
+    if (tab !== 'insights') return;
+    const api = window.mochi;
+    if (!api) return;
+
+    let alive = true;
+    const read = () => {
+      api
+        .getInsights()
+        .then((view) => {
+          if (alive) setInsights(view);
+        })
+        .catch(() => {
+          if (alive) setNotice('Insights could not be read just now.');
+        });
+    };
+
+    read();
+    const timer = window.setInterval(read, 60_000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [tab]);
 
   const runFocus = useCallback(
     async (action: FocusAction) => {
@@ -391,6 +449,18 @@ const [highContrast, setHighContrast] = useState(false);
   const { pet, focus, settings } = snapshot;
   const cosmetics = unlockedCosmetics(pet.level);
   const recovery = snapshot.recovery;
+  const range =
+    insights && !insights.empty
+      ? insightsRange === 7
+        ? insights.week
+        : insights.month
+      : undefined;
+  const chartMax = Math.max(1, ...(range?.days.map((day) => day.focusedMs) ?? [1]));
+  const chartLabel = range
+    ? `Focus minutes per day over the last ${insightsRange} days; tallest day ${formatMinutes(
+        chartMax,
+      )}.`
+    : 'No focus history yet.';
   const phase = PHASE_LABEL[focus.phase];
   const totalMs = Math.max(1, focus.phaseDurationMs);
   const progress =
@@ -439,14 +509,26 @@ const [highContrast, setHighContrast] = useState(false);
         <header className="den-header">
           <div>
             <h1 className="den-title">
-              {tab === 'home' ? `${greeting()}.` : tab === 'focus' ? 'Focus' : 'Settings'}
+              {tab === 'home'
+                ? `${greeting()}.`
+                : tab === 'focus'
+                  ? 'Focus'
+                  : tab === 'insights'
+                    ? 'Insights'
+                    : tab === 'locker'
+                      ? 'Locker'
+                      : 'Settings'}
             </h1>
             <p className="den-subtitle">
               {tab === 'home'
                 ? `${settings.petName} is ${BEHAVIOR_LABEL[pet.behavior]}.`
                 : tab === 'focus'
                   ? 'One block at a time. Breaks are part of the work.'
-                  : 'Small choices. Everything stays on this PC.'}
+                  : tab === 'insights'
+                    ? 'The truth about your week, without judgment.'
+                    : tab === 'locker'
+                      ? 'Earned by being companions. Nothing else.'
+                      : 'Small choices. Everything stays on this PC.'}
             </p>
           </div>
           {tab !== 'settings' ? (
@@ -606,35 +688,6 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Locker</span>
-                </div>
-                <div className="locker-grid">
-                  {COSMETICS.map((cosmetic) => {
-                    const unlocked = cosmetics.includes(cosmetic.id);
-                    return (
-                      <div
-                        key={cosmetic.id}
-                        className={`cosmetic ${unlocked ? 'unlocked' : 'locked'}`}
-                      >
-                        <div className={`cosmetic-icon cosmetic-${cosmetic.id}`} />
-                        <div className="cosmetic-info">
-                          <span className="cosmetic-label">{cosmetic.label}</span>
-                          <span className="cosmetic-level">
-                            {unlocked ? 'Unlocked' : `Level ${cosmetic.unlockLevel}`}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="tip">
-                  Cosmetics unlock as {settings.petName} gains levels — no pressure, no
-                  currency, just something new to wear.
-                </p>
-              </Card>
-
-              <Card>
-                <div className="card-head">
                   <span className="eyebrow">A gentle tip</span>
                 </div>
                 <p className="tip">
@@ -778,6 +831,175 @@ const [highContrast, setHighContrast] = useState(false);
           </div>
         ) : null}
 
+        {tab === 'insights' ? (
+          <div className="grid-insights">
+            {insights && range && !insights.empty ? (
+              <>
+                <div className="stack">
+                  <Card>
+                    <div className="card-head">
+                      <span className="eyebrow">Focus minutes</span>
+                      <div className="range-toggle" role="group" aria-label="Range">
+                        <button
+                          type="button"
+                          className={`range-btn${insightsRange === 7 ? ' is-active' : ''}`}
+                          aria-pressed={insightsRange === 7}
+                          onClick={() => setInsightsRange(7)}
+                        >
+                          7 days
+                        </button>
+                        <button
+                          type="button"
+                          className={`range-btn${insightsRange === 30 ? ' is-active' : ''}`}
+                          aria-pressed={insightsRange === 30}
+                          onClick={() => setInsightsRange(30)}
+                        >
+                          30 days
+                        </button>
+                      </div>
+                    </div>
+                    <div className="chart" role="img" aria-label={chartLabel}>
+                      {range.days.map((day) => (
+                        <div key={day.dayKey} className="chart-col" title={day.dayKey}>
+                          <div
+                            className="chart-bar"
+                            style={{
+                              height: `${Math.max(
+                                2,
+                                Math.round((day.focusedMs / Math.max(1, chartMax)) * 100),
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="tip">
+                      {range === insights.week ? 'This week' : 'This month'}: best day was{' '}
+                      {formatDay(range.bestDay?.dayKey ?? null)},{' '}
+                      {formatMinutes(range.bestDay?.focusedMs ?? 0)}.
+                    </p>
+                  </Card>
+
+                  <Card>
+                    <div className="stat-row">
+                      <div className="stat">
+                        <span className="stat-value">{formatMinutes(range.focusedMs)}</span>
+                        <span className="stat-label">focused</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-value">{range.blocks}</span>
+                        <span className="stat-label">blocks</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-value">{range.breaks}</span>
+                        <span className="stat-label">breaks</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-value">{range.activeDays}</span>
+                        <span className="stat-label">active days</span>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card>
+                    <div className="stat-row">
+                      <div className="stat">
+                        <span className="stat-value">{insights.streakDays}</span>
+                        <span className="stat-label">current streak (days)</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-value">{insights.longestStreakDays}</span>
+                        <span className="stat-label">longest streak (days)</span>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                <Card>
+                  <div className="card-head">
+                    <span className="eyebrow">Recent sessions</span>
+                  </div>
+                  {insights.recent.length > 0 ? (
+                    <ul className="session-list">
+                      {insights.recent.map((session, index) => (
+                        <li key={`${session.dayKey}-${index}`} className="session-row">
+                          <span className="session-day">{formatDay(session.dayKey)}</span>
+                          <span className="session-phase">
+                            {session.phase === 'work' ? 'Focus' : session.phase === 'shortBreak' ? 'Short break' : 'Long break'}
+                          </span>
+                          <span className="session-mins">{formatMinutes(session.focusedMs)}</span>
+                          <span
+                            className={`session-tag${session.completed ? ' is-complete' : ''}`}
+                          >
+                            {session.completed ? 'completed' : 'partial'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="tip">Nothing yet. The first block is yours.</p>
+                  )}
+                </Card>
+              </>
+            ) : (
+              <Card>
+                <div className="card-head">
+                  <span className="eyebrow">Insights</span>
+                </div>
+                <p className="tip">
+                  A quiet start. There is nothing to show because nothing has happened yet —
+                  and there is no "behind" to catch up to. Finish one block and this page
+                  starts filling in.
+                </p>
+                {connected ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-small"
+                    disabled={busy}
+                    onClick={() => void runFocus('start')}
+                  >
+                    Start a block
+                  </button>
+                ) : null}
+              </Card>
+            )}
+          </div>
+        ) : null}
+
+        {tab === 'locker' ? (
+          <div className="grid-insights">
+            <Card>
+              <div className="card-head">
+                <span className="eyebrow">Locker</span>
+                <span className="pill">Level {pet.level}</span>
+              </div>
+              <div className="locker-grid">
+                {COSMETICS.map((cosmetic) => {
+                  const unlocked = cosmetics.includes(cosmetic.id);
+                  return (
+                    <div
+                      key={cosmetic.id}
+                      className={`cosmetic ${unlocked ? 'unlocked' : 'locked'}`}
+                    >
+                      <div className={`cosmetic-icon cosmetic-${cosmetic.id}`} />
+                      <div className="cosmetic-info">
+                        <span className="cosmetic-label">{cosmetic.label}</span>
+                        <span className="cosmetic-level">
+                          {unlocked ? 'Unlocked' : `Level ${cosmetic.unlockLevel}`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="tip">
+                Cosmetics unlock as {settings.petName} gains levels — no pressure, no
+                currency, just something new to wear.
+              </p>
+            </Card>
+          </div>
+        ) : null}
+
         {tab === 'settings' ? (
           <div className="grid-settings">
             <Card>
@@ -875,6 +1097,12 @@ const [highContrast, setHighContrast] = useState(false);
                   checked={highContrast}
                   onChange={setHighContrast}
                 />
+                <Toggle
+                  label="Hide in fullscreen apps"
+                  description="Best effort: Mochi steps aside when a game takes the whole screen."
+                  checked={settings.hideInFullscreen}
+                  onChange={(value) => void saveSettings({ hideInFullscreen: value })}
+                />
               </Card>
 
               <Card>
@@ -897,16 +1125,203 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Privacy</span>
+                  <span className="eyebrow">Quiet hours</span>
+                </div>
+                <Toggle
+                  label="Quiet hours"
+                  description="No toast and no chime during these hours. The pet still celebrates."
+                  checked={settings.quietHoursEnabled}
+                  onChange={(value) => void saveSettings({ quietHoursEnabled: value })}
+                />
+                {settings.quietHoursEnabled ? (
+                  <>
+                    <div className="setting-row">
+                      <div className="setting-copy">
+                        <label className="setting-label" htmlFor="quiet-start">
+                          Starts
+                        </label>
+                        <span className="setting-desc">Only until the end hour.</span>
+                      </div>
+                      <select
+                        id="quiet-start"
+                        className="select-input"
+                        value={Math.floor(settings.quietStartMin / 60)}
+                        onChange={(event) =>
+                          void saveSettings({ quietStartMin: Number(event.target.value) * 60 })
+                        }
+                      >
+                        {Array.from({ length: 24 }, (_, hour) => (
+                          <option key={hour} value={hour}>
+                            {formatQuiet(hour * 60)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="setting-row">
+                      <div className="setting-copy">
+                        <label className="setting-label" htmlFor="quiet-end">
+                          Ends
+                        </label>
+                        <span className="setting-desc">Next morning is fine.</span>
+                      </div>
+                      <select
+                        id="quiet-end"
+                        className="select-input"
+                        value={Math.floor(settings.quietEndMin / 60)}
+                        onChange={(event) =>
+                          void saveSettings({ quietEndMin: Number(event.target.value) * 60 })
+                        }
+                      >
+                        {Array.from({ length: 24 }, (_, hour) => (
+                          <option key={hour} value={hour}>
+                            {formatQuiet(hour * 60)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                ) : null}
+              </Card>
+
+              <Card>
+                <div className="card-head">
+                  <span className="eyebrow">Shortcuts</span>
+                </div>
+                <Toggle
+                  label="Global keyboard shortcuts"
+                  description="Work even while another app is in front."
+                  checked={settings.globalHotkeys}
+                  onChange={(value) => void saveSettings({ globalHotkeys: value })}
+                />
+                {settings.globalHotkeys ? (
+                  <ul className="shortcut-list" aria-label="Shortcut defaults">
+                    <li>
+                      <kbd>{HOTKEY_DEFAULTS.pet}</kbd> Show or hide {settings.petName}
+                    </li>
+                    <li>
+                      <kbd>{HOTKEY_DEFAULTS.focus}</kbd> Start or pause focus
+                    </li>
+                    <li>
+                      <kbd>{HOTKEY_DEFAULTS.den}</kbd> Open the Den
+                    </li>
+                  </ul>
+                ) : null}
+                {snapshot.hotkeyConflicts.length > 0 ? (
+                  <p className="tip warn" role="note">
+                    {snapshot.hotkeyConflicts.join(', ')}{' '}
+                    {snapshot.hotkeyConflicts.length === 1 ? 'is' : 'are'} already used by another
+                    app. The tray menu still works.
+                  </p>
+                ) : null}
+              </Card>
+
+              <Card>
+                <div className="card-head">
+                  <span className="eyebrow">Data &amp; privacy</span>
                 </div>
                 <p className="tip">
                   {settings.petName} keeps its data in one file on this PC. No account, no
                   telemetry, no network calls.
                 </p>
-                <button type="button" className="btn btn-soft" onClick={() => void showPet()}>
-                  Bring {settings.petName} back
-                </button>
+                {exportPreview !== null ? (
+                  <details className="export-preview">
+                    <summary>Your data, exactly as it would be saved</summary>
+                    <pre>{exportPreview}</pre>
+                  </details>
+                ) : null}
+                <div className="button-row">
+                  <button
+                    type="button"
+                    className="btn btn-soft"
+                    onClick={() => {
+                      setExportPreview(null);
+                      void window.mochi?.getExportPayload().then(setExportPreview).catch(() => {
+                        setNotice('The data could not be read just now.');
+                      });
+                    }}
+                  >
+                    Preview your data
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-soft"
+                    disabled={busy}
+                    onClick={async () => {
+                      const api = window.mochi;
+                      if (!api) return;
+                      try {
+                        const result = await api.exportData();
+                        setNotice(result.ok ? 'Data exported.' : 'Export cancelled.');
+                      } catch {
+                        setNotice('Export cancelled.');
+                      }
+                    }}
+                  >
+                    Export as JSON…
+                  </button>
+                  <button type="button" className="btn btn-soft" onClick={() => void openDataFolder()}>
+                    Open data folder
+                  </button>
+                </div>
+                <div className="button-row">
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-small"
+                    onClick={() => setResetArmed(true)}
+                  >
+                    Reset everything…
+                  </button>
+                  <span className="setting-desc">Erases every level, every minute, every setting.</span>
+                </div>
               </Card>
+            </div>
+          </div>
+        ) : null}
+
+        {resetArmed ? (
+          <div
+            className="modal-backdrop"
+            role="presentation"
+            onClick={() => setResetArmed(false)}
+          >
+            <div
+              className="modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="reset-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h2 id="reset-title">Reset everything?</h2>
+              <p>
+                This erases every level, every minute, every setting — {settings.petName} forgets
+                you completely. There is no undo.
+              </p>
+              <div className="button-row">
+                <button type="button" className="btn btn-soft" onClick={() => setResetArmed(false)}>
+                  Keep my data
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  disabled={busy}
+                  onClick={async () => {
+                    const api = window.mochi;
+                    if (!api) return;
+                    setBusy(true);
+                    try {
+                      const result = await api.resetData();
+                      setNotice(result.ok ? `A fresh start. ${settings.petName} says hello again.` : 'The reset did not work.');
+                      setResetArmed(false);
+                    } catch {
+                      setNotice('The reset did not work.');
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Erase everything
+                </button>
+              </div>
             </div>
           </div>
         ) : null}

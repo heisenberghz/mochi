@@ -11,6 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CURRENT_SCHEMA_VERSION } from '../shared/constants';
 import v1Fixture from '../domain/fixtures/state-v1.json';
 import { Store } from './store';
 
@@ -28,7 +29,7 @@ describe('Store', () => {
   it('starts from defaults when there is no file yet', () => {
     const store = new Store(dir);
 
-    expect(store.state.version).toBe(3);
+    expect(store.state.version).toBe(CURRENT_SCHEMA_VERSION);
     expect(store.state.settings.petName).toBe('Mochi');
     expect(store.state.hasSeenWelcome).toBe(false);
     expect(store.state.focus.active).toBeNull();
@@ -406,7 +407,7 @@ describe('Store write scheduling', () => {
 
     const store = new Store(dir);
 
-    expect(store.state.version).toBe(3);
+    expect(store.state.version).toBe(CURRENT_SCHEMA_VERSION);
     expect(store.state.pet.xp).toBe(310);
     expect(store.state.settings.petName).toBe('Mochi');
     expect(store.state.focus.config.workMin).toBe(25);
@@ -435,7 +436,7 @@ describe('Store write scheduling', () => {
     const onDisk = JSON.parse(readFileSync(join(dir, 'state.json'), 'utf8')) as {
       version: number;
     };
-    expect(onDisk.version).toBe(3);
+    expect(onDisk.version).toBe(CURRENT_SCHEMA_VERSION);
   });
 
   it('does not take a pre-migration copy of a file that was already current', () => {
