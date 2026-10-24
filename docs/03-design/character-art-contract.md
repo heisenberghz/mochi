@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
-| Date | 2026-10-21 |
-| Status | **Proposed** — the drawing is mine to propose, the polish is yours |
-| Supersedes | The Rive authoring contract, once `ADR-0010` lands |
+| Version | 1.1 |
+| Date | 2026-10-24 |
+| Status | **Active** — the drawing follows this, and the tests hold it to it |
+| Supersedes | v1.0 (the scarf was part of the character; now it is a cosmetic) |
 | Companion | `src/shared/art-anchors.ts` — the same numbers, in code |
 
 This is the contract between the drawing and the code. It says where every part of Mochi
@@ -19,25 +19,35 @@ drifted away from them, and nothing noticed. The anchors below live in
 
 ## 1. The character
 
-**Mochi is a small, round cat.** Cream-coloured, with one warm orange scarf and a soft
-silhouette that should read as "a friendly creature" in a single glance at 200 px.
+**Mochi is a small, real-looking cat.** Cream-coloured, soft-shaded, with the proportions of
+an animal rather than a blob: ears that own their shape, a tail that tapers, paws that touch
+the ground. It should read as "a friendly cat" in a single glance at 200 px — **soft-real**,
+not photoreal: real proportions and shading, still friendly and a little round.
 
-The current drawing is a single blob with the face crowded into its middle. The proposal
-splits it into a **head on a body**, which fixes three problems at once: the face ends up
-where the spec says it is, there is a **neck** for the scarf to actually sit at, and the
-silhouette gains a shape you can read at a glance.
+### Soft-real rules
+
+1. **Real proportions.** Distinct ears with inner-ear colour, a graceful tapered tail that
+   leaves the body at the tail root, two visible paws plus **two far paws** behind the body
+   (dimmer) so the walk cycle has all four feet.
+2. **Shading is a gradient between palette tokens, never a new hue.** The body takes the
+   body → shadow gradient, an ambient-occlusion ellipse under the head, a lit rim along the
+   top, and the deep fur tone (`furDeep`) for pads, whiskers and folded-over fur.
+3. **Glossy eyes.** Each eye carries two highlights — one large, one small — so the pupils
+   read as wet glass rather than flat ink.
+4. **No default scarf.** The scarf was removed from the base art; it lives on as three
+   opt-in cosmetics (moss, sky, aurora). By default the neck seam is bare.
 
 ### Proportions
 
 | Part | Shape | Spans | Notes |
 | --- | --- | --- | --- |
-| Head | A rounded square, softer at the cheeks | x 48–152, y 38–118 | Centred on the head anchor |
+| Head | A rounded, slightly wider-than-tall shape, soft at the cheeks | x 48–152, y 38–118 | Centred on the head anchor |
 | Ears | Two triangles on the head | tips at y 34 | Inner ear in the inner-ear colour |
 | Body | A rounded pear, wider at the bottom | x 52–148, y 112–210 | Sits on the ground |
-| Neck | The seam where the head meets the body | y 108–124 | The scarf sits here |
-| Tail | Leaves the body and curls up and right | root at (156, 160) | Stays inside x = 200 |
-| Paws | Two small ovals at the bottom | resting at y 212 | Ground contact |
-| Shadow | A soft ellipse under the paws | y 216, 120 × 18 | Ink at 12 % |
+| Neck | The seam where the head meets the body | y 108–124 | Bare by default; a scarf sits here |
+| Tail | Leaves the body and curls up and right, tapering to a lit tip | root at (156, 160) | Stays inside x = 200 |
+| Paws | Two near ovals resting at y 212, two far paws at y 206 | Ground contact | Far paws sit behind the body |
+| Sleep curl | A second pose: a squat oval, head tucked at its left, tail wrapped | drawn in the `sleep-curl` group | Shown only while asleep |
 
 ### The face
 
@@ -45,33 +55,32 @@ The face lives on the head, not in the middle of the body.
 
 | Feature | Where |
 | --- | --- |
-| Eyes | y 76, at x 82 and x 118 |
+| Eyes | y 76, at x 80 and x 120 (highlight upper-left of each) |
 | Nose | (100, 88) |
 | Mouth | y 94 |
-| Blush | (78, 88) and (122, 88) |
-
-### The scarf
-
-Around the **neck**, not across the body — a band from y 108 to 124, knotted at the scarf
-anchor, with the loose end hanging down the chest to about y 168.
+| Blush | (72, 87) and (128, 87) |
+| Whiskers | Two per side, in the deep fur tone, quiet |
 
 ### Colours
 
 Straight from the design system's art palette, so the pet and the Den are one family:
 
-| Token | Value |
-| --- | --- |
-| Body | `#F3E7D6` |
-| Body, lit | `#FBF3E6` |
-| Shadow | `#E4D2BB` |
-| Inner ear | `#E8B7A6` |
-| Scarf | `#E9A15C` |
-| Ink | `#2A2622` |
-| Highlight | `#FFFDF8` |
+| Token | Value | Used for |
+| --- | --- | --- |
+| Body | `#F3E7D6` | The main coat |
+| Body, lit | `#FBF3E6` | The rim light, the tail tip |
+| Deep fur | `#CBB69C` | Whiskers, pads, shading under the head and tail |
+| Shadow | `#E4D2BB` | Grooves, the far paws, the tail's under-stroke |
+| Inner ear | `#E8B7A6` | Inner ear, blush |
+| Ink | `#2A2622` | Eyes, nose, mouth |
+| Highlight | `#FFFDF8` | Eye highlights, chest fluff |
+| Moss | `#8FAE7C` | Leaf hat, moss scarf |
+| Sky | `#7FA3C7` | Sky scarf |
+| Aurora light / dark | `#7EC8A9` / `#9A7FD1` | Aurora scarf wash |
+| Warm accent | `#D98C45` | The mug |
 
-The current drawing has a gradient from a cream to a warm tan. The proposal keeps that
-gradient but anchors it on the three tones above, so it still has depth without inventing
-colours the design system does not have.
+Everything else in the drawing is a shade derived from these — a mid-stop on a gradient, a
+deep edge on a band — not a new hue.
 
 ---
 
@@ -84,7 +93,7 @@ These are numbers the drawing must hit and the code may rely on.
 | `character` | (100, 140) | The line the pet turns around |
 | `head` | (100, 78) | The eyes, and the head's centre |
 | `body` | (100, 158) | The belly |
-| `scarfKnot` | (100, 120) | The scarf's knot |
+| `scarfKnot` | (100, 120) | The scarf's knot, when one is worn |
 | `headAttach` | (100, 44) | A leaf hat |
 | `faceAttach` | (100, 76) | Glasses |
 | `pawAttach` | (146, 176) | A mug, in the right paw |
@@ -94,21 +103,9 @@ These are numbers the drawing must hit and the code may rely on.
 
 The artboard is **200 × 220**, and no visible part of the pet may leave it in any state.
 
-### What the current drawing gets wrong
-
-| Anchor | Spec | Current art | Off by |
-| --- | --- | --- | --- |
-| Artboard | 200 × 220 | 200 × 220 | exact |
-| `character.centreX` | 100 | 100 | exact |
-| `earTip` | y 34 | y 35 | 1 px |
-| `head` | (100, 78) | the face is at about (100, 110) | **32 px low** |
-| `scarfKnot` | (100, 120) | (100, 151) | **31 px low** |
-| `body` | (100, 158) | belly at (100, 158) | exact |
-| ground | y 212 | paws stop at y 207 | 5 px |
-| `shadow` | y 216 | y 209 | 7 px |
-| `pawAttach` | (146, 176) | the paw ends at x 141 | 5 px |
-
-That is the list the redraw has to close.
+The drift list from v1.0 (face 32 px low, knot 31 px low, ground 5 px short, shadow 7 px
+short, paw 5 px short) was closed by the first redraw and stays closed — the tests keep it
+closed.
 
 ---
 
@@ -120,31 +117,37 @@ Drawn back to front, so the tail is behind the body and the accessories sit on t
 | --- | --- | --- |
 | 1 | `ground` | The contact shadow, a bed |
 | 2 | `tail` | The tail and its outline |
-| 3 | `body` | The body and the belly |
-| 4 | `scarfBack` | The piece of the scarf behind the body |
+| 3 | `body` | The body and the belly, the far paws behind it |
+| 4 | `scarfBack` | Reserved — the behind-body half of a scarf, when one is worn |
 | 5 | `head` | The head and the ears |
 | 6 | `face` | Eyes, nose, mouth, blush, glasses |
-| 7 | `scarfFront` | The band and knot at the neck, the hanging end |
-| 8 | `accessory` | A hat, a mug — anything the player unlocks |
+| 7 | `scarfFront` | Reserved — the band and knot at the neck, when a scarf is worn |
+| 8 | `accessory` | A hat, a mug, a scarf — anything the player equips |
 | 9 | `effects` | The Zzz, the sparkles |
 | 10 | `outline` | The ink outline, shown in high contrast only |
 
-**No text in the artboard.** The current "Zzz" is three `<text>` elements, which the design
-rules forbid. It becomes three drawn shapes.
+The scarf layers are reserved, not always present: with no scarf worn the neck is bare and
+the layer is empty. Each scarf cosmetic is drawn as its own `.accessory` group placed
+between the body and the head, so the band sits under the chin.
+
+**No text in the artboard.** The Zzz is three drawn shapes.
 
 ---
 
 ## 4. The accessories
 
-The design system lists seven. Each needs somewhere to live, and the anchors give it one.
+Each needs somewhere to live, and the anchors give it one. Accessories are hidden by
+default (`.accessory { display: none }`) and shown when equipped.
 
 | Accessory | Where it goes | How |
 | --- | --- | --- |
-| ScarfMoss, ScarfSky, AuroraScarf | The scarf | Recolour the `scarfFront` and `scarfBack` |
-| Glasses | `faceAttach` (100, 76) | Two lenses and a bridge across the face |
-| LeafHat | `headAttach` (100, 44) | Sits on top of the head, between the ears |
-| Mug | `pawAttach` (146, 176) | Held in the right paw |
-| Bed | `groundAttach` (100, 216) | Under the pet, behind it |
+| Scarf moss | The neck, y 108–124 | Its own group: band, knot at the scarf anchor, hanging end |
+| Scarf sky | The neck, y 108–124 | Same shapes, the sky colour |
+| Scarf aurora | The neck, y 108–124 | Same shapes, the aurora wash |
+| Glasses | `faceAttach` (100, 76) | Two lenses and a bridge across the face, worn by default |
+| Leaf hat | `headAttach` (100, 44) | Sits on top of the head, between the ears, with a vein line |
+| Mug | `pawAttach` (146, 176) | A real mug — body, handle, steam — held in the right paw |
+| Bed | `groundAttach` (100, 216) | A rounded mattress under the pet |
 
 The drawing has to leave room for these even when they are not being worn — a hat needs
 clear space above the head, and the right paw needs to be a paw rather than part of the

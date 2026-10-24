@@ -51,16 +51,28 @@ export const ANCHORS = {
  * The colours the art is drawn in.
  *
  * These come from the design system's art palette, so the pet and the Den
- * are made of the same family of colours.
+ * are made of the same family of colours. The soft-real rule is that every
+ * tone is derived from one of these — shading is a gradient between them,
+ * never a new hue.
  */
 export const ART_PALETTE = {
   body: '#F3E7D6',
   bodyLight: '#FBF3E6',
+  /** The deep fur tone: paw pads, whiskers, the shading under the head. */
+  furDeep: '#CBB69C',
   shadow: '#E4D2BB',
   innerEar: '#E8B7A6',
-  scarf: '#E9A15C',
   ink: '#2A2622',
   highlight: '#FFFDF8',
+  /** The leaf hat and the moss scarf. */
+  moss: '#8FAE7C',
+  /** The sky scarf. */
+  sky: '#7FA3C7',
+  /** The aurora scarf, at both ends of its wash. */
+  auroraLight: '#7EC8A9',
+  auroraDark: '#9A7FD1',
+  /** A small warmth the pet earned: the mug. */
+  warmAccent: '#D98C45',
 } as const;
 
 /**

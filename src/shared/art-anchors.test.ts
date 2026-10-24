@@ -63,7 +63,7 @@ describe('the art palette', () => {
     expect(ART_PALETTE.body).toBe('#F3E7D6');
     expect(ART_PALETTE.shadow).toBe('#E4D2BB');
     expect(ART_PALETTE.innerEar).toBe('#E8B7A6');
-    expect(ART_PALETTE.scarf).toBe('#E9A15C');
+    expect(ART_PALETTE.furDeep).toBe('#CBB69C');
     expect(ART_PALETTE.ink).toBe('#2A2622');
   });
 

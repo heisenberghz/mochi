@@ -83,6 +83,14 @@
   opacity: 0;
 }
 
+/*
+ * The curled sleeping pose lives in the art. It is hidden until the pet is
+ * asleep, when it replaces the standing pose entirely.
+ */
+.pet-svg .sleep-curl {
+  opacity: 0;
+}
+
 .pet-svg .tail,
 .pet-svg .tail-outline {
   transform-box: view-box;
@@ -235,16 +243,27 @@
   }
 }
 
-/* Sleep */
+/*
+ * Sleep: the pet curls up. The standing pose is hidden and the curl is shown;
+ * the bed and the Zzz float above it. The eyes stay shut inside the curl.
+ */
 .behavior-sleep .character {
   animation: mochi-sleep 5s var(--ease-standard) infinite;
 }
-.behavior-sleep .eye-open {
-  opacity: 0;
-  animation: none;
-}
-.behavior-sleep .eye-closed {
+.behavior-sleep .sleep-curl {
   opacity: 1;
+}
+.behavior-sleep .tail-group,
+.behavior-sleep .body,
+.behavior-sleep .body-shade,
+.behavior-sleep .body-rim,
+.behavior-sleep .belly,
+.behavior-sleep .head,
+.behavior-sleep .face,
+.behavior-sleep .paw,
+.behavior-sleep .glasses,
+.behavior-sleep .character .accessory {
+  display: none;
 }
 .behavior-sleep .zzz {
   opacity: 1;
@@ -257,10 +276,6 @@
 }
 .behavior-sleep .zzz-three {
   animation-delay: 1s;
-}
-.behavior-sleep .tail,
-.behavior-sleep .tail-outline {
-  animation-duration: 7s;
 }
 .behavior-sleep .contact-shadow {
   transform: scaleX(1.08);
@@ -289,6 +304,11 @@
 /* Focus */
 .behavior-focus .character {
   animation: mochi-focus 4.4s ease-in-out infinite;
+}
+/* The tail goes still while the pet works. */
+.behavior-focus .tail,
+.behavior-focus .tail-outline {
+  animation: none;
 }
 .behavior-focus .glasses {
   opacity: 1;
@@ -322,6 +342,21 @@
 .behavior-drag .character {
   animation: mochi-dangle 1.2s ease-in-out infinite;
   transform-origin: 100px 70px;
+}
+/* Carried by the scruff: the head and the body stretch under their own weight. */
+.behavior-drag .head,
+.behavior-drag .body,
+.behavior-drag .belly {
+  transform-box: fill-box;
+}
+.behavior-drag .head {
+  transform-origin: top center;
+  transform: scaleY(1.06);
+}
+.behavior-drag .body,
+.behavior-drag .belly {
+  transform-origin: bottom center;
+  transform: scaleY(1.05);
 }
 .behavior-drag .paw-left,
 .behavior-drag .paw-right {
@@ -571,20 +606,21 @@
 
 @keyframes mochi-sleep {
   /*
-   * The first 12% of the cycle — about 600 ms — is the pet settling down.
-   * Then it breathes, very slowly, for the rest of the time.
+   * The first 12% of the cycle — about 600 ms — is the pet folding down.
+   * Then it breathes, very slowly, for the rest of the time: the curled
+   * body rises and falls around its centre.
    */
   0% {
     transform: translateY(0) scale(1);
   }
   12% {
-    transform: translateY(6px) scale(0.94, 0.9);
+    transform: translateY(0) scale(1.02, 0.96);
   }
   50% {
-    transform: translateY(7px) scale(0.95, 0.92);
+    transform: translateY(0) scale(1.03, 0.95);
   }
   88% {
-    transform: translateY(6px) scale(0.94, 0.9);
+    transform: translateY(0) scale(1.02, 0.96);
   }
   100% {
     transform: translateY(0) scale(1);
