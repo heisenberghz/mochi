@@ -90,7 +90,6 @@ describe('the hit region', () => {
   });
 
   it('uses the behaviour the pet is actually in', () => {
-    const sleeping = hitRegionFor('sleep');
     const awake = hitRegionFor('idle');
 
     // A point that is inside the awake pet but outside the sleeping one.

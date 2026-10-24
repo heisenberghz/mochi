@@ -25,7 +25,6 @@ import {
   BUBBLE_UNSOLICITED_MIN_GAP_MS,
   BEHAVIOR_TICK_MS,
   CURRENT_SCHEMA_VERSION,
-  FOCUS_BREAK_XP,
   FOCUS_DEFAULTS,
   FOCUS_PHASE_BONUS_XP,
   FOCUS_TICK_MS,
@@ -39,7 +38,7 @@ import {
   WALK_SPEED_DIP_PER_SECOND,
 } from '../shared/constants';
 import { localDateKey } from '../shared/dates';
-import { defaultPersistedState, type PersistedState } from '../domain/persistence-schema';
+import { defaultPersistedState } from '../domain/persistence-schema';
 import type {
   AppSnapshot,
   BubbleSpec,
@@ -1451,7 +1450,7 @@ export class MochiController {
 
     ipcMain.handle('pet:poke', (event): OkResult => {
       if (!fromPet(event)) return { ok: false };
-      const result = this.brain.poke(Date.now());
+      this.brain.poke(Date.now());
       this.broadcast();
       return { ok: true };
     });

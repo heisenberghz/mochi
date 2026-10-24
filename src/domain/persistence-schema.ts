@@ -4,7 +4,6 @@ import { clampFocusConfig } from '../shared/focus-config';
 import type { FocusConfig, Settings } from '../shared/types';
 import type {
   FocusActiveSession,
-  FocusAggregates,
   FocusPersisted,
   FocusSessionRecord,
 } from './focus-timer';

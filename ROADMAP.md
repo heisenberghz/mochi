@@ -138,7 +138,9 @@ A spec is a contract with the future team, not a checklist to complete. These ar
 
 ## 4. The stages
 
-**54 items, grouped into 8 commits.** Each one is reviewed before the next starts.
+**Grouped into 9 commits; six of the original items are parked.** Each one is reviewed
+before the next starts. Nothing was dropped silently — the packaging half of Commit 7 is
+parked, with its reason written next to it.
 
 Nothing is dropped — only grouped. I still implement in small steps and run the tests after
 each one; the commit is simply where you review.
@@ -219,18 +221,16 @@ polished at the end, once everything else is finished.
 - [x] Export your data and reset, with confirmation
 - [x] A keyboard and screen-reader pass over the Den
 
-### Commit 7 — Ship It *(8 items)*
-*Turn it from "runs on my machine" into "installable, updatable, and verifiable".*
+### Commit 7 — Ship It — personal build *(2 items)*
+*Re-scoped 2026-10-24. Mochi is a personal app right now: it runs from the working tree and,
+someday, gets pushed to GitHub as source. The packaging half of this commit — installer,
+DPI icon, signing, staged auto-update, fuses, the perf budget and extra fault injection —
+served "ships to strangers", not "mine". It is parked (visible at the bottom of this file)
+and stays the plan for the day a real deployment happens.*
 
-- [ ] CI — lint, typecheck, test, build, on every push
-- [ ] ESLint with a rule that blocks the domain layer from importing Electron, React or
+- [x] CI — lint, typecheck, test, build, on every push
+- [x] ESLint with a rule that blocks the domain layer from importing Electron, React or
       Node I/O
-- [ ] An NSIS installer, per-user, no admin rights required
-- [ ] A real app icon at every DPI
-- [ ] Auto-update with staged rollout and signature checking
-- [ ] Electron fuses, ASAR integrity, IPC fuzzing
-- [ ] A performance harness against the spec's CPU, memory and frame-pacing budgets
-- [ ] Fault injection — renderer crash, corrupt state, display unplugged, failed update
 
 ### Commit 8 — The visual polish *(10 items)*
 *The artwork, now that the software is finished. This is where the character gets its
@@ -260,6 +260,13 @@ personality — and where you polish it.*
 ### Parked — not happening
 - [ ] ~~Rive renderer~~ — **decided against**. The art stays SVG, edited in any drawing
       tool and exported. The contract keeps the door open without the cost.
+- [ ] The public-ship packaging — an NSIS installer (per-user, no admin rights), a real
+      app icon at every DPI, auto-update with staged rollout and signature checking,
+      Electron fuses, ASAR integrity, IPC fuzzing, the performance harness against the
+      spec's CPU/memory/frame budgets, and the remaining fault-injection scenarios
+      (display unplugged, failed update). **Parked 2026-10-24**: the app is personal use,
+      pushed to GitHub as source only; signing costs money and updates serve nobody on a
+      single machine. These items are the plan for the day Mochi is deployed for real.
 
 ---
 
@@ -278,10 +285,10 @@ them until the automated checks for the same item are already green.
 
 | Needs you | Why | When |
 | --- | --- | --- |
-| The signing certificate and update hosting (O-2/O-3) | Money and an account | **Now — it has a lead time in days** |
+| The signing certificate and update hosting (O-2/O-3) | Money and an account | **Parked with Commit 7 — revisit at a real deployment** |
 | Real support and privacy URLs | Only you know where they live | Before Commit 5 |
 | A Windows 10 22H2 machine | I can only test your one machine | Before Commit 6 |
-| Eyeballing the pet at 150/200% scaling, on a busy wallpaper, in dark mode | Only a pair of eyes catches this | Commit 7 |
+| Eyeballing the pet at 150/200% scaling, on a busy wallpaper, in dark mode | Only a pair of eyes catches this | Commit 8 |
 | Closing the lid mid-block, and changing the system clock | I can simulate the events, not the real hardware | Once, near the end of Stage 1B |
 
 Everything else — the data safety, the timer, the pet's behaviour, the Den, the packaging —
@@ -292,6 +299,34 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 ## 7. Status log
 
 *Newest first. I add an entry after each piece of work.*
+
+### 2026-10-24 — Commit 7 (slim): CI and the domain-purity rule
+
+- **Every push now runs the battery on GitHub Actions** — lint, typecheck, 226 unit
+  tests, and a build, on Node 22. The two-phase smoke harness stays local (it drives a
+  real Windows desktop), and says so in the workflow.
+- **ESLint is in, with the rule that carries the architecture**: `src/domain` now *refuses*
+  imports of Electron, React, and Node's I/O surface, with a message that says what to do
+  instead (inject a clock, a store, a callback). The rule was proven by violating it — the
+  probe file importing `electron` and `node:fs` failed on both, then was deleted. The
+  domain keeps its promise without being asked again.
+- **Four bits of dead weight the linter found went away**: two unused imports it would
+  never have caught (an XP constant and a type), an accumulator nobody read in the poke
+  handler, and a fixture variable in a geometry test that only ever stored sleep.
+- lint, typecheck, test, build and smoke all green. Next: **Commit 8 — the visual
+  polish**, which is where the pet earns its face.
+
+### 2026-10-24 — Commit 7 re-scoped: personal build
+
+- **Mochi is a personal app today.** It runs from the working tree and, someday, the source
+  gets pushed to GitHub — nothing more. Commit 7's packaging half (NSIS installer, DPI icon,
+  signed staged auto-update, fuses/ASAR/IPC fuzzing, the perf budget harness, the extra
+  fault injections) served "ships to strangers", not "mine".
+- **Commit 7 keeps the two things that keep the codebase honest at zero cost:** CI on every
+  push, and the ESLint rule that keeps `domain/` free of Electron, React and Node I/O.
+- **The cut items are parked verbatim, not deleted** — they remain the plan for the day a
+  real deployment happens. The signing-certificate ask in §6 is parked with them.
+- Next after this: **Commit 8, the visual polish** — where the pet earns its face.
 
 ### 2026-10-21 — Commit 4: the pet's mind
 
