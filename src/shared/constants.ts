@@ -32,6 +32,18 @@ export const WALK_DURATION_MIN_MS = 2600;
 export const WALK_DURATION_MAX_MS = 5200;
 export const WALK_SPEED_DIP_PER_SECOND = 70;
 
+/**
+ * What one paw cycle is worth in ground distance. Two steps happen inside it
+ * — one near paw and one far paw lift together in a trot.
+ */
+export const WALK_STRIDE_DIP = 63;
+
+/**
+ * How long one paw cycle takes, so the stride and the window glide agree:
+ * the pet's feet cover exactly the ground the window moves in that time.
+ */
+export const WALK_CYCLE_MS = Math.round((WALK_STRIDE_DIP / WALK_SPEED_DIP_PER_SECOND) * 1000);
+
 export const BEHAVIOR_TICK_MS = 500;
 export const FOCUS_TICK_MS = 1000;
 export const SESSION_ENERGY_DRAIN_MS = 600_000; // 1 energy per 10 min awake

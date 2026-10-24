@@ -14,6 +14,7 @@ import {
   spriteOffsetDrift,
 } from '../../../shared/geometry';
 import type { AppSnapshot, Behavior, BubbleAction, BubbleSpec } from '../../../shared/types';
+import { emotionFor } from '../../../shared/emotion';
 import { mockSnapshot } from '../mock';
 import { PetSprite } from './PetSprite';
 
@@ -393,6 +394,19 @@ export function PetApp() {
   const pet = snapshot?.pet ?? mockSnapshot().pet;
   behaviorRef.current = pet.behavior;
 
+  // The pet settles after a walk ends, the same way it settles after being
+  // put down — the glide stops, and the pose drops back onto the ground.
+  const prevBehaviorRef = useRef<Behavior>('idle');
+  useEffect(() => {
+    const previous = prevBehaviorRef.current;
+    prevBehaviorRef.current = pet.behavior;
+    if (previous === 'walk' && pet.behavior !== 'walk') {
+      setSettling(true);
+      const timer = window.setTimeout(() => setSettling(false), SETTLE_DURATION_MS);
+      return () => window.clearTimeout(timer);
+    }
+  }, [pet.behavior]);
+
   return (
     <div
       className={`pet-root${reducedMotion ? ' reduced' : ''}`}
@@ -464,6 +478,7 @@ export function PetApp() {
             settling={settling}
             animationPaused={pet.animationPaused}
             lookAngle={lookAngle}
+            emotion={emotionFor(pet)}
             spriteRef={spriteRef}
           />
         </div>

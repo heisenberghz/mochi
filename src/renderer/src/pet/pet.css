@@ -140,16 +140,23 @@
   animation: mochi-ear-flick 48s linear infinite;
 }
 
-/* Walk */
+/*
+ * Walk. The window glides at WALK_SPEED_DIP_PER_SECOND; the paw cycle is
+ * timed from the stride in shared/constants.ts, so the feet cover exactly
+ * the ground the window moves per cycle. The gait is a trot: the near and
+ * far paws lift in diagonal pairs.
+ */
 .behavior-walk .character {
-  animation: mochi-walk 0.9s var(--ease-standard) infinite;
+  animation: mochi-walk var(--walk-cycle, 0.9s) var(--ease-standard) infinite;
 }
-.behavior-walk .paw-left {
-  animation: mochi-step 0.9s var(--ease-standard) infinite;
+.behavior-walk .paw-left,
+.behavior-walk .paw-far-right {
+  animation: mochi-step var(--walk-cycle, 0.9s) var(--ease-standard) infinite;
 }
-.behavior-walk .paw-right {
-  animation: mochi-step 0.9s var(--ease-standard) infinite;
-  animation-delay: 0.45s;
+.behavior-walk .paw-right,
+.behavior-walk .paw-far-left {
+  animation: mochi-step var(--walk-cycle, 0.9s) var(--ease-standard) infinite;
+  animation-delay: calc(var(--walk-cycle, 0.9s) / 2);
 }
 .behavior-walk .tail,
 .behavior-walk .tail-outline {
@@ -244,6 +251,50 @@
 }
 
 /*
+ * Emotion: what energy and mood do to the face. The `data-emotion`
+ * attribute comes from the thresholds in `src/shared/emotion.ts`.
+ *
+ * Droopy is a slower, lower blink — half-lidded, with a little weight. The
+ * bright face opens the eyes and widens the mouth. Brightness is a static
+ * transform on the shapes inside the eye, so it can sit next to the blink
+ * without fighting it, and it keeps working under reduced motion.
+ */
+.pet-sprite[data-emotion="droopy"] .eye-open {
+  animation: mochi-blink-tired 48s linear infinite;
+}
+@keyframes mochi-blink-tired {
+  /* A tired pet blinks rarely, and never opens fully between them. */
+  0%,
+  91%,
+  100% {
+    transform: scaleY(0.62) translateY(1.5px);
+  }
+  93%,
+  95% {
+    transform: scaleY(0.08);
+  }
+  98% {
+    transform: scaleY(0.62) translateY(1.5px);
+  }
+}
+.pet-sprite[data-emotion="droopy"] .mouth {
+  transform: scaleX(0.85) translateY(1px);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.pet-sprite[data-emotion="bright"] .eye-open ellipse {
+  transform: scale(1.14);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.pet-sprite[data-emotion="bright"] .mouth {
+  transform: scaleX(1.2) translateY(-0.5px);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/*
  * Sleep: the pet curls up. The standing pose is hidden and the curl is shown;
  * the bed and the Zzz float above it. The eyes stay shut inside the curl.
  */
@@ -299,6 +350,13 @@
 }
 .behavior-wave .ear-left {
   animation: mochi-ear-lift 1.5s ease-in-out;
+}
+/* A worn scarf bounces along with the arm it hangs beside. */
+.behavior-wave .scarf-tail {
+  transform-box: view-box;
+  /* The origin is the scarf knot anchor, from the art contract. */
+  transform-origin: 100px 120px;
+  animation: mochi-scarf-wave 1.5s ease-in-out;
 }
 
 /* Focus */
@@ -643,17 +701,35 @@
 }
 
 @keyframes mochi-wake {
+  /* It starts at the pose the curl leaves behind — wide and flat — then
+     stretches up into standing. */
   0% {
-    transform: translateY(6px) scale(0.94, 0.9);
+    transform: translateY(0) scale(1.03, 0.95);
   }
   35% {
-    transform: translateY(-4px) scale(1.02, 1.04);
+    transform: translateY(-5px) scale(0.97, 1.06);
   }
   65% {
-    transform: translateY(0) scale(0.99, 1);
+    transform: translateY(0) scale(1.02, 0.99);
   }
   100% {
     transform: translateY(0) scale(1, 1);
+  }
+}
+
+@keyframes mochi-scarf-wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(-8deg);
+  }
+  55% {
+    transform: rotate(5deg);
+  }
+  75% {
+    transform: rotate(-3deg);
   }
 }
 
@@ -703,18 +779,23 @@
 }
 
 @keyframes mochi-celebrate {
+  /* The rounder body needs a real squash to gather from: a dip, a deep
+     flatten, a tall spring, a heavy landing and a small rebound. */
   0%,
   100% {
     transform: translateY(0) scale(1, 1);
   }
-  25% {
-    transform: translateY(2px) scale(1.04, 0.94);
+  20% {
+    transform: translateY(4px) scale(1.06, 0.9);
   }
   55% {
-    transform: translateY(-12px) scale(0.97, 1.06);
+    transform: translateY(-13px) scale(0.96, 1.07);
   }
-  80% {
-    transform: translateY(0) scale(1.01, 0.99);
+  78% {
+    transform: translateY(0) scale(1.04, 0.97);
+  }
+  90% {
+    transform: translateY(0) scale(0.995, 1.005);
   }
 }
 
@@ -825,11 +906,12 @@
   animation: none !important;
 }
 
-/* Accessories: hidden by default, shown when the level unlocks them. */
+/* Accessories: hidden by default, shown when the player unlocks and equips them. */
 .accessory { display: none; }
-.pet-sprite[data-cosmetics~="leaf-hat"] .accessory.leaf-hat { display: block; }
-.pet-sprite[data-cosmetics~="mug"] .accessory.mug { display: block; }
-.pet-sprite[data-cosmetics~="bed"].behavior-sleep .accessory.bed { display: block; }
+/* The attribute lives on the pet root, so the rules are plain descendants. */
+[data-cosmetics~="leaf-hat"] .accessory.leaf-hat { display: block; }
+[data-cosmetics~="mug"] .accessory.mug { display: block; }
+[data-cosmetics~="bed"].behavior-sleep .accessory.bed { display: block; }
 
 /*
  * Reduced motion: every state stays readable, without continuous movement.
@@ -880,6 +962,13 @@
   50% {
     transform: rotate(-4deg);
   }
+}
+
+/* Under reduced motion the tired face gives up its half-lidded blink, so the
+   eyes dim instead — the expression survives without the movement. */
+.pet-root.reduced .pet-sprite[data-emotion="droopy"] .eye-open {
+  animation: none !important;
+  opacity: 0.75;
 }
 
 /* The bubble fades in rather than rising. */

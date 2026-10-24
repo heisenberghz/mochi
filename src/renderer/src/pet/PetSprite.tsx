@@ -1,5 +1,7 @@
 import type { CSSProperties, RefObject } from 'react';
 import { ANCHORS } from '../../../shared/art-anchors';
+import { WALK_CYCLE_MS } from '../../../shared/constants';
+import type { Emotion } from '../../../shared/emotion';
 import type { Behavior } from '../../../shared/types';
 import petArt from '../../../../assets/pet/mochi.svg?raw';
 
@@ -14,6 +16,8 @@ interface PetSpriteProps {
   animationPaused: boolean;
   /** Where the pet is looking, in degrees (-25 to 25). */
   lookAngle?: number;
+  /** How the face should feel, from `emotionFor` in the shared thresholds. */
+  emotion?: Emotion;
   /** The art itself, so it can be checked against the click target. */
   spriteRef?: RefObject<HTMLDivElement | null>;
 }
@@ -34,6 +38,7 @@ export function PetSprite({
   settling,
   animationPaused,
   lookAngle,
+  emotion,
   spriteRef,
 }: PetSpriteProps) {
   const classes = [
@@ -48,10 +53,12 @@ export function PetSprite({
     .join(' ');
 
   // The pet turns around the character anchor, which the stylesheet needs to
-  // know about.
+  // know about. The paw cycle is timed from the shared stride constant, so
+  // the feet cover the ground the window glides.
   const style = {
     '--flip-origin': `${ANCHORS.character.x}px ${ANCHORS.character.y}px`,
     '--look-angle': `${lookAngle ?? 0}deg`,
+    '--walk-cycle': `${WALK_CYCLE_MS}ms`,
   } as CSSProperties;
 
   return (
@@ -60,6 +67,7 @@ export function PetSprite({
       aria-hidden="true"
       ref={spriteRef}
       data-facing={facing}
+      data-emotion={emotion}
       style={style}
       dangerouslySetInnerHTML={{ __html: petArt }}
     />
