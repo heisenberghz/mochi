@@ -908,18 +908,28 @@
 
 /* Accessories: hidden by default, shown when the player unlocks and equips them. */
 .accessory { display: none; }
-/* The attribute lives on the pet root, so the rules are plain descendants. */
+/* The attribute lives on the pet root, so the rules are plain descendants —
+   including the behavior class on the sprite, which is a different element. */
 [data-cosmetics~="leaf-hat"] .accessory.leaf-hat { display: block; }
 [data-cosmetics~="mug"] .accessory.mug { display: block; }
 [data-cosmetics~="scarf-moss"] .accessory.scarf-moss { display: block; }
 [data-cosmetics~="scarf-sky"] .accessory.scarf-sky { display: block; }
 [data-cosmetics~="scarf-aurora"] .accessory.scarf-aurora { display: block; }
-[data-cosmetics~="bed"].behavior-sleep .accessory.bed { display: block; }
+[data-cosmetics~="bed"] .behavior-sleep .accessory.bed { display: block; }
 
 /* Glasses are an accessory like the rest: the Locker decides whether they
    are worn, and a new pet starts with them on. */
 .pet-svg .glasses { display: none; }
 [data-cosmetics~="glasses"] .pet-svg .glasses { display: block; }
+
+/* Sleep curls the pet into its ball, and the outfit curls away with it —
+   the show rules above sit later in the file, so bedtime gets reasserted
+   here. The bed is the exception: it is drawn outside the character, and
+   catching it is the whole point of the nap. */
+[data-cosmetics] .behavior-sleep .pet-svg .glasses,
+[data-cosmetics] .behavior-sleep .character .accessory {
+  display: none;
+}
 
 /*
  * Reduced motion: every state stays readable, without continuous movement.

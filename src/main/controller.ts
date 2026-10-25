@@ -130,6 +130,41 @@ interface SmokeLockerFlow {
   petGlassesOn?: string;
   locked?: unknown;
   afterLocked?: string[];
+  /** Level after the test-only XP grant that opens the whole Locker. */
+  level?: number;
+  /** Every unlocked cosmetic: on → visible, off → gone. */
+  sweep?: Record<string, SmokeCosmeticStep>;
+  /** Two items in one slot: the second must replace the first. */
+  swap?: {
+    first?: unknown;
+    afterFirst?: string[];
+    second?: unknown;
+    afterSecond?: string[];
+    firstDisplay?: string;
+    secondDisplay?: string;
+    afterTakeOff?: string[];
+  };
+  /** The bed only shows while asleep, and only it survives sleep. */
+  bed?: {
+    afterEquip?: string[];
+    asleep?: string;
+    bedAsleep?: string;
+    scarfAsleep?: string;
+    awake?: string;
+    bedAwake?: string;
+    scarfAwake?: string;
+    afterTakeOff?: string[];
+  };
+  error?: string;
+}
+
+interface SmokeCosmeticStep {
+  putOn?: unknown;
+  afterOn?: string[];
+  displayOn?: string;
+  takeOff?: unknown;
+  afterOff?: string[];
+  displayOff?: string;
   error?: string;
 }
 
@@ -179,6 +214,8 @@ export class MochiController {
   private unsolicitedThisHour = 0;
   private bubbleHourKey = 0;
   private lastIdleCheckAt = 0;
+  /** Debug trail for the smoke run: every equip invocation, in order. */
+  private equipTrace: string[] = [];
   /** Global hotkeys that failed to register, shown in Settings. */
   private hotkeyConflicts: string[] = [];
   private registeredHotkeys = new Map<string, Electron.Accelerator>();
@@ -380,24 +417,120 @@ export class MochiController {
       // refusal for a locked cosmetic. What the pet actually shows is read
       // from the pet window, because a state that changes without the art
       // following is exactly the bug this guards against.
+      //
+      // The smoke save keeps its level *and* its outfit between runs (focus
+      // sessions grant XP, and a high level lets the mug in the door). Reset
+      // to a fresh pet: level 1, wearing only the glasses it starts with —
+      // otherwise nothing would look locked and every check would rot away.
       try {
+        this.brain.restore({ xp: 0, equipped: ['glasses'] }, Date.now());
         lockerFlow.before = [...this.brain.snapshot().equipped];
         lockerFlow.off = await den.webContents.executeJavaScript(
           "window.mochi.equip('glasses')",
         );
         lockerFlow.afterOff = [...this.brain.snapshot().equipped];
-        lockerFlow.petGlassesOff = await this.glassesDisplay();
+        lockerFlow.petGlassesOff = await this.cosmeticDisplay('.pet-svg .glasses');
         lockerFlow.on = await den.webContents.executeJavaScript(
           "window.mochi.equip('glasses')",
         );
         lockerFlow.afterOn = [...this.brain.snapshot().equipped];
-        lockerFlow.petGlassesOn = await this.glassesDisplay();
+        lockerFlow.petGlassesOn = await this.cosmeticDisplay('.pet-svg .glasses');
         lockerFlow.locked = await den.webContents.executeJavaScript(
           "window.mochi.equip('mug')",
         );
         lockerFlow.afterLocked = [...this.brain.snapshot().equipped];
       } catch (error) {
         lockerFlow.error = String(error);
+      }
+
+      // The full sweep: grant XP to this throwaway test pet until the whole
+      // Locker is open, then every cosmetic goes on, must be visible at its
+      // anchor, comes off, and must be gone. The two scarves also prove the
+      // one-per-slot rule, and the bed proves sleep only spares the bed.
+      try {
+        lockerFlow.sweep = {};
+        this.brain.addXp(1400); // level 10 costs 1350 xp — the bed's price
+        lockerFlow.level = this.brain.snapshot().level;
+        const sleep = (ms: number) =>
+          new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+        for (const [id, selector] of [
+          ['leaf-hat', '.accessory.leaf-hat'],
+          ['mug', '.accessory.mug'],
+          ['scarf-aurora', '.accessory.scarf-aurora'],
+        ] as const) {
+          const step: SmokeCosmeticStep = {};
+          try {
+            step.putOn = await den.webContents.executeJavaScript(
+              `window.mochi.equip(${JSON.stringify(id)})`,
+            );
+            await sleep(80);
+            step.afterOn = [...this.brain.snapshot().equipped];
+            step.displayOn = await this.cosmeticDisplay(selector);
+            step.takeOff = await den.webContents.executeJavaScript(
+              `window.mochi.equip(${JSON.stringify(id)})`,
+            );
+            await sleep(80);
+            step.afterOff = [...this.brain.snapshot().equipped];
+            step.displayOff = await this.cosmeticDisplay(selector);
+          } catch (error) {
+            step.error = String(error);
+          }
+          lockerFlow.sweep[id] = step;
+        }
+
+        // The scarf swap: the neck holds one, so the new scarf retires the old.
+        if (!lockerFlow.swap) lockerFlow.swap = {};
+        lockerFlow.swap.first = await den.webContents.executeJavaScript(
+          "window.mochi.equip('scarf-moss')",
+        );
+        await sleep(80);
+        lockerFlow.swap.afterFirst = [...this.brain.snapshot().equipped];
+        lockerFlow.swap.second = await den.webContents.executeJavaScript(
+          "window.mochi.equip('scarf-sky')",
+        );
+        await sleep(80);
+        lockerFlow.swap.afterSecond = [...this.brain.snapshot().equipped];
+        lockerFlow.swap.firstDisplay = await this.cosmeticDisplay(
+          '.accessory.scarf-moss',
+        );
+        lockerFlow.swap.secondDisplay = await this.cosmeticDisplay(
+          '.accessory.scarf-sky',
+        );
+        await den.webContents.executeJavaScript("window.mochi.equip('scarf-sky')");
+        await sleep(80);
+        lockerFlow.swap.afterTakeOff = [...this.brain.snapshot().equipped];
+
+        // The bed: worn items vanish at bedtime, the bed is the exception.
+        if (!lockerFlow.bed) lockerFlow.bed = {};
+        await den.webContents.executeJavaScript("window.mochi.equip('scarf-moss')");
+        await den.webContents.executeJavaScript("window.mochi.equip('bed')");
+        await sleep(80);
+        lockerFlow.bed.afterEquip = [...this.brain.snapshot().equipped];
+        this.brain.forceSleep(Date.now());
+        this.broadcast();
+        await sleep(200);
+        lockerFlow.bed.asleep = this.brain.snapshot().behavior;
+        lockerFlow.bed.bedAsleep = await this.cosmeticDisplay('.accessory.bed');
+        lockerFlow.bed.scarfAsleep = await this.cosmeticDisplay(
+          '.accessory.scarf-moss',
+        );
+        this.brain.forceWake(Date.now());
+        this.broadcast();
+        await sleep(200);
+        lockerFlow.bed.awake = this.brain.snapshot().behavior;
+        lockerFlow.bed.bedAwake = await this.cosmeticDisplay('.accessory.bed');
+        lockerFlow.bed.scarfAwake = await this.cosmeticDisplay(
+          '.accessory.scarf-moss',
+        );
+        await den.webContents.executeJavaScript("window.mochi.equip('scarf-moss')");
+        await den.webContents.executeJavaScript("window.mochi.equip('bed')");
+        await sleep(80);
+        lockerFlow.bed.afterTakeOff = [...this.brain.snapshot().equipped];
+      } catch (error) {
+        lockerFlow.bed = lockerFlow.bed ?? {};
+        lockerFlow.swap = lockerFlow.swap ?? {};
+        lockerFlow.error = [...(lockerFlow.error ? [lockerFlow.error] : []), String(error)].join('; ');
       }
 
       // The window and the pet's behaviour. Everything here is checked by the
@@ -598,6 +731,7 @@ export class MochiController {
         : null,
       focusFlow,
       lockerFlow,
+      equipTrace: this.equipTrace,
       powerFlow,
       windowChecks,
       state: this.petWindow ? this.snapshot() : null,
@@ -865,6 +999,7 @@ export class MochiController {
    * question is asked when the user is back rather than while they are away.
    */
   private autoPauseIfIdle(wallNow: number): void {
+    if (this.smoke) return; // the real clock is outside the smoke run's control
     if (wallNow - this.lastIdleCheckAt < IDLE_CHECK_INTERVAL_MS) return;
     this.lastIdleCheckAt = wallNow;
 
@@ -1545,6 +1680,9 @@ export class MochiController {
 
     ipcMain.handle('pet:equip', (event, id: unknown): OkResult => {
       if (!fromApp(event)) return { ok: false };
+      this.equipTrace.push(
+        `${String(id)}@${event.sender.id === this.petWindow?.webContents.id ? 'pet' : event.sender.id === this.denWindow?.webContents.id ? 'den' : 'other'}`,
+      );
       const result = this.brain.equip(id);
       this.persistNow();
       this.broadcast();
@@ -1869,13 +2007,13 @@ export class MochiController {
     this.broadcast();
   }
 
-  /** What the pet window currently does with the glasses group. */
-  private async glassesDisplay(): Promise<string> {
+  /** What the pet window currently does with an art group. */
+  private async cosmeticDisplay(selector: string): Promise<string> {
     const win = this.petWindow;
     if (!win || win.isDestroyed()) return 'no-window';
     try {
       return await win.webContents.executeJavaScript(
-        "getComputedStyle(document.querySelector('.pet-svg .glasses')).display",
+        `(() => { const el = document.querySelector(${JSON.stringify(selector)}); return el ? getComputedStyle(el).display : 'missing'; })()`,
       );
     } catch (error) {
       return `eval-failed:${String(error)}`;

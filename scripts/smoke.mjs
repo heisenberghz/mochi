@@ -174,6 +174,88 @@ async function main() {
     locker.afterLocked,
   );
 
+  // The full cosmetic sweep. Every item: on → visible, off → gone. The XP
+  // grant is test-only (isolated save), so nothing here touches the real one.
+  const sweep = locker.sweep ?? {};
+  check(locker.level === 10, 'The test pet did not reach level 10.', locker.level);
+  for (const id of ['leaf-hat', 'mug', 'scarf-aurora']) {
+    const step = sweep[id] ?? {};
+    check(!step.error, `The ${id} step threw.`, step.error);
+    check(step.putOn?.ok === true, `Putting the ${id} on was refused.`, step.putOn);
+    check(
+      step.afterOn?.includes(id) === true,
+      `The ${id} did not stick when equipped.`,
+      step.afterOn,
+    );
+    check(
+      step.displayOn === 'block',
+      `The pet does not show the ${id} it is wearing.`,
+      step.displayOn,
+    );
+    check(step.takeOff?.ok === true, `Taking the ${id} off was refused.`, step.takeOff);
+    check(
+      step.afterOff?.includes(id) === false,
+      `The ${id} stayed equipped after being taken off.`,
+      step.afterOff,
+    );
+    check(
+      step.displayOff === 'none',
+      `The pet still shows the ${id} after it was taken off.`,
+      step.displayOff,
+    );
+  }
+
+  // One slot, one scarf: the second scarf must retire the first.
+  const swap = locker.swap ?? {};
+  check(
+    swap.afterFirst?.includes('scarf-moss') === true,
+    'The first scarf did not stick.',
+    swap.afterFirst,
+  );
+  check(
+    swap.afterSecond?.includes('scarf-sky') === true &&
+      swap.afterSecond?.includes('scarf-moss') === false,
+    'The second scarf did not replace the first.',
+    swap.afterSecond,
+  );
+  check(
+    swap.firstDisplay === 'none' && swap.secondDisplay === 'block',
+    'The wrong scarf is visible after the swap.',
+    { first: swap.firstDisplay, second: swap.secondDisplay },
+  );
+
+  // The bed: worn items vanish at bedtime, the bed is the exception.
+  const bed = locker.bed ?? {};
+  check(
+    bed.afterEquip?.includes('scarf-moss') === true &&
+      bed.afterEquip?.includes('bed') === true,
+    'The scarf and the bed were not equipped together.',
+    bed.afterEquip,
+  );
+  check(bed.asleep === 'sleep', 'The test pet did not fall asleep.', bed.asleep);
+  check(
+    bed.bedAsleep === 'block',
+    'The bed is not visible while the pet sleeps.',
+    bed.bedAsleep,
+  );
+  check(
+    bed.scarfAsleep === 'none',
+    'The scarf stays visible at bedtime (it should curl away with the outfit).',
+    bed.scarfAsleep,
+  );
+  check(bed.bedAwake === 'none', 'The bed is visible while the pet is awake.', bed.bedAwake);
+  check(
+    bed.scarfAwake === 'block',
+    'The scarf did not come back after waking.',
+    bed.scarfAwake,
+  );
+  check(
+    bed.afterTakeOff?.includes('bed') === false &&
+      bed.afterTakeOff?.includes('scarf-moss') === false,
+    'Taking the scarf and bed off did not clear them.',
+    bed.afterTakeOff,
+  );
+
   console.log('Phase 1 assertions passed.');
 
   // --- The window and the pet's behaviour ----------------------------------
