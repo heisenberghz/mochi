@@ -4,7 +4,7 @@
 > original product specification. This file is the one we actually build from, and it gets
 > updated after every piece of work so you can always see where we are.
 >
-> **Last updated:** 2026-10-20 · **Repo:** `D:\pet` · **Branch:** `main`
+> **Last updated:** 2026-10-25 · **Repo:** `D:\pet` · **Branch:** `main`
 
 ---
 
@@ -236,16 +236,16 @@ and stays the plan for the day a real deployment happens.*
 *The artwork, now that the software is finished. This is where the character gets its
 personality — and where you polish it.*
 
-- [ ] The micro-behaviours get their poses, so they read on screen
-- [ ] Sleep curls into a proper oval; the body stretches when carried
-- [ ] The tail goes still during focus; the scarf bounces when waving
-- [ ] The celebration squash is right
-- [ ] The walk cycle matched to speed, with the drop settle
-- [ ] Energy and mood expressed in the art — droopy eyes when tired, a smile when happy
-- [ ] The accessories drawn — leaf hat, mug, bed, and the moss, sky and aurora scarves
-- [ ] High contrast for the pet
+- [x] The micro-behaviours get their poses, so they read on screen
+- [x] Sleep curls into a proper oval; the body stretches when carried
+- [x] The tail goes still during focus; the scarf bounces when waving
+- [x] The celebration squash is right
+- [x] The walk cycle matched to speed, with the drop settle
+- [x] Energy and mood expressed in the art — droopy eyes when tired, a smile when happy
+- [x] The accessories drawn — leaf hat, mug, bed, and the moss, sky and aurora scarves
+- [x] High contrast for the pet *(landed early, with Commit 5)*
 - [ ] Visual QA over light, dark and busy wallpapers, 100–200% scaling, two monitors
-- [ ] The app icon, drawn from the final character
+- [x] The app icon, drawn from the final character
 
 ### Commit 9 — The last mile *(6 items)*
 *Make the spec tell the truth.*
@@ -299,6 +299,50 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 ## 7. Status log
 
 *Newest first. I add an entry after each piece of work.*
+
+### 2026-10-25 — Commit 8: the visual polish
+
+Four checkpoints, each its own reviewed commit, plus the icon:
+
+- **The soft-real redraw** (`dd21b5c`). `assets/pet/mochi.svg` rewritten to a
+  real character: shaded cream body, glossy two-highlight eyes, far paws
+  behind the body, a sleep-curl pose with the Zzz drawn as shapes, and the
+  scarf drawn as three accessory groups. Palette moves to the design
+  system's warm cream; the art contract grows to v1.1 and the art tests
+  (palette, classes, anchors) grow with it.
+- **Poses that read** (`fa9c1dc`). The walk is a real diagonal trot whose
+  gait and cycle are matched to speed, there is a settle after walks and
+  after being put down, and tired and happy moods show in the face
+  (`shared/emotion.ts`, thresholds droopy ≤ 30 energy and bright ≥ 80 mood).
+  The scarf bounces when waving; the celebration squash was retuned.
+- **The Locker equips for real** (`45f3917`). All seven cosmetics drawn —
+  leaf hat, mug, bed, and moss, sky and aurora scarves — and wired: free
+  wear and removal, one item per slot (a new scarf retires the old one),
+  `pet:equip` over IPC, schema v5 with `pet.equipped` (migration chain
+  [2,3,4,5], grooming tests per step). Locked items list their level.
+- **Every cosmetic obeys the Locker** (`59cb9fd`). Two real bugs the new
+  cosmetic sweep caught: the bed's show rule demanded `data-cosmetics` and
+  `.behavior-sleep` on the same element (they live on different ones — the
+  bed could never appear), and the sleep rules were beaten by the equip
+  show-rules sitting later at equal specificity (the outfit stayed visible
+  inside the sleep-curl). Now the outfit curls away at bedtime and only the
+  bed stays — catching it is the point of the nap. The glasses fix
+  (display rule for unequipped glasses) is in `45f3917`.
+- **The icon wears the new face.** `scripts/make-icon.mjs` drawn again from
+  the sans-scarf character: head portrait with the glossy eyes, blush and
+  the w-mouth, ears with pink inners, ink ring for light docks. No hex
+  outside the art's palette; `resources/icon.png` regenerated (feeds the
+  tray and the packaged app).
+- **The smoke harness grew teeth.** The locker flow now resets the throwaway
+  save to a fresh level-1 pet (it keeps XP and outfits between runs), grants
+  XP to level 10, and proves each cosmetic: on → visible at its anchor →
+  off → gone; one scarf per slot; the scarf hides at bedtime while the bed
+  stays; the bed returns when awake. Every equip invocation is traced. The
+  idle auto-pause no longer runs on the smoke's real clock (it flaked on
+  machine idle time; the logic stays unit-tested).
+- Remaining in Commit 8: the **visual QA eyeball pass** (light/dark/busy
+  wallpapers, 100–200% scaling, two monitors) — needs the user's eyes.
+- 246 tests passing. lint, typecheck, build and all five smoke phases green.
 
 ### 2026-10-24 — Commit 7 (slim): CI and the domain-purity rule
 

@@ -13,8 +13,13 @@ const colors = {
   cream: [243, 231, 214],
   shadow: [228, 210, 187],
   innerEar: [232, 183, 166],
-  scarf: [217, 137, 69],
+  // Cheeks sit at 55% opacity in the art; pre-blended over the cream here,
+  // because the pixel plotter overwrites rather than composites.
+  blush: [234, 197, 180],
+  deep: [203, 182, 156],
   highlight: [255, 253, 248],
+  // The small eye sparkle is 85% white over the ink eye.
+  sparkle: [223, 223, 225],
 };
 
 function put(x, y, color, alpha = 255) {
@@ -71,47 +76,43 @@ function roundRect(x0, y0, x1, y1, r, color) {
   }
 }
 
-// Tail (behind the body), drawn as a chain of circles.
-for (let i = 0; i <= 20; i += 1) {
-  const t = i / 20;
-  const x = 188 + 26 * Math.sin(t * Math.PI * 0.85);
-  const y = 166 + 34 * t;
-  ellipse(x, y, 15, 15, colors.ink);
-}
-for (let i = 0; i <= 20; i += 1) {
-  const t = i / 20;
-  const x = 188 + 26 * Math.sin(t * Math.PI * 0.85);
-  const y = 166 + 34 * t;
-  ellipse(x, y, 11, 11, colors.cream);
-}
+// The icon is a portrait: the head fills the frame, because that is what
+// still reads at 16px. Geometry mirrors mochi.svg — head 53..147 x 40..116,
+// shifted onto the 256 canvas through the mapping in each block below.
 
-// Ears.
-triangle([96, 94], [76, 38], [124, 72], colors.ink);
-triangle([160, 94], [180, 38], [132, 72], colors.ink);
-triangle([99, 86], [85, 50], [117, 72], colors.cream);
-triangle([157, 86], [171, 50], [139, 72], colors.cream);
-triangle([99, 79], [91, 58], [109, 71], colors.innerEar);
-triangle([157, 79], [165, 58], [147, 71], colors.innerEar);
+// Ears behind the head: cream triangles with pink inners that peek out.
+triangle([74, 26], [120, 62], [56, 90], colors.cream);
+triangle([182, 26], [136, 62], [200, 90], colors.cream);
 
-// Body with a thin ink outline.
-ellipse(128, 150, 84, 78, colors.ink);
-ellipse(128, 150, 80, 74, colors.cream);
-ellipse(128, 172, 54, 46, colors.shadow);
+// Head with a thin ink ring, so the cream reads on light docks.
+ellipse(128, 104, 79, 65, colors.ink);
+ellipse(128, 104, 75, 61, colors.cream);
 
-// Scarf.
-roundRect(48, 162, 208, 184, 11, colors.ink);
-roundRect(50, 164, 206, 182, 9, colors.scarf);
-ellipse(196, 190, 14, 12, colors.scarf);
-ellipse(208, 202, 10, 9, colors.shadow);
+// Inner ears, staying above the head's edge so they read as ear lining.
+triangle([78, 36], [68, 58], [102, 50], colors.innerEar);
+triangle([178, 36], [188, 58], [154, 50], colors.innerEar);
 
-// Face.
-ellipse(106, 140, 7, 9, colors.ink);
-ellipse(150, 140, 7, 9, colors.ink);
-ellipse(104, 137, 2.4, 2.8, colors.highlight);
-ellipse(148, 137, 2.4, 2.8, colors.highlight);
-triangle([128, 151], [123, 157], [133, 157], colors.ink);
-ellipse(92, 156, 7, 4, colors.innerEar);
-ellipse(164, 156, 7, 4, colors.innerEar);
+// Glossy eyes: ink ovals, a big top-left highlight and a small one below.
+ellipse(96, 100.6, 11.2, 14.4, colors.ink);
+ellipse(160, 100.6, 11.2, 14.4, colors.ink);
+ellipse(92, 95, 4.8, 5.1, colors.highlight);
+ellipse(156, 95, 4.8, 5.1, colors.highlight);
+ellipse(100.5, 106.4, 2.1, 2.1, colors.sparkle);
+ellipse(164.5, 106.4, 2.1, 2.1, colors.sparkle);
+
+// Cheeks and the smile (the w-mouth simplified for icon scale).
+ellipse(83.2, 118.2, 10.4, 5.8, colors.blush);
+ellipse(172.8, 118.2, 10.4, 5.8, colors.blush);
+ellipse(128, 133, 10.5, 2.3, colors.ink);
+
+// The nose: the wide-top triangle from the art.
+triangle([120, 115], [136, 115], [128.8, 124], colors.ink);
+
+// Whiskers, in the deep fur tone, thin as wedges.
+triangle([73.6, 109.5], [73.6, 110.9], [48, 103.8], colors.deep);
+triangle([73.6, 117.5], [73.6, 118.9], [48, 118.2], colors.deep);
+triangle([180.8, 109.5], [180.8, 110.9], [206, 103.8], colors.deep);
+triangle([180.8, 117.5], [180.8, 118.9], [206, 118.2], colors.deep);
 
 // Downsample with alpha-weighted colour so edges stay clean.
 const output = Buffer.alloc(SIZE * SIZE * 4);
