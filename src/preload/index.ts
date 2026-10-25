@@ -73,6 +73,7 @@ const api: MochiApi = {
   openDen: () => ipcRenderer.invoke('window:openDen') as Promise<OkResult>,
   openDataFolder: () => ipcRenderer.invoke('app:openDataFolder') as Promise<OkResult>,
   focus,
+  equip: (id: string) => ipcRenderer.invoke('pet:equip', id) as Promise<OkResult>,
   updateFocusConfig: (patch: Partial<FocusConfig>) =>
     ipcRenderer.invoke('focus:updateConfig', patch) as Promise<FocusConfigResult>,
   updateSettings: (patch: Partial<Settings>) =>

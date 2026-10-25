@@ -1170,3 +1170,197 @@ input:focus-visible {
     color: #e08d5b;
   }
 }
+
+/* Locker */
+
+.locker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.cosmetic {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    opacity 120ms ease;
+}
+
+.cosmetic.worn {
+  border-color: rgba(217, 140, 69, 0.55);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.cosmetic.locked {
+  opacity: 0.55;
+}
+
+.cosmetic-icon {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  /* The pet's own cream, at full strength in any theme — the ink glyphs
+     must read on it whether the Den sits in light or dark mode. */
+  background: #f3e7d6;
+}
+
+.cosmetic-icon::before,
+.cosmetic-icon::after {
+  content: '';
+  position: absolute;
+}
+
+.cosmetic-info {
+  display: grid;
+  gap: 2px;
+  margin-right: auto;
+  min-width: 0;
+}
+
+.cosmetic-label {
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cosmetic-level {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cosmetic-toggle {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.cosmetic-toggle:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.cosmetic.worn .cosmetic-toggle {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffdf8;
+}
+
+.cosmetic-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* The icon swatches. Drawn in the pet's own palette, so the Locker and the
+   pet window wear the same colours. */
+
+/* Two lens rings and a bridge, drawn as gradients. */
+.cosmetic-glasses {
+  background:
+    radial-gradient(circle at 13px 20px, transparent 5.5px, #2a2622 5.5px 8px, transparent 8px),
+    radial-gradient(circle at 27px 20px, transparent 5.5px, #2a2622 5.5px 8px, transparent 8px),
+    linear-gradient(#2a2622, #2a2622);
+  background-size: 100% 100%, 100% 100%, 13px 2.5px;
+  background-position: 0 0, 0 0, 13px 18.5px;
+  background-repeat: no-repeat;
+}
+
+.cosmetic-leaf-hat::before {
+  left: 12px;
+  top: 10px;
+  width: 16px;
+  height: 16px;
+  background: #8fae7c;
+  border-radius: 0 50% 0 50%;
+  transform: rotate(45deg);
+}
+.cosmetic-leaf-hat::after {
+  left: 19px;
+  top: 12px;
+  width: 1.5px;
+  height: 12px;
+  background: #6e8e5f;
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.cosmetic-scarf-moss::before,
+.cosmetic-scarf-sky::before,
+.cosmetic-scarf-aurora::before {
+  left: 8px;
+  top: 13px;
+  width: 24px;
+  height: 9px;
+  border-radius: 5px 5px 0 0;
+}
+.cosmetic-scarf-moss::after,
+.cosmetic-scarf-sky::after,
+.cosmetic-scarf-aurora::after {
+  top: 20px;
+  width: 8px;
+  height: 13px;
+  border-radius: 0 0 3px 3px;
+}
+.cosmetic-scarf-moss::before { background: #8fae7c; }
+.cosmetic-scarf-moss::after { left: 16px; background: #6e8e5f; }
+.cosmetic-scarf-sky::before { background: #7fa3c7; }
+.cosmetic-scarf-sky::after { left: 16px; background: #5f86b1; }
+.cosmetic-scarf-aurora::before { background: linear-gradient(120deg, #7ec8a9, #9a7fd1); }
+.cosmetic-scarf-aurora::after { left: 16px; background: #9a7fd1; }
+
+.cosmetic-mug::before {
+  left: 9px;
+  bottom: 11px;
+  width: 15px;
+  height: 14px;
+  background: #d98c45;
+  border-radius: 2px 2px 5px 5px;
+}
+.cosmetic-mug::after {
+  left: 23px;
+  bottom: 13px;
+  width: 6px;
+  height: 9px;
+  border: 2.5px solid #d98c45;
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+}
+
+.cosmetic-bed::before {
+  left: 6px;
+  right: 6px;
+  top: 13px;
+  bottom: 13px;
+  background: #fff8ec;
+  border: 1.5px solid #cbb69c;
+  border-radius: 8px;
+}
+.cosmetic-bed::after {
+  left: 10px;
+  top: 16.5px;
+  width: 7px;
+  height: 7px;
+  background: #fff0da;
+  border: 1px solid #cbb69c;
+  border-radius: 50%;
+}

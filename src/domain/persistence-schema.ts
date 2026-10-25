@@ -1,5 +1,12 @@
 import { localDateKey } from '../shared/dates';
-import { CURRENT_SCHEMA_VERSION, DEFAULT_SETTINGS, FOCUS_DEFAULTS } from '../shared/constants';
+import {
+  COSMETIC_IDS,
+  CURRENT_SCHEMA_VERSION,
+  DEFAULT_SETTINGS,
+  FOCUS_DEFAULTS,
+  cosmeticSlot,
+} from '../shared/constants';
+import type { CosmeticId } from '../shared/constants';
 import { clampFocusConfig } from '../shared/focus-config';
 import type { FocusConfig, Settings } from '../shared/types';
 import type {
@@ -96,6 +103,20 @@ const MIGRATIONS: Record<number, Migration> = {
       },
     };
   },
+
+  // 4 -> 5: what the pet is wearing is remembered, so the player can equip and
+  // unequip freely. A file with no choice on it starts with the glasses on.
+  5: (state) => {
+    const pet = isRecord(state.pet) ? state.pet : {};
+    return {
+      ...state,
+      version: 5,
+      pet: {
+        ...pet,
+        equipped: Array.isArray(pet.equipped) ? pet.equipped : ['glasses'],
+      },
+    };
+  },
 };
 
 export interface MigrationOutcome {
@@ -159,6 +180,7 @@ const DEFAULT_PET: StoredPet = {
   level: 1,
   facing: 1,
   lastSeenAt: null,
+  equipped: ['glasses'],
 };
 
 function defaultFocus(today: string): FocusPersisted {
@@ -214,7 +236,25 @@ export function sanitisePet(value: unknown): StoredPet {
       typeof value.lastSeenAt === 'number' && Number.isFinite(value.lastSeenAt)
         ? value.lastSeenAt
         : null,
+    equipped: sanitiseEquipped(value.equipped),
   };
+}
+
+/**
+ * Keep only what the pet can actually wear: known ids, no repeats, at most
+ * one cosmetic per slot, and no empty strings.
+ */
+function sanitiseEquipped(value: unknown): CosmeticId[] {
+  if (!Array.isArray(value)) return [...DEFAULT_PET.equipped];
+  const worn: CosmeticId[] = [];
+  for (const candidate of value) {
+    if (typeof candidate !== 'string') continue;
+    if (!COSMETIC_IDS.some((id) => id === candidate)) continue;
+    if (worn.includes(candidate as CosmeticId)) continue;
+    if (worn.some((id) => cosmeticSlot(id) === cosmeticSlot(candidate))) continue;
+    worn.push(candidate as CosmeticId);
+  }
+  return worn;
 }
 
 export function sanitiseSettings(value: unknown): Settings {

@@ -911,7 +911,15 @@
 /* The attribute lives on the pet root, so the rules are plain descendants. */
 [data-cosmetics~="leaf-hat"] .accessory.leaf-hat { display: block; }
 [data-cosmetics~="mug"] .accessory.mug { display: block; }
+[data-cosmetics~="scarf-moss"] .accessory.scarf-moss { display: block; }
+[data-cosmetics~="scarf-sky"] .accessory.scarf-sky { display: block; }
+[data-cosmetics~="scarf-aurora"] .accessory.scarf-aurora { display: block; }
 [data-cosmetics~="bed"].behavior-sleep .accessory.bed { display: block; }
+
+/* Glasses are an accessory like the rest: the Locker decides whether they
+   are worn, and a new pet starts with them on. */
+.pet-svg .glasses { display: none; }
+[data-cosmetics~="glasses"] .pet-svg .glasses { display: block; }
 
 /*
  * Reduced motion: every state stays readable, without continuous movement.

@@ -120,6 +120,19 @@ interface SmokeFocusFlow {
   error?: string;
 }
 
+interface SmokeLockerFlow {
+  before?: string[];
+  off?: unknown;
+  afterOff?: string[];
+  petGlassesOff?: string;
+  on?: unknown;
+  afterOn?: string[];
+  petGlassesOn?: string;
+  locked?: unknown;
+  afterLocked?: string[];
+  error?: string;
+}
+
 interface SmokeFocusSnapshot {
   status: string;
   pauseReason: string | null;
@@ -303,6 +316,7 @@ export class MochiController {
     const tabs: Record<string, unknown> = {};
     const windowChecks: Record<string, unknown> = {};
     const focusFlow: SmokeFocusFlow = {};
+    const lockerFlow: SmokeLockerFlow = {};
     const powerFlow: SmokePowerFlow = {
       beforeSleep: 0,
       duringSleep: { status: 'idle', pauseReason: null, remainingMs: 0 },
@@ -360,6 +374,30 @@ export class MochiController {
         focusFlow.configWorkMin = this.focus.getConfig().workMin;
       } catch (error) {
         focusFlow.error = String(error);
+      }
+
+      // The Locker: wearing something must round-trip — off, back on, and a
+      // refusal for a locked cosmetic. What the pet actually shows is read
+      // from the pet window, because a state that changes without the art
+      // following is exactly the bug this guards against.
+      try {
+        lockerFlow.before = [...this.brain.snapshot().equipped];
+        lockerFlow.off = await den.webContents.executeJavaScript(
+          "window.mochi.equip('glasses')",
+        );
+        lockerFlow.afterOff = [...this.brain.snapshot().equipped];
+        lockerFlow.petGlassesOff = await this.glassesDisplay();
+        lockerFlow.on = await den.webContents.executeJavaScript(
+          "window.mochi.equip('glasses')",
+        );
+        lockerFlow.afterOn = [...this.brain.snapshot().equipped];
+        lockerFlow.petGlassesOn = await this.glassesDisplay();
+        lockerFlow.locked = await den.webContents.executeJavaScript(
+          "window.mochi.equip('mug')",
+        );
+        lockerFlow.afterLocked = [...this.brain.snapshot().equipped];
+      } catch (error) {
+        lockerFlow.error = String(error);
       }
 
       // The window and the pet's behaviour. Everything here is checked by the
@@ -559,6 +597,7 @@ export class MochiController {
           }
         : null,
       focusFlow,
+      lockerFlow,
       powerFlow,
       windowChecks,
       state: this.petWindow ? this.snapshot() : null,
@@ -1504,6 +1543,14 @@ export class MochiController {
       return { ok: true };
     });
 
+    ipcMain.handle('pet:equip', (event, id: unknown): OkResult => {
+      if (!fromApp(event)) return { ok: false };
+      const result = this.brain.equip(id);
+      this.persistNow();
+      this.broadcast();
+      return { ok: result.applied };
+    });
+
     ipcMain.handle('focus:start', (event): OkResult => {
       if (!fromApp(event)) return { ok: false };
       return this.handleFocus('start');
@@ -1820,6 +1867,19 @@ export class MochiController {
     this.applyLoginItem();
     this.applyHotkeys();
     this.broadcast();
+  }
+
+  /** What the pet window currently does with the glasses group. */
+  private async glassesDisplay(): Promise<string> {
+    const win = this.petWindow;
+    if (!win || win.isDestroyed()) return 'no-window';
+    try {
+      return await win.webContents.executeJavaScript(
+        "getComputedStyle(document.querySelector('.pet-svg .glasses')).display",
+      );
+    } catch (error) {
+      return `eval-failed:${String(error)}`;
+    }
   }
 
   private insightsView(): InsightsView {

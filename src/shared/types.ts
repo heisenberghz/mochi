@@ -13,6 +13,9 @@ export type Behavior =
   | 'celebrate'
   | 'drag';
 
+export type { CosmeticId } from './constants';
+import type { CosmeticId } from './constants';
+
 export type PetMode = 'awake' | 'focus' | 'sleep' | 'drag';
 
 export type FocusPhase = 'work' | 'shortBreak' | 'longBreak';
@@ -34,6 +37,8 @@ export interface PetView {
   xp: number;
   level: number;
   facing: -1 | 1;
+  /** What the player has put on the pet, one cosmetic per slot. */
+  equipped: CosmeticId[];
   /** True when the pet's animation has stopped working and it is standing still. */
   animationPaused: boolean;
 }
@@ -195,6 +200,8 @@ export interface MochiApi {
   openDen(): Promise<OkResult>;
   openDataFolder(): Promise<OkResult>;
   focus(action: FocusAction): Promise<OkResult>;
+  /** Toggle a cosmetic on the pet. Only an unlocked one is accepted. */
+  equip(id: string): Promise<OkResult>;
   updateFocusConfig(patch: Partial<FocusConfig>): Promise<FocusConfigResult>;
   updateSettings(patch: Partial<Settings>): Promise<SettingsResult>;
   setPetVisible(visible: boolean): Promise<OkResult>;

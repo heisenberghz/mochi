@@ -976,25 +976,40 @@ const [highContrast, setHighContrast] = useState(false);
               <div className="locker-grid">
                 {COSMETICS.map((cosmetic) => {
                   const unlocked = cosmetics.includes(cosmetic.id);
+                  const worn = pet.equipped.includes(cosmetic.id);
                   return (
                     <div
                       key={cosmetic.id}
-                      className={`cosmetic ${unlocked ? 'unlocked' : 'locked'}`}
+                      className={`cosmetic ${unlocked ? 'unlocked' : 'locked'}${worn ? ' worn' : ''}`}
                     >
                       <div className={`cosmetic-icon cosmetic-${cosmetic.id}`} />
                       <div className="cosmetic-info">
                         <span className="cosmetic-label">{cosmetic.label}</span>
                         <span className="cosmetic-level">
-                          {unlocked ? 'Unlocked' : `Level ${cosmetic.unlockLevel}`}
+                          {unlocked
+                            ? worn
+                              ? 'Wearing'
+                              : 'Unlocked'
+                            : `Level ${cosmetic.unlockLevel}`}
                         </span>
                       </div>
+                      {unlocked ? (
+                        <button
+                          type="button"
+                          className="cosmetic-toggle"
+                          onClick={() => void window.mochi.equip(cosmetic.id)}
+                        >
+                          {worn ? 'Take off' : 'Wear'}
+                        </button>
+                      ) : null}
                     </div>
                   );
                 })}
               </div>
               <p className="tip">
-                Cosmetics unlock as {settings.petName} gains levels — no pressure, no
-                currency, just something new to wear.
+                Free to wear — anything unlocked goes on and off as much as you like,
+                one thing per spot. Cosmetics unlock as {settings.petName} gains levels;
+                no pressure, no currency.
               </p>
             </Card>
           </div>

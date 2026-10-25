@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PetBrain, levelForXp } from './pet-brain';
+import { PetBrain, levelForXp, type StoredPet } from './pet-brain';
 
 const context = {
   idleSeconds: 0,
@@ -436,5 +436,82 @@ describe('PetBrain watchdog', () => {
     brain.tick(now + 201_000, still);
 
     expect(brain.snapshot().animationPaused).toBe(false);
+  });
+});
+
+describe('PetBrain wearing things', () => {
+  it('starts with the glasses on', () => {
+    const brain = new PetBrain({ now: 1_000_000, rng: () => 0 });
+    expect(brain.snapshot().equipped).toEqual(['glasses']);
+  });
+
+  it('puts on and takes off an unlocked cosmetic, freely', () => {
+    const brain = new PetBrain({ now: 1_000_000, rng: () => 0 });
+
+    // Level 3 (160 XP) unlocks the moss scarf. Glasses come unaided.
+    brain.addXp(160);
+    expect(brain.equip('scarf-moss').applied).toBe(true);
+    expect(brain.snapshot().equipped).toEqual(['glasses', 'scarf-moss']);
+
+    // Off again, and the glasses stay untouched.
+    expect(brain.equip('scarf-moss').applied).toBe(true);
+    expect(brain.snapshot().equipped).toEqual(['glasses']);
+  });
+
+  it('refuses a locked cosmetic', () => {
+    const brain = new PetBrain({ now: 1_000_000, rng: () => 0 });
+    const before = brain.snapshot().equipped;
+
+    // The mug unlocks at level 5; a level 1 pet cannot wear it.
+    expect(brain.equip('mug').applied).toBe(false);
+    expect(brain.snapshot().equipped).toEqual(before);
+  });
+
+  it('only knows the cosmetics it has', () => {
+    const brain = new PetBrain({ now: 1_000_000, rng: () => 0 });
+    expect(brain.equip('nonsense-id').applied).toBe(false);
+    expect(brain.snapshot().equipped).toEqual(['glasses']);
+  });
+
+  it('lets one cosmetic take another off the same slot', () => {
+    const brain = new PetBrain({ now: 1_000_000, rng: () => 0 });
+
+    // Level 4 (270 XP) reaches the sky scarf too.
+    brain.addXp(270);
+    brain.equip('scarf-moss');
+    expect(brain.equip('scarf-sky').applied).toBe(true);
+
+    const worn = brain.snapshot().equipped;
+    expect(worn).toContain('scarf-sky');
+    expect(worn).not.toContain('scarf-moss');
+    expect(worn).toContain('glasses');
+  });
+
+  it('keeps what was equipped when the state is restored', () => {
+    const brain = new PetBrain({ now: 1_000_000, rng: () => 0 });
+    brain.addXp(160);
+    brain.equip('scarf-moss');
+    const worn = brain.snapshot().equipped;
+
+    const reborn = new PetBrain({ now: 2_000_000, rng: () => 0 });
+    reborn.restore({ equipped: worn }, 2_000_000);
+    expect(reborn.snapshot().equipped).toEqual(worn);
+  });
+
+  it('deduplicates and keeps one per slot from a messy restore', () => {
+    const brain = new PetBrain({ now: 1_000_000, rng: () => 0 });
+    brain.restore(
+      {
+        equipped: ['glasses', 'nonsense', 'scarf-moss', 'scarf-sky', 'scarf-moss'],
+      } as Partial<StoredPet>,
+      1_000_000,
+    );
+    expect(brain.snapshot().equipped).toEqual(['glasses', 'scarf-moss']);
+  });
+
+  it('leaves a deliberately bare pet bare', () => {
+    const brain = new PetBrain({ now: 1_000_000, rng: () => 0 });
+    brain.equip('glasses');
+    expect(brain.snapshot().equipped).toEqual([]);
   });
 });

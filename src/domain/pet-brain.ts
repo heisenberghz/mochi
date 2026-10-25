@@ -18,6 +18,9 @@ import {
   WALK_DURATION_MIN_MS,
   WALK_INTERVAL_MAX_MS,
   WALK_INTERVAL_MIN_MS,
+  COSMETICS,
+  cosmeticSlot,
+  type CosmeticId,
 } from '../shared/constants';
 import { localDateKey } from '../shared/dates';
 import type { Behavior, PetMode, PetView } from '../shared/types';
@@ -53,6 +56,8 @@ export interface StoredPet {
   facing: -1 | 1;
   /** When the user was last here, so the pet can catch up. */
   lastSeenAt: number | null;
+  /** What the player has put on the pet, one cosmetic per slot. */
+  equipped: CosmeticId[];
 }
 
 interface BrainOptions {
@@ -178,6 +183,8 @@ export class PetBrain {
   private xp = 0;
   private level = 1;
   private facing: -1 | 1 = 1;
+  /** What the player has put on the pet. Glasses are on from the start. */
+  private equipped: CosmeticId[] = ['glasses'];
 
   private until = 0;
   /** When the watchdog gives up on the current behaviour. */
@@ -230,6 +237,10 @@ export class PetBrain {
     }
     if (pet.facing === 1 || pet.facing === -1) this.facing = pet.facing;
 
+    // What the pet wears comes as a list. Unknown ids are dropped, and only
+    // one cosmetic per slot stays on.
+    if (Array.isArray(pet.equipped)) this.equipped = this.filterEquipped(pet.equipped);
+
     const lastSeen = typeof pet.lastSeenAt === 'number' ? pet.lastSeenAt : null;
     this.lastSeenAt = now;
 
@@ -270,8 +281,48 @@ export class PetBrain {
       xp: this.xp,
       level: this.level,
       facing: this.facing,
+      equipped: [...this.equipped],
       animationPaused: this.animationPaused,
     };
+  }
+
+  /**
+   * Wear or take off a cosmetic.
+   *
+   * The toggle is free: anything the level has unlocked can go on and off as
+   * often as the player likes. One cosmetic per slot — the second scarf takes
+   * the first one off. A locked or unknown id is refused, and the pet wears
+   * what it already wears.
+   */
+  equip(requested: unknown): { state: PetView; applied: boolean } {
+    const cosmetic = COSMETICS.find((c) => c.id === requested);
+    if (!cosmetic) return { state: this.snapshot(), applied: false };
+    if (cosmetic.unlockLevel > this.level) {
+      return { state: this.snapshot(), applied: false };
+    }
+
+    if (this.equipped.includes(cosmetic.id)) {
+      this.equipped = this.equipped.filter((id) => id !== cosmetic.id);
+    } else {
+      this.equipped = [
+        ...this.equipped.filter((id) => cosmeticSlot(id) !== cosmetic.slot),
+        cosmetic.id,
+      ];
+    }
+    return { state: this.snapshot(), applied: true };
+  }
+
+  /** Keep only known ids, without repeats, and only one per slot. */
+  private filterEquipped(candidates: unknown[]): CosmeticId[] {
+    const worn: CosmeticId[] = [];
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string') continue;
+      if (!COSMETICS.some((c) => c.id === candidate)) continue;
+      if (worn.includes(candidate as CosmeticId)) continue;
+      if (worn.some((id) => cosmeticSlot(id) === cosmeticSlot(candidate))) continue;
+      worn.push(candidate as CosmeticId);
+    }
+    return worn;
   }
 
   tick(now: number, ctx: BrainContext): TickResult {

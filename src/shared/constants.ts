@@ -104,19 +104,34 @@ export const MOOD_LEVEL_REWARD = 2;
 /** What Mochi can wear, unlocked by level. No currency, no countdowns, no
  * pressure mechanics — the pet just earns them by being your companion. */
 export interface Cosmetic {
-  id: 'glasses' | 'leaf-hat' | 'mug' | 'bed';
+  id: 'glasses' | 'leaf-hat' | 'mug' | 'bed' | 'scarf-moss' | 'scarf-sky' | 'scarf-aurora';
   label: string;
   unlockLevel: number;
   /** Where it hangs on the artboard. */
-  slot: 'face' | 'head' | 'paw' | 'ground';
+  slot: 'face' | 'head' | 'paw' | 'ground' | 'neck';
 }
+
+export type CosmeticId = Cosmetic['id'];
 
 export const COSMETICS: readonly Cosmetic[] = [
   { id: 'glasses', label: 'Glasses', unlockLevel: 1, slot: 'face' },
   { id: 'leaf-hat', label: 'Leaf hat', unlockLevel: 2, slot: 'head' },
+  { id: 'scarf-moss', label: 'Moss scarf', unlockLevel: 3, slot: 'neck' },
+  { id: 'scarf-sky', label: 'Sky scarf', unlockLevel: 4, slot: 'neck' },
   { id: 'mug', label: 'Mug', unlockLevel: 5, slot: 'paw' },
+  { id: 'scarf-aurora', label: 'Aurora scarf', unlockLevel: 6, slot: 'neck' },
   { id: 'bed', label: 'Bed', unlockLevel: 10, slot: 'ground' },
 ];
+
+/** Full list of the ids that may appear in an equipped list. */
+export const COSMETIC_IDS: readonly CosmeticId[] = COSMETICS.map((c) => c.id);
+
+/** The slot a cosmetic hangs from, or null when the id is not known. */
+export function cosmeticSlot(id: unknown): Cosmetic['slot'] | null {
+  if (typeof id !== 'string') return null;
+  const cosmetic = COSMETICS.find((c) => c.id === id);
+  return cosmetic ? cosmetic.slot : null;
+}
 
 /** What the pet has earned so far, derived from level (no separate save needed). */
 export function unlockedCosmetics(level: number): string[] {
@@ -140,7 +155,7 @@ export const FOCUS_BREAK_XP = 2;
  * The schema version this build writes. Bump it whenever the persisted shape
  * changes, and add a migration for the previous version.
  */
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export const DEFAULT_SETTINGS = {
   petName: 'Mochi',

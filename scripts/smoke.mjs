@@ -136,6 +136,44 @@ async function main() {
     flow.configWorkMin,
   );
 
+  // The Locker round-trip. The display check is the part that can silently
+  // regress: the state can change while the art ignores it.
+  const locker = result.lockerFlow ?? {};
+  check(!locker.error, 'The locker flow threw.', locker.error);
+  check(
+    locker.before?.[0] === 'glasses',
+    'The pet did not start wearing the glasses.',
+    locker.before,
+  );
+  check(locker.off?.ok === true, 'Taking the glasses off was refused.', locker.off);
+  check(
+    (locker.afterOff ?? []).length === 0,
+    'The glasses stayed equipped after being taken off.',
+    locker.afterOff,
+  );
+  check(
+    locker.petGlassesOff === 'none',
+    'The pet still shows glasses the Locker took off.',
+    locker.petGlassesOff,
+  );
+  check(locker.on?.ok === true, 'Putting the glasses back on was refused.', locker.on);
+  check(
+    locker.afterOn?.[0] === 'glasses',
+    'The glasses did not come back on.',
+    locker.afterOn,
+  );
+  check(
+    locker.petGlassesOn === 'block',
+    'The pet does not show the glasses the Locker put on.',
+    locker.petGlassesOn,
+  );
+  check(locker.locked?.ok === false, 'A locked cosmetic was equipped.', locker.locked);
+  check(
+    locker.afterLocked?.[0] === 'glasses',
+    'A refused toggle changed what the pet wears.',
+    locker.afterLocked,
+  );
+
   console.log('Phase 1 assertions passed.');
 
   // --- The window and the pet's behaviour ----------------------------------

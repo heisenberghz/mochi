@@ -5,7 +5,6 @@ import {
   DRAG_THRESHOLD,
   INTERACTIVE_EXIT_DELAY,
   SETTLE_DURATION_MS,
-  unlockedCosmetics,
 } from '../../../shared/constants';
 import {
   BUBBLE_REGION,
@@ -410,7 +409,7 @@ export function PetApp() {
   return (
     <div
       className={`pet-root${reducedMotion ? ' reduced' : ''}`}
-      data-cosmetics={unlockedCosmetics(pet.level).join(' ')}
+      data-cosmetics={pet.equipped.join(' ')}
     >
       {bubble ? (
         <div

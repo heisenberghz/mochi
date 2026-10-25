@@ -321,6 +321,7 @@ export class Store {
       level: pet.level,
       facing: pet.facing,
       lastSeenAt,
+      equipped: [...pet.equipped],
     };
   }
 

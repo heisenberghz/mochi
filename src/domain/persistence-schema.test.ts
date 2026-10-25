@@ -16,7 +16,7 @@ describe('migrateState', () => {
   it('upgrades a version 1 file', () => {
     const outcome = migrateState(v1Fixture, TODAY);
 
-    expect(outcome.applied).toEqual([2, 3, 4]);
+    expect(outcome.applied).toEqual([2, 3, 4, 5]);
     expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
   });
 
@@ -239,7 +239,7 @@ describe('the version 2 to 3 migration', () => {
   it('upgrades a version 2 file', () => {
     const outcome = migrateState(v2Fixture, TODAY);
 
-    expect(outcome.applied).toEqual([3, 4]);
+    expect(outcome.applied).toEqual([3, 4, 5]);
     expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
   });
 
@@ -264,7 +264,7 @@ describe('the version 3 to 4 migration', () => {
   it('upgrades a version 3 file', () => {
     const outcome = migrateState(v3Fixture, TODAY);
 
-    expect(outcome.applied).toEqual([4]);
+    expect(outcome.applied).toEqual([4, 5]);
     expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
   });
 
@@ -300,14 +300,66 @@ describe('the version 3 to 4 migration', () => {
   });
 });
 
+describe('the version 4 to 5 migration', () => {
+  const v4Fixture = {
+    version: 4,
+    pet: { energy: 60, mood: 55, xp: 160, level: 3, facing: -1, lastSeenAt: 900 },
+    focus: {},
+  };
+
+  it('upgrades a version 4 file', () => {
+    const outcome = migrateState(v4Fixture, TODAY);
+
+    expect(outcome.applied).toEqual([5]);
+    expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
+  });
+
+  it('keeps everything a version 4 file had', () => {
+    const { state } = migrateState(v4Fixture, TODAY);
+
+    expect(state.pet.xp).toBe(160);
+    expect(state.pet.level).toBe(3);
+    expect(state.pet.facing).toBe(-1);
+    expect(state.pet.lastSeenAt).toBe(900);
+  });
+
+  it('starts a file with no choice on it wearing the glasses', () => {
+    const { state } = migrateState(v4Fixture, TODAY);
+    expect(state.pet.equipped).toEqual(['glasses']);
+  });
+
+  it('keeps an equipped list the file already had', () => {
+    const { state } = migrateState(
+      { ...v4Fixture, pet: { ...v4Fixture.pet, equipped: ['scarf-sky'] } },
+      TODAY,
+    );
+    expect(state.pet.equipped).toEqual(['scarf-sky']);
+  });
+
+  it('clears out what the pet cannot wear, and keeps one per slot', () => {
+    const { state } = migrateState(
+      {
+        ...v4Fixture,
+        pet: {
+          ...v4Fixture.pet,
+          equipped: ['beard', 'glasses', 'scarf-moss', 'scarf-sky', 7],
+        },
+      },
+      TODAY,
+    );
+    expect(state.pet.equipped).toEqual(['glasses', 'scarf-moss']);
+  });
+});
+
 describe('the whole chain', () => {
   it('takes a version 1 file all the way to the current version', () => {
     const outcome = migrateState(v1Fixture, TODAY);
 
-    expect(outcome.applied).toEqual([2, 3, 4]);
+    expect(outcome.applied).toEqual([2, 3, 4, 5]);
     expect(outcome.state.version).toBe(CURRENT_SCHEMA_VERSION);
     expect(outcome.state.focus.config).toEqual(FOCUS_DEFAULTS);
     expect(outcome.state.pet.lastSeenAt).toBeNull();
+    expect(outcome.state.pet.equipped).toEqual(['glasses']);
   });
 });
 
