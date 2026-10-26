@@ -4,7 +4,7 @@
 > original product specification. This file is the one we actually build from, and it gets
 > updated after every piece of work so you can always see where we are.
 >
-> **Last updated:** 2026-10-25 · **Repo:** `D:\pet` · **Branch:** `main`
+> **Last updated:** 2026-10-26 · **Repo:** `D:\pet` · **Branch:** `main`
 
 ---
 
@@ -343,6 +343,37 @@ Four checkpoints, each its own reviewed commit, plus the icon:
 - Remaining in Commit 8: the **visual QA eyeball pass** (light/dark/busy
   wallpapers, 100–200% scaling, two monitors) — needs the user's eyes.
 - 246 tests passing. lint, typecheck, build and all five smoke phases green.
+
+### 2026-10-26 — Commit 9: the cursor wakes the pet (QA-pass fixes)
+
+Three bugs surfaced during the visual QA pass, all traced and fixed:
+
+- **Hover and drag never worked on this machine.** `setIgnoreMouseEvents(true,
+  { forward: true })` — Electron's way of hearing the cursor while click-through —
+  silently delivers nothing here. Replaced with a main-process cursor poll
+  (`watchCursor()`, 100 ms): it computes the same hit regions the renderer uses
+  and flips the interactive switch itself, with hysteresis against edge
+  flicker and an interactive bubble region that outlives the bubble by a beat
+  (`BUBBLE_INTERACTIVE_MARGIN_MS`). Verified against Electron 44.9's quirk that
+  `getCursorScreenPoint()` answers in dips and only refreshes on real input —
+  the user's hand confirmed both hover-glance and hold-and-drag, and the drop
+  position persisted.
+- **Mochi vanished a second after every launch.** The "hide during fullscreen"
+  check compared the work area to the screen size; on a display whose taskbar
+  hides itself the two are always equal, so the desktop was mistaken for a game
+  and the pet hid forever. New `src/main/fullscreen-detector.ts` asks Windows
+  which window is actually in front (koffi, MIT, prebuilt — no compiler) and
+  calls it fullscreen only when a borderless, non-shell window covers a whole
+  display; the old size check stays as fallback. User-verified: she now
+  survives launch.
+- **The neck stared too hard.** Head-turn clamp reduced from ±25° to ±10° so
+  the tilted head reads as a glance, not an owl.
+- **Smoke green-once regression.** The smoke save lives in the temp folder and
+  survived between runs, so after the first day every run inherited
+  `hasSeenWelcome: true` and the welcome assertion failed forever after. The
+  harness now wipes the throwaway save before each run.
+- 253 tests passing (7 new for the fullscreen detector). lint, typecheck,
+  build and all five smoke phases green.
 
 ### 2026-10-24 — Commit 7 (slim): CI and the domain-purity rule
 

@@ -31,6 +31,8 @@ import {
   FOCUS_XP_PER_MINUTE,
   HOTKEY_DEFAULTS,
   IDLE_AUTO_PAUSE_SECONDS,
+  BUBBLE_INTERACTIVE_MARGIN_MS,
+  CURSOR_WATCH_INTERVAL_MS,
   QUIET_MINUTE_MAX,
   QUIET_MINUTE_MIN,
   SNAP_DISTANCE,
@@ -38,6 +40,7 @@ import {
   WALK_SPEED_DIP_PER_SECOND,
 } from '../shared/constants';
 import { localDateKey } from '../shared/dates';
+import { isInsideHitRegion, BUBBLE_REGION } from '../shared/geometry';
 import { defaultPersistedState } from '../domain/persistence-schema';
 import type {
   AppSnapshot,
@@ -55,6 +58,7 @@ import { focusConfigIssues } from '../shared/focus-config';
 import { Store } from './store';
 import { monotonicNow, systemFocusClock } from './clock';
 import { clampPlacement, createDenWindow, createPetWindow } from './windows';
+import { isRealFullScreen } from './fullscreen-detector';
 
 const SETTINGS_KEYS: (keyof Settings)[] = [
   'petName',
@@ -224,6 +228,12 @@ export class MochiController {
   private fullscreenTimer: NodeJS.Timeout | null = null;
   /** Whether reduced motion is actually in effect, as the pet reports it. */
   private reducedMotionActive = false;
+
+  /** Whether the cursor watcher currently believes the pointer is on the pet. */
+  private cursorInside = false;
+  /** Until when the speech bubble counts as clickable, in wall-clock ms. */
+  private bubbleVisibleUntil = 0;
+  private cursorWatchTimer: NodeJS.Timeout | null = null;
 
   constructor(store: Store, smoke = false, smokeRecover = false) {
     this.store = store;
@@ -862,8 +872,58 @@ export class MochiController {
     this.behaviorTimer = setInterval(() => this.behaviorTick(), BEHAVIOR_TICK_MS);
     this.focusTimer = setInterval(() => this.focusTick(), FOCUS_TICK_MS);
     this.fullscreenTimer = setInterval(() => this.checkFullscreen(), FULLSCREEN_CHECK_MS);
+    // During the smoke test the window stays click-through by design; the run
+    // drives the pet itself and a live cursor would only flake it.
+    if (!this.smoke) {
+      this.cursorWatchTimer = setInterval(() => this.watchCursor(), CURSOR_WATCH_INTERVAL_MS);
+    }
     this.behaviorTick();
     this.focusTick();
+  }
+
+  /**
+   * Throw the interactive/click-through switch by watching the real cursor.
+   *
+   * This exists because `setIgnoreMouseEvents(true, { forward: true })` —
+   * Electron's way of hearing the cursor while the window is click-through —
+   * silently delivers nothing on some Windows machines, this one included.
+   * Rather than gamble on it, the main process polls where the cursor actually
+   * is and decides on its own whether the pet should be touchable, using the
+   * exact same hit regions the renderer uses.
+   */
+  private watchCursor(): void {
+    if (!this.petWindow || this.petWindow.isDestroyed() || !this.petWindow.isVisible()) {
+      this.cursorInside = false;
+      return;
+    }
+
+    // While she is being carried the pointer belongs to the drag; the window
+    // stays interactive until the drop, whatever the geometry says.
+    if (this.dragOffset !== null) return;
+
+    const cursor = screen.getCursorScreenPoint();
+    const bounds = this.petWindow.getBounds();
+    // Both speak the same virtual zoom-adjusted pixels here (the cursor point
+    // is DIP per Electron's docs; at 125% zoom that is physical/1.25).
+    const x = cursor.x - bounds.x;
+    const y = cursor.y - bounds.y;
+
+    // Hysteresis: the region that counts as "entering" is a little larger
+    // than the one that counts as "leaving", so sitting on the edge never
+    // flickers the window between its two modes.
+    const onPet = isInsideHitRegion(x, y, this.brain.snapshot().behavior, !this.cursorInside);
+    const bubbleLive = Date.now() < this.bubbleVisibleUntil;
+    const onBubble =
+      bubbleLive &&
+      x >= BUBBLE_REGION.x &&
+      x <= BUBBLE_REGION.x + BUBBLE_REGION.width &&
+      y >= BUBBLE_REGION.y &&
+      y <= BUBBLE_REGION.y + BUBBLE_REGION.height;
+    const inside = onPet || onBubble;
+
+    if (inside === this.cursorInside) return;
+    this.cursorInside = inside;
+    this.petWindow.setIgnoreMouseEvents(!inside, { forward: true });
   }
 
   private behaviorTick(): void {
@@ -1135,6 +1195,9 @@ export class MochiController {
     if (!this.petWindow || !this.petWindow.isVisible()) return;
     if (unsolicited && !this.canShowUnsolicitedBubble(Date.now())) return;
     this.petWindow.webContents.send('pet:bubble', bubble);
+    // The cursor watcher keeps the bubble clickable for as long as it is on
+    // screen, plus a margin for its fade-out.
+    this.bubbleVisibleUntil = Date.now() + bubble.durationMs + BUBBLE_INTERACTIVE_MARGIN_MS;
     if (unsolicited) {
       this.lastUnsolicitedBubbleAt = Date.now();
       this.unsolicitedThisHour += 1;
@@ -1925,6 +1988,17 @@ export class MochiController {
    * a display whose work area equals its full size is probably showing one.
    * The setting's description is honest about the limitation.
    */
+  /** The old display-size heuristic, kept as the detector's fallback. */
+  private legacyExclusiveCheck(): boolean {
+    return screen
+      .getAllDisplays()
+      .some(
+        (display) =>
+          display.workArea.width === display.size.width &&
+          display.workArea.height === display.size.height,
+      );
+  }
+
   private checkFullscreen(): void {
     if (!this.store.state.settings.hideInFullscreen || this.isQuitting) {
       if (this.hiddenByFullscreen) {
@@ -1934,13 +2008,10 @@ export class MochiController {
       return;
     }
 
-    const exclusive = screen
-      .getAllDisplays()
-      .some(
-        (display) =>
-          display.workArea.width === display.size.width &&
-          display.workArea.height === display.size.height,
-      );
+    // Ask Windows what is at the front; fall back to the size-based guess
+    // (which mistakes a self-hiding taskbar for a game) when the probe is
+    // unavailable.
+    const exclusive = isRealFullScreen() ?? this.legacyExclusiveCheck();
 
     if (exclusive && !this.hiddenByFullscreen && this.petWindow?.isVisible()) {
       this.hiddenByFullscreen = true;

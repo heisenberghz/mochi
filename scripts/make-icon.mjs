@@ -64,18 +64,6 @@ function triangle(a, b, c, color) {
   }
 }
 
-function roundRect(x0, y0, x1, y1, r, color) {
-  for (let y = Math.floor(y0 * SS); y <= Math.ceil(y1 * SS); y += 1) {
-    for (let x = Math.floor(x0 * SS); x <= Math.ceil(x1 * SS); x += 1) {
-      const px = x / SS;
-      const py = y / SS;
-      const nx = Math.min(Math.max(px, x0 + r), x1 - r);
-      const ny = Math.min(Math.max(py, y0 + r), y1 - r);
-      if (Math.hypot(px - nx, py - ny) <= r) put(x, y, color);
-    }
-  }
-}
-
 // The icon is a portrait: the head fills the frame, because that is what
 // still reads at 16px. Geometry mirrors mochi.svg — head 53..147 x 40..116,
 // shifted onto the 256 canvas through the mapping in each block below.

@@ -7,6 +7,16 @@ export const PET_WINDOW = { width: 320, height: 360 } as const;
 export const HIT_HYSTERESIS = 8;
 export const INTERACTIVE_EXIT_DELAY = 150;
 
+/**
+ * How often the main process polls the real cursor to throw the
+ * interactive/click-through switch. Fast enough that hovering in feels
+ * instant, slow enough to be invisible in the process budget.
+ */
+export const CURSOR_WATCH_INTERVAL_MS = 100;
+
+/** How long after a bubble's own timer it still counts as on screen. */
+export const BUBBLE_INTERACTIVE_MARGIN_MS = 600;
+
 export const DRAG_THRESHOLD = 4;
 export const CLICK_MAX_DURATION = 400;
 export const SNAP_DISTANCE = 48;

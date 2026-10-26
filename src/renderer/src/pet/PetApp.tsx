@@ -270,9 +270,11 @@ export function PetApp() {
         clearExit();
         setWindowInteractive(true);
         // When the cursor is over the pet, Mochi turns its head to look at it.
+        // The art's own glances sit at seven degrees, so anything much past
+        // ten reads as a neck out of joint rather than a look.
         const angle =
           Math.atan2(event.clientY - 274, event.clientX - 160) * (180 / Math.PI);
-        setLookAngle(Math.max(-25, Math.min(25, angle)));
+        setLookAngle(Math.max(-10, Math.min(10, angle)));
       } else if (interactiveRef.current) {
         scheduleExit();
       }

@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const require = createRequire(import.meta.url);
 const electronPath = require('electron');
@@ -13,6 +14,12 @@ const imageFile = join(process.cwd(), 'smoke-result.png');
 rmSync(resultFile, { force: true });
 rmSync(recoverFile, { force: true });
 rmSync(imageFile, { force: true });
+
+// The smoke run keeps its save in the temp folder, which survives from one
+// run to the next. Assertions like "the pet greets a brand-new user" must
+// test the app, not leftovers of the previous run, so start from a clean
+// save every time.
+rmSync(join(tmpdir(), 'mochi-smoke'), { force: true, recursive: true });
 
 if (!existsSync(join(process.cwd(), 'out/main/index.js'))) {
   console.error('Build output missing. Run `npm run build` first.');
