@@ -1,133 +1,97 @@
-# Mochi
+# virtual_pet
 
-**A calm, always-there desktop companion for Windows.** Mochi is a small animated blob-cat that lives in the corner of your screen, keeps you company through focus sessions, and makes deep work feel a little more human.
+**A calm, always-there desktop companion for Windows.** Mochi is a small
+cream blob-cat who lives in the corner of your screen — keeping
+you company through focus sessions, napping when you nap, and making deep work
+feel a little more human.
 
-> **Status:** architecture and specification complete — implementation has not started.
-> **Spec version:** 1.0 · **Date:** 2026-10-19 · **Target:** Windows 11 (22H2+), Windows 10 22H2 (best effort), x64 first.
+> **Status:** personal-use app, built and running from source on Windows.
+> Pushed to GitHub as source only — no installer, no auto-update, no telemetry.
 
 ---
 
 ## Why this exists
 
-Productivity software usually asks for more attention than it gives back. Mochi takes the opposite bet: a tiny, delightful presence that is **ambient by default**, **useful when called upon**, and **never guilt-tripping**. It behaves like a good desk companion — quiet while you work, playful when you take a break, and asleep when you are.
+Productivity software usually asks for more attention than it gives back.
+Mochi takes the opposite bet: a tiny, delightful presence that is **ambient by
+default**, **useful when called upon**, and **never guilt-tripping**. She is
+quiet while you work, playful when you take a break, and asleep when you are.
 
-Three product pillars drive every technical decision:
+## What she does
 
-| Pillar | What it means | Architectural consequence |
+- Lives in an always-on-top, transparent, drag-anywhere window — click-through
+  everywhere except her own body, so she never blocks a click.
+- Walks her own walk cycles (roaming, sleep-curl, blink, wave, celebrate,
+  carried-by-you) driven by a behaviour brain that reads the time of day,
+  your energy budget, her energy and mood.
+- Runs a Pomodoro-style focus engine with idle-aware auto-pause, break
+  nudges, XP, levels, streaks and daily insights.
+- Wears cosmetics from her **Locker**: leaf hat, mug, bed, glasses and three
+  scarves — unlocked by level, retired when replaced.
+- Snoozes through quiet hours, pauses when you lock the screen, hides during
+  real fullscreen games, and comes back when you double-click her icon in the
+  tray (or at next log-in, if you let her).
+
+## Running it
+
+```powershell
+npm install
+npm run dev        # she appears
+```
+
+Quality gates:
+
+```powershell
+npm test           # unit tests (vitest)
+npm run lint
+npm run typecheck
+npm run build
+npm run smoke      # real desktop phases; needs a Windows desktop, local only
+```
+
+Details live in [ROADMAP.md](ROADMAP.md) — the live build log, stage by stage.
+
+## How it's built
+
+| Layer | Choice | Notes |
 | --- | --- | --- |
-| **Invisible until wanted** | The pet must never block clicks, steal focus, or clutter the taskbar. | Transparent frameless window, per-pixel-style hit testing, click-through by default, `showInactive()` startup. |
-| **Alive, not noisy** | Motion is continuous and characterful, but idle cost is near zero. | Rive state machine with layered idle animations; main-process behavior director; power-aware rendering. |
-| **Trustworthy companion** | Local-first data, no surveillance, predictable recovery. | No telemetry by default, sandboxed renderers, validated IPC, atomic versioned storage. |
+| Shell | Electron 44 | main process owns all state |
+| UI | React 19 + TypeScript (strict) | dumb renderers, typed IPC (Zod-validated at both ends) |
+| Build | electron-vite | |
+| Art | one hand-drawn SVG + CSS keyframes | the character is a single editable file; no binary art formats |
+| Native bridge | [koffi](https://github.com/Koromix/koffi) (MIT, prebuilt) | one tiny job: asking Windows which window is fullscreen |
+| Tests | Vitest | pure domain; a separate `scripts/smoke.mjs` drives the real desktop |
 
-## What v1 does
+Architecture in one line: **the main process decides, the renderers draw.**
+A pure-TypeScript domain core (behaviour brain, focus engine, persistence
+schema) runs in the main process; the pet and Den windows are projections of
+its snapshots, wired over a typed `contextBridge` API.
 
-- An always-on-top, transparent, draggable pet window with a roaming walk cycle, sleep, blink, wave, focus, celebrate, and drag reactions.
-- A behavior brain that chooses what Mochi does based on time of day, energy, mood, and what you are doing.
-- A focus timer (Pomodoro-style) with idle-aware auto-pause, break nudges, XP, streaks, and daily insights.
-- A "Den" window for the timer, stats, cosmetics, and settings.
-- Tray integration, global hotkeys, launch-at-login, multi-monitor and DPI handling.
-- Signed NSIS installer with background auto-update.
+## Deliberately not built
 
-Full scope, acceptance criteria, and release gates live in the [requirements](docs/01-product/requirements.md) and [roadmap](docs/05-plan/roadmap.md).
+This is a personal app, so some spec dreams stay parked in
+[ROADMAP.md](ROADMAP.md): the NSIS installer, auto-update with staged rollout,
+code signing, and the Rive binary-art pipeline. The docs in `docs/` are the
+original product specification — kept as history, not as the build plan.
 
-## Stack
-
-| Layer | Choice | Version baseline |
-| --- | --- | --- |
-| Shell | Electron | 44.9.x |
-| UI | React + TypeScript (strict) | React 19.x, TS 5.x |
-| Build | electron-vite + Vite | current at scaffold time |
-| Pet animation | Rive (`@rive-app/react-canvas`) | 4.37.0 / runtime 2.45.0 |
-| Styling (Den) | Tailwind CSS + CSS custom properties, Radix primitives | Tailwind 4.x |
-| Domain tests | Vitest + fake clock/RNG | Vitest 3.x |
-| E2E | Playwright Electron | current at scaffold time |
-| Packaging | electron-builder + electron-updater | 26.x / 6.x |
-| Storage | Versioned JSON document store (no native modules) | schema v1 |
-
-Rationale for each choice is recorded in the [ADR set](docs/04-adr/README.md).
-
-## Architecture at a glance
+## Repository layout
 
 ```
-┌──────────────────────────── Main process (authority) ────────────────────────────┐
-│  Domain core (pure TS)          Application services           OS integration     │
-│  ├─ BehaviorDirector            ├─ PetService                  ├─ WindowManager    │
-│  ├─ FocusEngine                 ├─ FocusService                ├─ MotionDriver     │
-│  ├─ PetModel (energy/mood/XP)   ├─ SettingsService             ├─ TrayController   │
-│  └─ RoamPlanner                 ├─ StatsService                ├─ HotkeyService    │
-│                                 └─ PersistenceService           └─ PowerService     │
-│                    typed, validated IPC  ◄────────────►  preload (contextBridge)   │
-└──────────────────────────────────────────────────────────────────────────────────┘
-          │                                                          │
-   ┌──────▼──────────────┐                                   ┌───────▼──────────────┐
-   │ Pet renderer        │                                   │ Den renderer         │
-   │ Rive canvas + bubble│                                   │ Timer, stats,        │
-   │ input capture       │                                   │ settings, locker     │
-   └─────────────────────┘                                   └──────────────────────┘
-```
-
-- **The main process owns state.** Renderers send commands and render snapshots. This keeps behavior consistent across window reloads and makes the domain testable without Electron.
-- **Rive owns the body, not the brain.** The behavior director emits a behavior enum plus energy/mood/speed; the Rive state machine handles blending, blinking, and secondary motion.
-- **The pet window is tight, not a full-screen overlay.** It moves with a main-process motion driver when Mochi walks, and is click-through everywhere except the pet's hit region.
-- **Everything that crosses a process boundary is typed and validated** with Zod at both ends.
-
-Read the full [architecture overview](docs/02-architecture/overview.md).
-
-## Documentation map
-
-| Document | Purpose |
-| --- | --- |
-| [Docs index](docs/README.md) | Reading paths, conventions, status |
-| [PRD](docs/01-product/prd.md) | Vision, users, scope, success metrics |
-| [Requirements](docs/01-product/requirements.md) | FR/NFR IDs and acceptance criteria |
-| [Architecture overview](docs/02-architecture/overview.md) | Process model, modules, data flow, constants |
-| [Desktop shell](docs/02-architecture/desktop-shell.md) | Windows, transparency, click-through, drag, motion, DPI |
-| [Behavior engine](docs/02-architecture/behavior-engine.md) | Statecharts, behavior catalog, scheduling |
-| [Animation system](docs/02-architecture/animation-system.md) | Rive runtime, bridge, asset lifecycle, failure modes |
-| [Focus engine](docs/02-architecture/focus-engine.md) | Timer semantics, idle/suspend recovery, rewards |
-| [Data & persistence](docs/02-architecture/data-and-persistence.md) | Schemas, atomic writes, migrations, recovery |
-| [IPC contracts](docs/02-architecture/ipc-contracts.md) | Channels, envelopes, errors, preload API |
-| [Security & privacy](docs/02-architecture/security-and-privacy.md) | Threat model, hardening, data inventory |
-| [Performance & reliability](docs/02-architecture/performance-and-reliability.md) | Budgets, measurement, power, crash handling |
-| [Experience spec](docs/03-design/experience-spec.md) | Flows, interactions, surfaces, copy, a11y |
-| [Visual & motion system](docs/03-design/visual-and-motion.md) | Art direction, palette, timing, sound |
-| [Rive authoring contract](docs/03-design/rive-authoring-contract.md) | Artboard, state machine, view model contract |
-| [ADRs](docs/04-adr/README.md) | Nine decisions with alternatives and consequences |
-| [Roadmap](docs/05-plan/roadmap.md) | Phases, spikes, estimates, release checklist |
-| [Test strategy](docs/05-plan/test-strategy.md) | Pyramid, E2E, visual, perf, release gates |
-| [Risk register](docs/05-plan/risk-register.md) | Likelihood, impact, mitigation, owners |
-| [Glossary](docs/06-appendix/glossary.md) | Shared vocabulary |
-| [References](docs/06-appendix/references.md) | Verified API/version sources |
-
-## Planned repository layout
-
-```
-mochi/
+virtual_pet/
 ├─ src/
-│  ├─ main/            # Electron main process, adapters, services
-│  ├─ preload/         # contextBridge API (one per renderer surface)
-│  ├─ domain/          # pure TypeScript: no electron, no React, no I/O
-│  ├─ shared/          # Zod contracts, constants, types
+│  ├─ main/          # Electron main process: controller, store, windows, smoke
+│  ├─ preload/       # contextBridge API for each renderer surface
+│  ├─ domain/        # pure TypeScript: behaviour, focus, persistence (no Electron)
+│  ├─ shared/        # Zod contracts, constants, art anchors
 │  └─ renderer/
-│     ├─ pet/          # Rive canvas, bubble, input capture
-│     └─ den/          # timer, insights, settings, locker
-├─ assets/
-│  ├─ rive/mochi.riv   # designer-owned; validated in CI
-│  ├─ icons/           # tray + installer, multi-DPI
-│  └─ audio/           # short, license-cleared cues
-├─ docs/               # this specification
-└─ tests/              # fixtures, E2E, visual goldens
+│     ├─ pet/        # the SVG pet, bubbles, input
+│     └─ den/        # focus timer, insights, locker, settings
+├─ assets/pet/       # mochi.svg — the entire character, one editable file
+├─ scripts/          # icon generator + the two-phase desktop smoke harness
+└─ docs/             # the original specification (historical)
 ```
 
-## Working agreements
+## The Name
 
-- **Requirements are testable.** Every `FR-*` has an acceptance criterion and a verification method. Every NFR has a budget and a measurement.
-- **ADRs are immutable records.** Superseding a decision means adding a new ADR, not editing history.
-- **The Rive file is a versioned interface.** Its view model and state machine names are contractual; CI fails if they drift.
-- **Docs are the source of truth until code exists.** When implementation reveals a better decision, update the ADR and the affected specs in the same change.
-
-## Immediate next steps
-
-1. Approve the [character direction](docs/03-design/visual-and-motion.md) and commission the first `.riv` file against the [Rive contract](docs/03-design/rive-authoring-contract.md).
-2. Run Spike S1 (transparent window + click-through + motion smoothness) before committing to the motion driver design.
-3. Scaffold the repo from [Roadmap Phase 0](docs/05-plan/roadmap.md#3-phase-0-foundations-week-1).
+The repo is **virtual_pet** — the simplest honest description of what it is.
+Mochi the character keeps the name she was born with.
