@@ -12,7 +12,7 @@ import tseslint from 'typescript-eslint';
  * what makes that a promise instead of a hope.
  */
 export default tseslint.config(
-  { ignores: ['out/**', 'node_modules/**', 'coverage/**'] },
+  { ignores: ['out/**', 'node_modules/**', 'coverage/**', 'art-mockups/**'] },
 
   // Every TS file in the product.
   { files: ['src/**/*.{ts,tsx}'] },

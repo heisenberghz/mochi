@@ -4,7 +4,7 @@
 > original product specification. This file is the one we actually build from, and it gets
 > updated after every piece of work so you can always see where we are.
 >
-> **Last updated:** 2026-10-26 · **Repo:** `D:\pet` · **Branch:** `main`
+> **Last updated:** 2026-10-29 · **Repo:** `D:\pet` · **Branch:** `main`
 
 ---
 
@@ -299,6 +299,45 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 ## 7. Status log
 
 *Newest first. I add an entry after each piece of work.*
+
+### 2026-10-29 — Commit 10 (stage 10B): the pixel art lands as contract v2
+
+The A/B mockup round ended with the user picking **B · Pixel Mochi**; this stage
+lands that sprite as the production art:
+
+- **The generator is the source of truth.** `scripts/build-pixel-mochi.mjs`
+  writes `assets/pet/mochi.svg`; the SVG's header says so and points at the
+  generator. The old hand-shaped art is gone — never drawn on by hand again.
+- **Contract v2 in `src/shared/art-anchors.ts`.** New ground (y 208, the
+  paw bottoms), shadow row (middle y 212), and anchors moved to the sprite:
+  head (100, 80), body (100, 160), knot (100, 128), hat (100, 24), paw
+  (153, 174), tail root (148, 148), ear tips y 8. The pixel palette
+  (`#26160F`-`#FFF6E6`, 15 flat tokens) replaces the gradient one, and the
+  separate `outline` layer is gone — the ink ring is woven into each part's
+  own cells.
+- **The art now carries every class hook.** The generator emits the full
+  skeleton the stylesheet and tests check: `head-shape`, `belly`,
+  `body-shade`, `scarf-back/band/knot/tail`, `mouth`, `eye-bright`,
+  `curl-body`, `curl-tail`, and `tail`+`tail-outline` on the tail fill.
+- **`pet.css` motion pivots moved to the new geometry.** Breathe/wake pivot
+  at the feet (y 208), drag by the scruff (y 44), scarf swing at the knot
+  (y 128), sleep shadow at y 212, and the tail wags about the curl's own
+  centre (176, 144) — a root pivot sheared the pixels a whole cell.
+  The "bright mood" eye selector now targets `.eye-bright` (pixel eyes have
+  no ellipse).
+- **Hit regions honest about the sprite.** Idle now a real circle that
+  covers the whisker dots (x 36) through the tail ring (x 200) and ear tips
+  (y 8) down to the shadow (y 216); sleep/drag/celebrate/focus follow the
+  new silhouette. Click target moves with it (the tests assert the exact
+  numbers).
+- **Found and fixed during the QA capture:** the first generated file was
+  missing the body's entire ink ring (a rename to `body-ring` that the
+  assembly never emitted) — the tail floated loose from the body. The
+  generated QA sheets (`art-mockups/qa-*.png`) prove the ring and the
+  weld on white and dark speckled wallpapers.
+- **Doc:** `docs/03-design/character-art-contract.md` rewritten to v2.0 —
+  the contract is now "edit the generator, not the SVG".
+- 68 shared tests passing. lint, typecheck, build green.
 
 ### 2026-10-25 — Commit 8: the visual polish
 

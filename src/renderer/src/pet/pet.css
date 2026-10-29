@@ -68,7 +68,7 @@
 
 .pet-svg .character {
   transform-box: view-box;
-  transform-origin: 100px 205px;
+  transform-origin: 100px 208px;
   animation: mochi-breathe 3.6s var(--ease-standard) infinite;
   will-change: transform;
 }
@@ -94,7 +94,10 @@
 .pet-svg .tail,
 .pet-svg .tail-outline {
   transform-box: view-box;
-  transform-origin: 150px 172px;
+  /* The pivot is the curl's own centre, not the tail root: a gentle sway in
+     place. A pivot at the root would swing the far cells a whole pixel-cell,
+     shearing the sprite out of its grid. */
+  transform-origin: 176px 144px;
   animation: mochi-tail 4.2s var(--ease-standard) infinite;
 }
 
@@ -105,7 +108,7 @@
    * of the scarf, and it swings away from its neck.
    */
   transform-box: view-box;
-  transform-origin: 100px 156px;
+  transform-origin: 100px 128px;
   animation: mochi-scarf 4.2s var(--ease-standard) infinite;
   /* The scarf lags the body, so the two never move in lockstep. */
   animation-delay: -0.12s;
@@ -283,7 +286,9 @@
   transform-origin: center;
 }
 
-.pet-sprite[data-emotion="bright"] .eye-open ellipse {
+.pet-sprite[data-emotion="bright"] .eye-bright {
+  /* A separate wrapper holds the shine, so brightness can sit next to the
+     blink instead of fighting it over the same transform. */
   transform: scale(1.14);
   transform-box: fill-box;
   transform-origin: center;
@@ -330,13 +335,13 @@
 }
 .behavior-sleep .contact-shadow {
   transform: scaleX(1.08);
-  transform-origin: 100px 209px;
+  transform-origin: 100px 212px;
 }
 
 /* Wake */
 .behavior-wake .character {
   animation: mochi-wake 1.2s ease-in-out;
-  transform-origin: 100px 205px;
+  transform-origin: 100px 208px;
 }
 
 /* Wave */
@@ -355,7 +360,7 @@
 .behavior-wave .scarf-tail {
   transform-box: view-box;
   /* The origin is the scarf knot anchor, from the art contract. */
-  transform-origin: 100px 120px;
+  transform-origin: 100px 128px;
   animation: mochi-scarf-wave 1.5s ease-in-out;
 }
 
@@ -399,7 +404,8 @@
 /* Dragged */
 .behavior-drag .character {
   animation: mochi-dangle 1.2s ease-in-out infinite;
-  transform-origin: 100px 70px;
+  /* Carried by the scruff: just under the flat top of the head. */
+  transform-origin: 100px 44px;
 }
 /* Carried by the scruff: the head and the body stretch under their own weight. */
 .behavior-drag .head,

@@ -90,15 +90,23 @@ describe('the artwork file', () => {
   });
 
   it('puts the contact shadow on the ground anchor', () => {
-    expect(art).toContain(`cy="${ART.shadow}"`);
+    // In the pixel art the shadow is the row of cells that starts at the
+    // pet's feet, so its top edge is the ground line itself.
+    expect(art).toContain(`y="${ART.ground}"`);
   });
 
   it('puts the eyes on the face anchor', () => {
-    expect(art).toContain(`cy="${ANCHORS.faceAttach.y}"`);
+    // The toy eyes are two cells wide, opening at either side of the face
+    // line: the left eye's cells start at head.x - 28, the right's at
+    // head.x + 12.
+    expect(art).toContain(`x="${ANCHORS.head.x - 28}"`);
+    expect(art).toContain(`x="${ANCHORS.head.x + 12}"`);
   });
 
   it('ties the scarf at the knot anchor', () => {
-    expect(art).toContain(`cx="${ANCHORS.scarfKnot.x}"`);
+    // The knot is the dark centre column of the band: it starts one cell
+    // left of centre, at the top of the band's two rows.
+    expect(art).toContain(`y="${ANCHORS.scarfKnot.y - 8}"`);
   });
 
   it('holds no text, because the design rules forbid it', () => {
@@ -106,7 +114,7 @@ describe('the artwork file', () => {
   });
 
   it('stays inside the artboard', () => {
-    // The furthest right anything reaches, plus the width of the tail's stroke.
+    // The furthest right anything reaches, plus the width of the tail's ring.
     const widest = Math.max(...[...art.matchAll(/x="(\d+)"/g)].map((m) => Number(m[1])));
     expect(widest).toBeLessThanOrEqual(ART.width);
   });

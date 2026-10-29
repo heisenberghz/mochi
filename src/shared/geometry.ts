@@ -36,8 +36,13 @@ export const BUBBLE_REGION = {
   height: BUBBLE_MAX_HEIGHT,
 };
 
-/** The body, as the art draws it. */
-const BODY: HitRegion = { cx: 100, cy: 108, rx: 84, ry: 100 };
+/** The body, as the art draws it.
+ *
+ * Taken from the pixel sprite's silhouette: the whisker dots reach x 36–172,
+ * the tail's ring touches the right artboard edge, the ear tips start at y 8
+ * and the contact shadow ends at y 216. A circle of rx 100 around x 100 is
+ * the smallest one that covers x 0–200, and ry 104 covers y 8–216. */
+const BODY: HitRegion = { cx: 100, cy: 112, rx: 100, ry: 104 };
 
 /**
  * The region that counts as the pet, per behaviour, in the art's own units.
@@ -57,13 +62,13 @@ export const HIT_REGION_SVG: Record<Behavior, HitRegion> = {
   stretch: BODY,
   yawn: BODY,
   // The glasses reach a little past the face.
-  focus: { cx: 100, cy: 106, rx: 86, ry: 102 },
-  // The sparkles reach further still.
-  celebrate: { cx: 100, cy: 106, rx: 88, ry: 104 },
-  // Curled up, it is lower and smaller.
-  sleep: { cx: 100, cy: 122, rx: 78, ry: 92 },
-  // Hanging, it is narrower.
-  drag: { cx: 100, cy: 112, rx: 76, ry: 96 },
+  focus: { cx: 100, cy: 112, rx: 102, ry: 104 },
+  // The sparkles reach further still, and the body lifts as it springs.
+  celebrate: { cx: 100, cy: 110, rx: 104, ry: 106 },
+  // Curled up, it is lower and smaller: x 24–168, y 152–208.
+  sleep: { cx: 100, cy: 160, rx: 84, ry: 64 },
+  // Hanging by the scruff, it swings about the head top.
+  drag: { cx: 100, cy: 104, rx: 84, ry: 112 },
 };
 
 /**

@@ -60,11 +60,12 @@ describe('the art anchors', () => {
 
 describe('the art palette', () => {
   it('is drawn from the design system', () => {
-    expect(ART_PALETTE.body).toBe('#F3E7D6');
-    expect(ART_PALETTE.shadow).toBe('#E4D2BB');
-    expect(ART_PALETTE.innerEar).toBe('#E8B7A6');
-    expect(ART_PALETTE.furDeep).toBe('#CBB69C');
-    expect(ART_PALETTE.ink).toBe('#2A2622');
+    expect(ART_PALETTE.body).toBe('#F7C585');
+    expect(ART_PALETTE.bodyShade).toBe('#DF9E5B');
+    expect(ART_PALETTE.bodyDeep).toBe('#B97E42');
+    expect(ART_PALETTE.ink).toBe('#26160F');
+    expect(ART_PALETTE.innerEar).toBe('#F6906E');
+    expect(ART_PALETTE.bodyLight).toBe('#FFE9C4');
   });
 
   it('is all the same colour of hex', () => {

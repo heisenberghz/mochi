@@ -13,10 +13,11 @@ import {
 
 /**
  * The measured bounds of the art, in the art's own units, taken from the
- * paths in `PetSprite.tsx`: the body runs x 38–162, the ears reach y 35 and
- * the paws reach y 207.
+ * cells in `assets/pet/mochi.svg`: the whisker dots run x 36–172, the tail's
+ * ring touches x 200, the ear tips start at y 8 and the shadow ends at
+ * y 216.
  */
-const ART_BOUNDS = { left: 38, right: 162, top: 35, bottom: 207 };
+const ART_BOUNDS = { left: 36, right: 200, top: 8, bottom: 216 };
 
 describe('the sprite geometry', () => {
   it('derives where the art sits in the window', () => {
@@ -50,7 +51,7 @@ describe('the hit region', () => {
     // The region used to be typed in by hand. Deriving it must not move the
     // pet's click target.
     const region = hitRegionFor('idle');
-    expect(region).toEqual({ cx: 160, cy: 242, rx: 84, ry: 100 });
+    expect(region).toEqual({ cx: 160, cy: 246, rx: 100, ry: 104 });
   });
 
   it('follows the pet when it curls up to sleep', () => {

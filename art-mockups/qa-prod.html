@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  Production-art QA sheet: the shipped assets/pet/mochi.svg at 2x her real
+  size, over both hostile wallpapers, animated by the real pet.css.
+  Built self-contained by build-qa-prod.mjs. Scroll for the dark row.
+-->
+<html lang="en" style="margin:0">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../src/renderer/src/pet/pet.css">
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #26221e; color: #f4ead7; margin: 0; padding: 24px; }
+  h1 { font-size: 17px; margin: 0 0 6px; }
+  table { border-collapse: separate; border-spacing: 14px; margin-top: 10px; }
+  .frame { width: 470px; height: 500px; border-radius: 12px; overflow: hidden; display: flex; align-items: end; justify-content: center; position: relative; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
+  .wall-white { background: #ffffff; }
+  .wall-dark {
+    background-color: #10151f;
+    background-image:
+      radial-gradient(circle at 12% 22%, #ffffff22 0 3.2px, transparent 4px),
+      radial-gradient(circle at 32% 68%, #ffffff1a 0 2.4px, transparent 4px),
+      radial-gradient(circle at 55% 39%, #ffffff20 0 3.6px, transparent 4.4px),
+      radial-gradient(circle at 74% 77%, #ffffff17 0 2.8px, transparent 4px),
+      radial-gradient(circle at 86% 28%, #ffffff1f 0 4px, transparent 4.8px),
+      radial-gradient(circle at 41% 12%, #ffffff18 0 2.2px, transparent 3.6px),
+      radial-gradient(circle at 66% 55%, #ffffff22 0 3px, transparent 4px),
+      radial-gradient(circle at 21% 88%, #ffffff1b 0 2.6px, transparent 4px),
+      linear-gradient(160deg, #1a2130 0%, #0d1119 60%, #141b28 100%);
+  }
+  .spritebox { width: 400px; height: 440px; position: relative; }
+  .spritebox svg.pet-svg { width: 400px; height: 440px; display: block; }
+  .cell-label { font-size: 13px; opacity: .7; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+  <h1>Mochi — production art QA (assets/pet/mochi.svg, contract v2)</h1>
+  <div style="font-size:13px;opacity:.65">Real pet.css — she breathes and blinks. Left: plain white. Right: dark speckled. Accessories stay hidden until equipped, like in the app.</div>
+  <table>
+    <tr>
+      <td><div class="cell-label">white, 2x</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot"></div></div></td>
+      <td><div class="cell-label">dark speckled, 2x</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot"></div></div></td>
+    </tr>
+  </table>
+<script>
+  // The SVG is inlined at build time (build-qa-prod.mjs) — no fetching.
+  window.__ART__ = `%PROD%`;
+  (function () {
+    const art = window.__ART__;
+    document.querySelectorAll('.spritebox').forEach(function (slot) {
+      slot.innerHTML = art;
+    });
+  })();
+  if (new URLSearchParams(location.search).get('row') === 'dark') {
+    addEventListener('load', function () { scrollTo(0, document.body.scrollHeight); });
+  }
+</script>
+</html>
