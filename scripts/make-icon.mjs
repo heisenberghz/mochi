@@ -1,3 +1,14 @@
+/**
+ * The app icon: Mochi's head as a portrait, replayed from the sprite.
+ *
+ * The drawing is the same flat pixel cells as the production art (art
+ * contract v2) — the head, the ears and the face, in the same order and the
+ * same palette as `scripts/build-pixel-mochi.mjs`, the source of truth for
+ * what Mochi looks like. Nothing is shaded or blurred: the icon is the
+ * character, scaled onto a 256px canvas.
+ *
+ * Run: npm run icon
+ */
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -5,133 +16,136 @@ import { join } from 'node:path';
 const SIZE = 256;
 const SS = 4;
 const W = SIZE * SS;
+const CELL = 8;
+
+/** The palette: the same flat tokens as the sprite generator. */
+const C = {
+  ink: [38, 22, 15], // #26160F
+  body: [247, 197, 133], // #F7C585
+  light: [255, 233, 196], // #FFE9C4
+  deep: [185, 126, 66], // #B97E42
+  spark: [255, 247, 234], // #FFF7EA
+  innerEar: [246, 144, 110], // #F6906E
+  // Pre-blended mixes (the plotter overwrites rather than composites):
+  blush: [246, 152, 113], // innerEar at 85% over the coat
+  sparkSoft: [222, 213, 201], // spark at 85% over the ink eye
+};
+
+/**
+ * The portrait's frame, in art units. The sprite's head — once its ink ring,
+ * the ears and the whisker dots are counted — spans x 36..172 and y 0..128
+ * (the ear tips' own ring cell is the top row). The frame squares that box
+ * with a whisker of padding on every side.
+ */
+const FRAME = { x0: 34, y0: -6, size: 140 };
+/** virtual (supersampled) pixels per art unit */
+const VS = (SIZE / FRAME.size) * SS;
 
 const pixels = new Uint8Array(W * W * 4);
 
-const colors = {
-  ink: [42, 38, 34],
-  cream: [243, 231, 214],
-  shadow: [228, 210, 187],
-  innerEar: [232, 183, 166],
-  // Cheeks sit at 55% opacity in the art; pre-blended over the cream here,
-  // because the pixel plotter overwrites rather than composites.
-  blush: [234, 197, 180],
-  deep: [203, 182, 156],
-  highlight: [255, 253, 248],
-  // The small eye sparkle is 85% white over the ink eye.
-  sparkle: [223, 223, 225],
-};
-
-function put(x, y, color, alpha = 255) {
+function put(x, y, color) {
   if (x < 0 || y < 0 || x >= W || y >= W) return;
   const i = (y * W + x) * 4;
   pixels[i] = color[0];
   pixels[i + 1] = color[1];
   pixels[i + 2] = color[2];
-  pixels[i + 3] = alpha;
+  pixels[i + 3] = 255;
 }
 
-function ellipse(cx, cy, rx, ry, color) {
-  const x0 = Math.floor((cx - rx) * SS);
-  const x1 = Math.ceil((cx + rx) * SS);
-  const y0 = Math.floor((cy - ry) * SS);
-  const y1 = Math.ceil((cy + ry) * SS);
-  for (let y = y0; y <= y1; y += 1) {
-    for (let x = x0; x <= x1; x += 1) {
-      const nx = (x / SS - cx) / rx;
-      const ny = (y / SS - cy) / ry;
-      if (nx * nx + ny * ny <= 1) put(x, y, color);
+/** An art-unit rectangle — a whole cell, or a free-size detail. */
+function fillArt(x0, y0, w, h, color) {
+  const vx0 = Math.round((x0 - FRAME.x0) * VS);
+  const vx1 = Math.round((x0 + w - FRAME.x0) * VS);
+  const vy0 = Math.round((y0 - FRAME.y0) * VS);
+  const vy1 = Math.round((y0 + h - FRAME.y0) * VS);
+  for (let y = vy0; y < vy1; y++) for (let x = vx0; x < vx1; x++) put(x, y, color);
+}
+
+/** One grid cell; fractional coordinates allowed, as in the sprite. */
+const at = (gx, gy, color) => fillArt(gx * CELL, gy * CELL, CELL, CELL, color);
+
+// ------------------------------------------------------------- cell helpers
+/** cells whose centre is inside an ellipse */
+function insideEllipse(cx, cy, rx, ry, x0, x1, y0, y1) {
+  const set = [];
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
+    if (dx * dx + dy * dy <= 1) set.push([x, y]);
+  }
+  return set;
+}
+/** true when no cell of `set` exists at that spot */
+const free = (set) => (x, y) => !set.some(([ax, ay]) => ax === x && ay === y);
+
+// ------------------------------------------------------- the head, replayed
+// The same shapes the sprite generator computes: a wide round head with a
+// flat top, ears welded onto it, the ink ring, and the toy face.
+
+const headSet = insideEllipse(12.5, 9.6, 6.2, 5.2, 5, 20, 3, 15).filter(([, y]) => y >= 5);
+const inHead = free(headSet);
+
+// ears first (in the sprite they sit behind the head's ring)
+const earL = [[8, 1], [7, 2], [8, 2], [9, 2], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3]];
+const earR = [[16, 1], [15, 2], [16, 2], [17, 2], [13, 3], [14, 3], [15, 3], [16, 3], [17, 3]];
+for (const [x, y] of earL) at(x, y, C.body);
+for (const [x, y] of earR) at(x, y, C.body);
+/** the ink a part's own ring would paint, exactly as the generator does */
+function earInk(ear) {
+  for (const [x, y] of ear) {
+    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+      if (free(ear)(nx, ny) && !inHead(nx, ny)) at(nx, ny, C.ink);
     }
   }
 }
+earInk(earL);
+earInk(earR);
+at(8, 2, C.innerEar); at(8, 3, C.innerEar); // inner ear, left
+at(16, 2, C.innerEar); at(16, 3, C.innerEar); // inner ear, right
 
-function triangle(a, b, c, color) {
-  const minX = Math.floor(Math.min(a[0], b[0], c[0]) * SS);
-  const maxX = Math.ceil(Math.max(a[0], b[0], c[0]) * SS);
-  const minY = Math.floor(Math.min(a[1], b[1], c[1]) * SS);
-  const maxY = Math.ceil(Math.max(a[1], b[1], c[1]) * SS);
-  const sign = (p, q, r) => (p[0] - r[0]) * (q[1] - r[1]) - (q[0] - r[0]) * (p[1] - r[1]);
-  for (let y = minY; y <= maxY; y += 1) {
-    for (let x = minX; x <= maxX; x += 1) {
-      const p = [x / SS, y / SS];
-      const d1 = sign(p, a, b);
-      const d2 = sign(p, b, c);
-      const d3 = sign(p, c, a);
-      const hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
-      const hasPos = d1 > 0 || d2 > 0 || d3 > 0;
-      if (!(hasNeg && hasPos)) put(x, y, color);
-    }
+// head fill, ink ring, light band
+for (const [x, y] of headSet) at(x, y, C.body);
+for (const [x, y] of headSet) {
+  for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+    if (inHead(nx, ny)) at(nx, ny, C.ink);
   }
 }
+for (const [x, y] of headSet) {
+  if ((y === 5 && x <= 10) || (y === 6 && x === 9)) at(x, y, C.light);
+}
 
-// The icon is a portrait: the head fills the frame, because that is what
-// still reads at 16px. Geometry mirrors mochi.svg — head 53..147 x 40..116,
-// shifted onto the 256 canvas through the mapping in each block below.
+// the toy face: two-cell glossy eyes with the catches cut into the ink
+for (const cx of [9, 14]) {
+  for (const [x, y] of [[cx, 9], [cx + 1, 9], [cx, 10], [cx + 1, 10]]) at(x, y, C.ink);
+  fillArt(cx * CELL + 2, 9 * CELL + 2, 5, 4, C.spark); // the big catch
+  fillArt((cx + 1) * CELL + 3, 10 * CELL + 5, 3, 3, C.sparkSoft); // the small one
+}
+at(8, 11, C.blush); at(17, 11, C.blush); // cheeks, tucked inside the ring
+at(12, 11, C.ink); // nose
+at(11, 12, C.ink); at(13, 12, C.ink); // the pixel M
+// whisker dots, just off the silhouette, in the deep fur tone
+for (const [x, y] of [[4.5, 10], [4.5, 11], [20.5, 10], [20.5, 11]]) at(x, y, C.deep);
 
-// Ears behind the head: cream triangles with pink inners that peek out.
-triangle([74, 26], [120, 62], [56, 90], colors.cream);
-triangle([182, 26], [136, 62], [200, 90], colors.cream);
-
-// Head with a thin ink ring, so the cream reads on light docks.
-ellipse(128, 104, 79, 65, colors.ink);
-ellipse(128, 104, 75, 61, colors.cream);
-
-// Inner ears, staying above the head's edge so they read as ear lining.
-triangle([78, 36], [68, 58], [102, 50], colors.innerEar);
-triangle([178, 36], [188, 58], [154, 50], colors.innerEar);
-
-// Glossy eyes: ink ovals, a big top-left highlight and a small one below.
-ellipse(96, 100.6, 11.2, 14.4, colors.ink);
-ellipse(160, 100.6, 11.2, 14.4, colors.ink);
-ellipse(92, 95, 4.8, 5.1, colors.highlight);
-ellipse(156, 95, 4.8, 5.1, colors.highlight);
-ellipse(100.5, 106.4, 2.1, 2.1, colors.sparkle);
-ellipse(164.5, 106.4, 2.1, 2.1, colors.sparkle);
-
-// Cheeks and the smile (the w-mouth simplified for icon scale).
-ellipse(83.2, 118.2, 10.4, 5.8, colors.blush);
-ellipse(172.8, 118.2, 10.4, 5.8, colors.blush);
-ellipse(128, 133, 10.5, 2.3, colors.ink);
-
-// The nose: the wide-top triangle from the art.
-triangle([120, 115], [136, 115], [128.8, 124], colors.ink);
-
-// Whiskers, in the deep fur tone, thin as wedges.
-triangle([73.6, 109.5], [73.6, 110.9], [48, 103.8], colors.deep);
-triangle([73.6, 117.5], [73.6, 118.9], [48, 118.2], colors.deep);
-triangle([180.8, 109.5], [180.8, 110.9], [206, 103.8], colors.deep);
-triangle([180.8, 117.5], [180.8, 118.9], [206, 118.2], colors.deep);
-
-// Downsample with alpha-weighted colour so edges stay clean.
+// ------------------------------------------------- downsample and encode
 const output = Buffer.alloc(SIZE * SIZE * 4);
 for (let y = 0; y < SIZE; y += 1) {
   for (let x = 0; x < SIZE; x += 1) {
     let r = 0;
     let g = 0;
     let b = 0;
-    let a = 0;
     for (let sy = 0; sy < SS; sy += 1) {
       for (let sx = 0; sx < SS; sx += 1) {
         const i = ((y * SS + sy) * W + (x * SS + sx)) * 4;
-        const alpha = pixels[i + 3];
-        r += pixels[i] * alpha;
-        g += pixels[i + 1] * alpha;
-        b += pixels[i + 2] * alpha;
-        a += alpha;
+        r += pixels[i];
+        g += pixels[i + 1];
+        b += pixels[i + 2];
       }
     }
+    const samples = SS * SS;
     const o = (y * SIZE + x) * 4;
-    if (a === 0) {
-      output[o] = 0;
-      output[o + 1] = 0;
-      output[o + 2] = 0;
-      output[o + 3] = 0;
-    } else {
-      output[o] = Math.round(r / a);
-      output[o + 1] = Math.round(g / a);
-      output[o + 2] = Math.round(b / a);
-      output[o + 3] = Math.round(a / (SS * SS));
-    }
+    output[o] = Math.round(r / samples);
+    output[o + 1] = Math.round(g / samples);
+    output[o + 2] = Math.round(b / samples);
+    output[o + 3] = 255;
   }
 }
 

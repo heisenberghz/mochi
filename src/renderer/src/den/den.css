@@ -4,8 +4,8 @@
   --ink: #2a2622;
   --muted: #776c5f;
   --line: #e4dacb;
-  --accent: #d98c45;
-  --accent-soft: #f3e2cc;
+  --accent: #e07a2b;
+  --accent-soft: #f5e4d2;
   --track: #ece1d2;
   display: grid;
   grid-template-columns: 216px minmax(0, 1fr);
@@ -459,7 +459,8 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #e39b58;
+  /* The accent stepped toward white, matching the bubble button's hover. */
+  background: #e89b60;
 }
 
 .btn-ghost {
@@ -598,7 +599,9 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #e7b477, var(--accent));
+  /* The light end is the accent stepped toward white, so the fill washes
+     from the palette's own tone. */
+  background: linear-gradient(90deg, #e9a26a, var(--accent));
   transition: width 400ms ease;
 }
 
@@ -1137,8 +1140,8 @@ input:focus-visible {
     --ink: #f0e8dc;
     --muted: #a3968a;
     --line: #3d342c;
-    --accent: #e6a05c;
-    --accent-soft: #45362a;
+    --accent: #e89b60;
+    --accent-soft: #48301c;
     --track: #332b24;
     background:
       radial-gradient(1200px 600px at 85% -10%, #2a241d 0%, rgba(42, 36, 29, 0) 60%),
@@ -1290,7 +1293,7 @@ input:focus-visible {
   top: 10px;
   width: 16px;
   height: 16px;
-  background: #8fae7c;
+  background: #7fa05e;
   border-radius: 0 50% 0 50%;
   transform: rotate(45deg);
 }
@@ -1299,7 +1302,7 @@ input:focus-visible {
   top: 12px;
   width: 1.5px;
   height: 12px;
-  background: #6e8e5f;
+  background: #5f8047;
   border-radius: 2px;
   transform: rotate(45deg);
 }
@@ -1321,19 +1324,19 @@ input:focus-visible {
   height: 13px;
   border-radius: 0 0 3px 3px;
 }
-.cosmetic-scarf-moss::before { background: #8fae7c; }
-.cosmetic-scarf-moss::after { left: 16px; background: #6e8e5f; }
-.cosmetic-scarf-sky::before { background: #7fa3c7; }
-.cosmetic-scarf-sky::after { left: 16px; background: #5f86b1; }
-.cosmetic-scarf-aurora::before { background: linear-gradient(120deg, #7ec8a9, #9a7fd1); }
-.cosmetic-scarf-aurora::after { left: 16px; background: #9a7fd1; }
+.cosmetic-scarf-moss::before { background: #7FA05E; }
+.cosmetic-scarf-moss::after { left: 16px; background: #5F8047; }
+.cosmetic-scarf-sky::before { background: #6FA0D8; }
+.cosmetic-scarf-sky::after { left: 16px; background: #4E7FB8; }
+.cosmetic-scarf-aurora::before { background: linear-gradient(120deg, #7EC8A9, #9A7FD1); }
+.cosmetic-scarf-aurora::after { left: 16px; background: #9A7FD1; }
 
 .cosmetic-mug::before {
   left: 9px;
   bottom: 11px;
   width: 15px;
   height: 14px;
-  background: #d98c45;
+  background: #E07A2B;
   border-radius: 2px 2px 5px 5px;
 }
 .cosmetic-mug::after {
@@ -1341,7 +1344,7 @@ input:focus-visible {
   bottom: 13px;
   width: 6px;
   height: 9px;
-  border: 2.5px solid #d98c45;
+  border: 2.5px solid #E07A2B;
   border-left: none;
   border-radius: 0 6px 6px 0;
 }

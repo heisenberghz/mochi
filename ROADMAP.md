@@ -300,6 +300,31 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 
 *Newest first. I add an entry after each piece of work.*
 
+### 2026-10-29 — Commit 11 (stage 10C): pixel icon + palette brought along
+
+The Den and the icon catch up with the pixel Mochi:
+
+- **The icon is the sprite's head.** `scripts/make-icon.mjs` rewritten to
+  replay the generator's own head cells — same shapes, same draw order, same
+  flat palette (`#26160F` ink ring, toy eyes with cut catches, pixel M,
+  whisker dots), framed as a portrait and scaled onto the 256px canvas.
+  `resources/icon.png` regenerated via `npm run icon` (2.1 kB, was ~8 kB of
+  gradient ellipses).
+- **Accent match.** The old soft `#d98c45` was a token from the pre-pixel
+  design; now the whole warm family is the sprite's `warmAccent #E07A2B`:
+  the Den `--accent` (buttons, meters, focus rings) and `--accent-soft`,
+  the dark-theme pair, the meter gradient's light end (`#e9a26a`), the
+  pet bubble's action button and its hover (`#e89b60`, the accent stepped
+  toward white — same tone the Den's primary hover uses).
+- **Cosmetic swatches re-tokened.** The Locker's leaf-hat, moss, sky and
+  aurora swatches (and the mug swatch) now use the exact art tokens
+  (`#7FA05E`/`#5F8047`, `#6FA0D8`/`#4E7FB8`, `#7EC8A9`→`#9A7FD1`),
+  so the preview cards and the art themselves cannot drift.
+- **Theme-flash premise checked and cleared:** the Den window's
+  `backgroundColor` already equals the Den's `--paper` (`#F7F2E9`), so
+  launch shows no flash — no change needed there after all.
+- 253 tests passing; lint, typecheck, build green.
+
 ### 2026-10-29 — Commit 10 (stage 10B): the pixel art lands as contract v2
 
 The A/B mockup round ended with the user picking **B · Pixel Mochi**; this stage
