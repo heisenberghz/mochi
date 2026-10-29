@@ -1,0 +1,72 @@
+<!doctype html>
+<!--
+  Close-up mockup sheet: the two Mochi candidates at 2x her real size,
+  over both hostile wallpapers, animated by the real pet.css. Scroll for
+  the dark-wallpaper row.
+-->
+<html lang="en" style="margin:0">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../src/renderer/src/pet/pet.css">
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #26221e; color: #f4ead7; margin: 0; padding: 24px; }
+  h1 { font-size: 17px; margin: 0 0 6px; }
+  table { border-collapse: separate; border-spacing: 14px; margin-top: 10px; }
+  .frame { width: 470px; height: 500px; border-radius: 12px; overflow: hidden; display: flex; align-items: end; justify-content: center; position: relative; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
+  .wall-white { background: #ffffff; }
+  .wall-dark {
+    background-color: #10151f;
+    background-image:
+      radial-gradient(circle at 12% 22%, #ffffff22 0 3.2px, transparent 4px),
+      radial-gradient(circle at 32% 68%, #ffffff1a 0 2.4px, transparent 4px),
+      radial-gradient(circle at 55% 39%, #ffffff20 0 3.6px, transparent 4.4px),
+      radial-gradient(circle at 74% 77%, #ffffff17 0 2.8px, transparent 4px),
+      radial-gradient(circle at 86% 28%, #ffffff1f 0 4px, transparent 4.8px),
+      radial-gradient(circle at 41% 12%, #ffffff18 0 2.2px, transparent 3.6px),
+      radial-gradient(circle at 66% 55%, #ffffff22 0 3px, transparent 4px),
+      radial-gradient(circle at 21% 88%, #ffffff1b 0 2.6px, transparent 4px),
+      linear-gradient(160deg, #1a2130 0%, #0d1119 60%, #141b28 100%);
+  }
+  .spritebox { width: 400px; height: 440px; position: relative; }
+  .spritebox svg.pet-svg { width: 400px; height: 440px; display: block; }
+  .cell-label { font-size: 13px; opacity: .7; margin-bottom: 6px; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; margin-right: 6px; }
+</style>
+</head>
+<body>
+  <h1>Mochi — 2x close-up sheet <span class="badge" style="background:#3a4f35;color:#dff0d5">A · Bold Mochi</span><span class="badge" style="background:#4f4033;color:#f0dcc5">B · Pixel Mochi</span></h1>
+  <div style="font-size:13px;opacity:.65">Real pet.css — they breathe and blink. Top row: plain white. Bottom row: dark speckled. Scroll down for the dark row.</div>
+  <table>
+    <tr>
+      <td><div class="cell-label">A · white, 2x</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-a1"></div></div></td>
+      <td><div class="cell-label">B · white, 2x</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-b1"></div></div></td>
+      <td><div class="cell-label">Current (control) · white, 2x</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-c1"></div></div></td>
+    </tr>
+    <tr>
+      <td><div class="cell-label">A · dark, 2x</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-a2"></div></div></td>
+      <td><div class="cell-label">B · dark, 2x</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-b2"></div></div></td>
+      <td><div class="cell-label">Current (control) · dark, 2x</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-c2"></div></div></td>
+    </tr>
+  </table>
+<script>
+  // SVGs are inlined at build time (build-zoom.mjs) — no fetching.
+  window.__MOCKUPS__ = { bold: `%BOLD%`, pixel: `%PIXEL%`, current: `%CURRENT%` };
+  (function () {
+    const m = window.__MOCKUPS__;
+    for (const slot of document.querySelectorAll('[id^=slot-a]')) slot.innerHTML = m.bold;
+    for (const slot of document.querySelectorAll('[id^=slot-b]')) slot.innerHTML = m.pixel;
+    for (const slot of document.querySelectorAll('[id^=slot-c]')) slot.innerHTML = m.current;
+    // ?row=dark (used by the snapshot script): jump straight to the dark row
+    if (location.search.includes('row=dark')) {
+      window.addEventListener('load', () => window.scrollTo(0, document.body.scrollHeight));
+    }
+  })();
+</script>
+</body>
+</html>

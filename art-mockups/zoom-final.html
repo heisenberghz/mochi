@@ -1,0 +1,670 @@
+<!doctype html>
+<!--
+  Close-up mockup sheet: the two Mochi candidates at 2x her real size,
+  over both hostile wallpapers, animated by the real pet.css. Scroll for
+  the dark-wallpaper row.
+-->
+<html lang="en" style="margin:0">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../src/renderer/src/pet/pet.css">
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #26221e; color: #f4ead7; margin: 0; padding: 24px; }
+  h1 { font-size: 17px; margin: 0 0 6px; }
+  table { border-collapse: separate; border-spacing: 14px; margin-top: 10px; }
+  .frame { width: 470px; height: 500px; border-radius: 12px; overflow: hidden; display: flex; align-items: end; justify-content: center; position: relative; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
+  .wall-white { background: #ffffff; }
+  .wall-dark {
+    background-color: #10151f;
+    background-image:
+      radial-gradient(circle at 12% 22%, #ffffff22 0 3.2px, transparent 4px),
+      radial-gradient(circle at 32% 68%, #ffffff1a 0 2.4px, transparent 4px),
+      radial-gradient(circle at 55% 39%, #ffffff20 0 3.6px, transparent 4.4px),
+      radial-gradient(circle at 74% 77%, #ffffff17 0 2.8px, transparent 4px),
+      radial-gradient(circle at 86% 28%, #ffffff1f 0 4px, transparent 4.8px),
+      radial-gradient(circle at 41% 12%, #ffffff18 0 2.2px, transparent 3.6px),
+      radial-gradient(circle at 66% 55%, #ffffff22 0 3px, transparent 4px),
+      radial-gradient(circle at 21% 88%, #ffffff1b 0 2.6px, transparent 4px),
+      linear-gradient(160deg, #1a2130 0%, #0d1119 60%, #141b28 100%);
+  }
+  .spritebox { width: 400px; height: 440px; position: relative; }
+  .spritebox svg.pet-svg { width: 400px; height: 440px; display: block; }
+  .cell-label { font-size: 13px; opacity: .7; margin-bottom: 6px; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; margin-right: 6px; }
+</style>
+</head>
+<body>
+  <h1>Mochi — 2x close-up sheet <span class="badge" style="background:#3a4f35;color:#dff0d5">A · Bold Mochi</span><span class="badge" style="background:#4f4033;color:#f0dcc5">B · Pixel Mochi</span></h1>
+  <div style="font-size:13px;opacity:.65">Real pet.css — they breathe and blink. Top row: plain white. Bottom row: dark speckled. Scroll down for the dark row.</div>
+  <table>
+    <tr>
+      <td><div class="cell-label">A · white, 2x</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-a1"></div></div></td>
+      <td><div class="cell-label">B · white, 2x</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-b1"></div></div></td>
+      <td><div class="cell-label">Current (control) · white, 2x</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-c1"></div></div></td>
+    </tr>
+    <tr>
+      <td><div class="cell-label">A · dark, 2x</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-a2"></div></div></td>
+      <td><div class="cell-label">B · dark, 2x</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-b2"></div></div></td>
+      <td><div class="cell-label">Current (control) · dark, 2x</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-c2"></div></div></td>
+    </tr>
+  </table>
+<script>
+  // SVGs are inlined at build time (build-zoom.mjs) — no fetching.
+  window.__MOCKUPS__ = { bold: `<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mockup A: "Bold Mochi".
+
+  Her identity, repainted to the visual standard set by the ChatGPT pet
+  screenshot: a bold ink outline stamped around the whole silhouette
+  (paint-order puts the stroke behind each fill, so seams stay clean),
+  a saturated apricot palette with real shading steps, and the blurred
+  contact shadow the design doc always specified.
+
+  The class skeleton is exactly the production art's, so pet.css's
+  animations and the hit regions apply unchanged.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" class="pet-svg" viewBox="0 0 200 220" width="200" height="220">
+  <defs>
+    <linearGradient id="mochi-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE9C4" />
+      <stop offset="45%" stop-color="#F7C585" />
+      <stop offset="100%" stop-color="#DF9E5B" />
+    </linearGradient>
+    <linearGradient id="mochi-aurora" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7EC8A9" />
+      <stop offset="100%" stop-color="#9A7FD1" />
+    </linearGradient>
+    <linearGradient id="mochi-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6FA0D8" />
+      <stop offset="100%" stop-color="#4E7FB8" />
+    </linearGradient>
+    <filter id="shadow-blur" x="-30%" y="-120%" width="160%" height="340%">
+      <feGaussianBlur stdDeviation="3" />
+    </filter>
+  </defs>
+
+  <!-- Ground: a blurred contact shadow, so she sits on the desk. -->
+  <ellipse class="contact-shadow" cx="100" cy="216" rx="56" ry="8" fill="#26160F" opacity="0.22" filter="url(#shadow-blur)" />
+
+  <!-- Bed: unlocks at level 10, shown while sleeping. -->
+  <g class="accessory bed">
+    <ellipse cx="100" cy="216" rx="54" ry="6" fill="#26160F" opacity="0.18" filter="url(#shadow-blur)" />
+    <rect x="74" y="200" width="52" height="10" rx="5" fill="#FFF6E6" stroke="#26160F" stroke-width="2" paint-order="stroke" />
+  </g>
+
+  <g class="facing">
+    <g class="character">
+      <!-- Tail: an ink pass, then the soft ghost, then the fur. -->
+      <g class="tail-group">
+        <path class="tail-ring" d="M 151 168 C 176 154 192 168 186 190 C 181 205 164 206 156 196" stroke="#26160F" stroke-width="19" stroke-linecap="round" fill="none" />
+        <path class="tail-outline" d="M 151 168 C 176 154 192 168 186 190 C 181 205 164 206 156 196" stroke="#26160F" stroke-width="15" stroke-linecap="round" fill="none" opacity="0.10" />
+        <path class="tail" d="M 151 168 C 176 154 192 168 186 190 C 181 205 164 206 156 196" stroke="#F7C585" stroke-width="13" stroke-linecap="round" fill="none" />
+        <path d="M 151 167.5 C 175 153.5 190 166.5 185 188" stroke="#FFE9C4" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.75" />
+        <circle cx="157" cy="196.5" r="6" fill="#FFE9C4" />
+      </g>
+
+      <!-- The far paws: behind the body, darker now so the depth reads. -->
+      <ellipse class="paw paw-far-left" cx="62" cy="206" rx="13" ry="7" fill="#DF9E5B" stroke="#26160F" stroke-width="3" paint-order="stroke" />
+      <ellipse class="paw paw-far-right" cx="138" cy="206" rx="13" ry="7" fill="#DF9E5B" stroke="#26160F" stroke-width="3" paint-order="stroke" />
+
+      <!-- Body: a chunkier pear, outlined and banded with warmth. -->
+      <path
+        class="body"
+        d="M 100 106 C 130 108 152 126 155 154 C 158 184 144 210 100 210 C 56 210 42 184 45 154 C 48 126 70 108 100 108 Z"
+        fill="url(#mochi-body)"
+        stroke="#26160F" stroke-width="5" paint-order="stroke fill" stroke-linejoin="round"
+      />
+      <!-- Warm AO under the head, reading as a shading band. -->
+      <ellipse class="body-shade" cx="100" cy="119" rx="41" ry="9" fill="#B97E42" opacity="0.40" />
+      <!-- A lit band along the top-left of the body. -->
+      <path class="body-rim" d="M 63 130 C 70 114 85 107 99 106.5" stroke="#FFE9C4" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9" />
+      <ellipse class="belly" cx="100" cy="158" rx="34" ry="26" fill="#FFF6E6" opacity="0.85" />
+
+      <!-- Scarf moss: outlined like every other sticker layer. -->
+      <g class="accessory scarf scarf-moss">
+        <path class="scarf-back" d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z" fill="#5F8047" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <path class="scarf-band" d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z" fill="#7FA05E" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#5F8047" stroke="#26160F" stroke-width="2.5" paint-order="stroke" />
+        <path class="scarf-tail" d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z" fill="#7FA05E" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+      </g>
+
+      <!-- Scarf sky: the same shapes, the sky colour. -->
+      <g class="accessory scarf scarf-sky">
+        <path class="scarf-back" d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z" fill="#4E7FB8" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <path class="scarf-band" d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z" fill="url(#mochi-sky)" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#4E7FB8" stroke="#26160F" stroke-width="2.5" paint-order="stroke" />
+        <path class="scarf-tail" d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z" fill="#6FA0D8" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+      </g>
+
+      <!-- Scarf aurora: the same shapes, the aurora wash. -->
+      <g class="accessory scarf scarf-aurora">
+        <path class="scarf-back" d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z" fill="#9A7FD1" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <path class="scarf-band" d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z" fill="url(#mochi-aurora)" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#9A7FD1" stroke="#26160F" stroke-width="2.5" paint-order="stroke" />
+        <path class="scarf-tail" d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z" fill="#7EC8A9" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+      </g>
+
+      <!-- Head: outlined like the body, with crisp ears. -->
+      <g class="head">
+        <g class="ears">
+          <path class="ear ear-left" d="M 57 68 C 55 48 57 36 63 34 C 73 40 83 47 91 56 C 78 52 65 56 57 68 Z" fill="#F7C585" stroke="#26160F" stroke-width="4" paint-order="stroke fill" stroke-linejoin="round" />
+          <path class="inner-ear inner-ear-left" d="M 65 60 C 64 47 65 40 68 38 C 74 42 81 47 85 52 C 77 50 70 53 65 60 Z" fill="#F6906E" />
+          <path class="ear ear-right" d="M 143 68 C 145 48 143 36 137 34 C 127 40 117 47 109 56 C 122 52 135 56 143 68 Z" fill="#F7C585" stroke="#26160F" stroke-width="4" paint-order="stroke fill" stroke-linejoin="round" />
+          <path class="inner-ear inner-ear-right" d="M 135 60 C 136 47 135 40 132 38 C 126 42 119 47 115 52 C 123 50 130 53 135 60 Z" fill="#F6906E" />
+        </g>
+        <path
+          class="head-shape"
+          d="M 100 40 C 130 40 150 55 150 78 C 150 90 146 98 141 105 C 134 112 118 116 100 116 C 82 116 66 112 59 105 C 54 98 50 90 50 78 C 50 55 70 40 100 40 Z"
+          fill="url(#mochi-body)"
+          stroke="#26160F" stroke-width="5" paint-order="stroke fill" stroke-linejoin="round"
+        />
+        <path d="M 68 53 C 76 45 88 40.5 98 40" stroke="#FFE9C4" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9" />
+        <!-- Leaf hat: outlined. -->
+        <g class="accessory leaf-hat">
+          <path d="M 89 44 Q 100 31 111 44 Q 100 52 89 44 Z" fill="#7FA05E" stroke="#26160F" stroke-width="2" paint-order="stroke" stroke-linejoin="round" />
+          <path d="M 100 43.5 L 100 34.5" stroke="#5F8047" stroke-width="1.2" stroke-linecap="round" />
+        </g>
+      </g>
+
+      <!-- Face: same geometry, deeper ink for the sat palette. -->
+      <g class="face">
+        <g class="eye-open eye-left">
+          <ellipse cx="80" cy="76" rx="7" ry="9" fill="#26160F" />
+          <ellipse cx="77.5" cy="72.5" rx="3.2" ry="3.4" fill="#FFF7EA" />
+          <ellipse cx="83" cy="80" rx="1.5" ry="1.5" fill="#FFF7EA" opacity="0.9" />
+        </g>
+        <g class="eye-open eye-right">
+          <ellipse cx="120" cy="76" rx="7" ry="9" fill="#26160F" />
+          <ellipse cx="117.5" cy="72.5" rx="3.2" ry="3.4" fill="#FFF7EA" />
+          <ellipse cx="123" cy="80" rx="1.5" ry="1.5" fill="#FFF7EA" opacity="0.9" />
+        </g>
+        <g class="eye-closed">
+          <path d="M 72 78 Q 80 84 88 78" stroke="#26160F" stroke-width="3" stroke-linecap="round" fill="none" />
+          <path d="M 112 78 Q 120 84 128 78" stroke="#26160F" stroke-width="3" stroke-linecap="round" fill="none" />
+        </g>
+        <ellipse cx="72" cy="87" rx="7.5" ry="4.2" fill="#F6906E" opacity="0.85" />
+        <ellipse cx="128" cy="87" rx="7.5" ry="4.2" fill="#F6906E" opacity="0.85" />
+        <path d="M 95 85 L 105 85 L 100.5 90.6 Q 100 91.2 99.5 90.6 Z" fill="#26160F" />
+        <path class="mouth" d="M 94 94 Q 97 98 100 94 Q 103 98 106 94" stroke="#26160F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        <g class="whiskers" stroke="#26160F" stroke-width="2.2" stroke-linecap="round" opacity="0.8">
+          <path d="M 66 82 L 45 78" />
+          <path d="M 66 87 L 45 88" />
+          <path d="M 134 82 L 155 78" />
+          <path d="M 134 87 L 155 88" />
+        </g>
+      </g>
+
+      <!-- Paws: front, outlined, with raised toe lines. -->
+      <g class="paws">
+        <ellipse class="paw paw-left" cx="80" cy="202" rx="17" ry="10" fill="#F7C585" stroke="#26160F" stroke-width="4" paint-order="stroke" />
+        <ellipse class="paw paw-right" cx="120" cy="202" rx="17" ry="10" fill="#F7C585" stroke="#26160F" stroke-width="4" paint-order="stroke" />
+        <path d="M 75 202 L 75 206 M 85 202 L 85 206 M 115 202 L 115 206 M 125 202 L 125 206" stroke="#B97E42" stroke-width="1.5" stroke-linecap="round" />
+      </g>
+
+      <!-- Mug: warmer orange, outlined. -->
+      <g class="accessory mug">
+        <path d="M 142.5 166 C 141.5 164 143 163 142.2 161" stroke="#A8845D" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.7" />
+        <path d="M 147.5 166 C 146.5 164 148 163 147.2 161" stroke="#A8845D" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.7" />
+        <rect x="140" y="168" width="12" height="11" rx="2" fill="#E07A2B" stroke="#26160F" stroke-width="2.4" paint-order="stroke" />
+        <path d="M 152 170.5 C 156 170.5 156 177.5 152 177.5" stroke="#26160F" stroke-width="2.4" stroke-linecap="round" fill="none" />
+      </g>
+
+      <!-- Glasses: kept, now reading against the saturated face. -->
+      <g class="glasses">
+        <circle cx="80" cy="76" r="12" fill="none" stroke="#26160F" stroke-width="2.4" />
+        <circle cx="120" cy="76" r="12" fill="none" stroke="#26160F" stroke-width="2.4" />
+        <path d="M 92 74 L 108 74" stroke="#26160F" stroke-width="2.4" stroke-linecap="round" />
+        <path d="M 68 72 L 60 70 M 132 72 L 140 70" stroke="#26160F" stroke-width="2" stroke-linecap="round" />
+      </g>
+
+      <!-- Sleep curl: outlined, saturated, with its own soft shadow. -->
+      <g class="sleep-curl">
+        <ellipse class="curl-body" cx="100" cy="194" rx="52" ry="18" fill="url(#mochi-body)" stroke="#26160F" stroke-width="5" paint-order="stroke fill" />
+        <ellipse cx="64" cy="197" rx="24" ry="5" fill="#B97E42" opacity="0.3" />
+        <g class="curl-tail">
+          <path d="M 148 202 C 128 210 78 210 64 202" stroke="#26160F" stroke-width="11" stroke-linecap="round" fill="none" />
+          <path d="M 148 202 C 128 210 78 210 64 202" stroke="#DF9E5B" stroke-width="7" stroke-linecap="round" fill="none" />
+          <circle cx="63" cy="201.5" r="3.5" fill="#FFE9C4" />
+        </g>
+        <g class="curl-head">
+          <g class="curl-ears">
+            <path class="curl-ear curl-ear-left" d="M 46 171 C 44 160 47 154 51 152.5 C 56 156 61 160 65 165 C 57 163 50 166 46 171 Z" fill="#F7C585" stroke="#26160F" stroke-width="3.5" paint-order="stroke fill" stroke-linejoin="round" />
+            <path d="M 51 165 C 50.5 159 51.5 156 53 155 C 56 157 59 160 61 163 C 56 162 53 163 51 165 Z" fill="#F6906E" />
+            <path class="curl-ear curl-ear-right" d="M 66 164 C 67 155 71 151 75 150 C 79 154 83 158 86 163 C 79 161 71 162 66 164 Z" fill="#F7C585" stroke="#26160F" stroke-width="3.5" paint-order="stroke fill" stroke-linejoin="round" />
+            <path d="M 71 160 C 71.5 156 73 154 74.5 153.5 C 77 156 79.5 158.5 81 161 C 77 160 74 160 71 160 Z" fill="#F6906E" />
+          </g>
+          <circle class="curl-head-shape" cx="62" cy="180" r="20" fill="url(#mochi-body)" stroke="#26160F" stroke-width="4.5" paint-order="stroke fill" />
+          <path d="M 47 172 C 49 166.5 53 163 58 161.5" stroke="#FFE9C4" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.9" />
+          <g class="curl-eyes">
+            <path d="M 51 181 Q 56 185 61 181" stroke="#26160F" stroke-width="2.4" stroke-linecap="round" fill="none" />
+            <path d="M 67 181 Q 72 185 77 181" stroke="#26160F" stroke-width="2.4" stroke-linecap="round" fill="none" />
+          </g>
+          <path d="M 62.5 187.5 L 65.5 187.5 L 64.3 190 Q 64 190.5 63.7 190 Z" fill="#26160F" />
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- Effects -->
+  <g class="zzz">
+    <g transform="translate(146 66) scale(0.75)">
+      <path class="zzz-letter zzz-one" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#26160F" />
+    </g>
+    <g transform="translate(160 46) scale(0.95)">
+      <path class="zzz-letter zzz-two" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#26160F" />
+    </g>
+    <g transform="translate(176 22) scale(1.15)">
+      <path class="zzz-letter zzz-three" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#26160F" />
+    </g>
+  </g>
+
+  <g class="sparkles">
+    <circle class="sparkle sparkle-one" cx="48" cy="76" r="3.2" />
+    <circle class="sparkle sparkle-two" cx="156" cy="84" r="2.5" />
+    <circle class="sparkle sparkle-three" cx="40" cy="126" r="2" />
+    <circle class="sparkle sparkle-four" cx="164" cy="136" r="3" />
+    <path class="sparkle sparkle-five" d="M 100 30 l 2.6 5.2 5.8 .8 -4.2 4.1 1 5.8 -5.2 -2.8 -5.2 2.8 1 -5.8 -4.2 -4.1 5.8 -.8 z" />
+  </g>
+</svg>
+`, pixel: `<svg xmlns="http://www.w3.org/2000/svg" class="pet-svg" viewBox="0 0 200 220" width="200" height="220" shape-rendering="crispEdges">
+<g class="facing"><g class="character">
+<g class="contact-shadow"><rect x="0" y="0" width="8" height="8" fill="transparent" opacity="0"/><rect x="40" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="48" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="56" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="64" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="72" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="80" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="88" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="96" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="104" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="112" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="120" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="128" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="136" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/><rect x="144" y="208" width="8" height="8" fill="#26160F" opacity="0.2"/></g>
+<g class="accessory bed"><rect x="64" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="72" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="80" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="88" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="96" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="104" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="112" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="120" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="128" y="208" width="8" height="8" fill="#FFF6E6" opacity="0.95"/><rect x="56" y="208" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="136" y="208" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="64" y="200" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="72" y="200" width="8" height="8" fill="#26160F" opacity="0.95"/></g>
+<g class="tail-group"><rect x="152" y="144" width="8" height="8" fill="#F7C585" class="tail"/><rect x="152" y="152" width="8" height="8" fill="#F7C585" class="tail"/><rect x="152" y="160" width="8" height="8" fill="#F7C585" class="tail"/><rect x="160" y="128" width="8" height="8" fill="#F7C585" class="tail"/><rect x="160" y="136" width="8" height="8" fill="#F7C585" class="tail"/><rect x="160" y="144" width="8" height="8" fill="#F7C585" class="tail"/><rect x="160" y="152" width="8" height="8" fill="#F7C585" class="tail"/><rect x="168" y="128" width="8" height="8" fill="#F7C585" class="tail"/><rect x="168" y="136" width="8" height="8" fill="#F7C585" class="tail"/><rect x="168" y="144" width="8" height="8" fill="#F7C585" class="tail"/><rect x="168" y="152" width="8" height="8" fill="#F7C585" class="tail"/><rect x="176" y="128" width="8" height="8" fill="#F7C585" class="tail"/><rect x="176" y="136" width="8" height="8" fill="#F7C585" class="tail"/><rect x="176" y="144" width="8" height="8" fill="#F7C585" class="tail"/><rect x="176" y="152" width="8" height="8" fill="#F7C585" class="tail"/><rect x="184" y="136" width="8" height="8" fill="#F7C585" class="tail"/><rect x="184" y="144" width="8" height="8" fill="#F7C585" class="tail"/><rect x="184" y="152" width="8" height="8" fill="#F7C585" class="tail"/><rect x="184" y="144" width="8" height="8" fill="#FFE9C4"/></g>
+<g class="paw paw-far-left"><rect x="56" y="192" width="8" height="8" fill="#DF9E5B" opacity="0.9" class="paw paw-far-left"/><rect x="64" y="192" width="8" height="8" fill="#DF9E5B" opacity="0.9" class="paw paw-far-left"/><rect x="56" y="200" width="8" height="8" fill="#DF9E5B" opacity="0.9" class="paw paw-far-left"/><rect x="64" y="200" width="8" height="8" fill="#DF9E5B" opacity="0.9" class="paw paw-far-left"/></g>
+<g class="paw paw-far-right"><rect x="128" y="192" width="8" height="8" fill="#DF9E5B" opacity="0.9" class="paw paw-far-right"/><rect x="136" y="192" width="8" height="8" fill="#DF9E5B" opacity="0.9" class="paw paw-far-right"/><rect x="128" y="200" width="8" height="8" fill="#DF9E5B" opacity="0.9" class="paw paw-far-right"/><rect x="136" y="200" width="8" height="8" fill="#DF9E5B" opacity="0.9" class="paw paw-far-right"/></g>
+<g class="body"><rect x="96" y="112" width="8" height="8" fill="#F7C585"/><rect x="72" y="120" width="8" height="8" fill="#F7C585"/><rect x="80" y="120" width="8" height="8" fill="#F7C585"/><rect x="88" y="120" width="8" height="8" fill="#F7C585"/><rect x="96" y="120" width="8" height="8" fill="#F7C585"/><rect x="104" y="120" width="8" height="8" fill="#F7C585"/><rect x="112" y="120" width="8" height="8" fill="#F7C585"/><rect x="120" y="120" width="8" height="8" fill="#F7C585"/><rect x="64" y="128" width="8" height="8" fill="#F7C585"/><rect x="72" y="128" width="8" height="8" fill="#F7C585"/><rect x="80" y="128" width="8" height="8" fill="#F7C585"/><rect x="88" y="128" width="8" height="8" fill="#F7C585"/><rect x="96" y="128" width="8" height="8" fill="#F7C585"/><rect x="104" y="128" width="8" height="8" fill="#F7C585"/><rect x="112" y="128" width="8" height="8" fill="#F7C585"/><rect x="120" y="128" width="8" height="8" fill="#F7C585"/><rect x="56" y="136" width="8" height="8" fill="#F7C585"/><rect x="64" y="136" width="8" height="8" fill="#F7C585"/><rect x="72" y="136" width="8" height="8" fill="#F7C585"/><rect x="80" y="136" width="8" height="8" fill="#F7C585"/><rect x="88" y="136" width="8" height="8" fill="#F7C585"/><rect x="96" y="136" width="8" height="8" fill="#F7C585"/><rect x="104" y="136" width="8" height="8" fill="#F7C585"/><rect x="112" y="136" width="8" height="8" fill="#F7C585"/><rect x="120" y="136" width="8" height="8" fill="#F7C585"/><rect x="56" y="144" width="8" height="8" fill="#F7C585"/><rect x="64" y="144" width="8" height="8" fill="#F7C585"/><rect x="72" y="144" width="8" height="8" fill="#F7C585"/><rect x="80" y="144" width="8" height="8" fill="#F7C585"/><rect x="88" y="144" width="8" height="8" fill="#F7C585"/><rect x="96" y="144" width="8" height="8" fill="#F7C585"/><rect x="104" y="144" width="8" height="8" fill="#F7C585"/><rect x="112" y="144" width="8" height="8" fill="#F7C585"/><rect x="120" y="144" width="8" height="8" fill="#F7C585"/><rect x="56" y="152" width="8" height="8" fill="#F7C585"/><rect x="64" y="152" width="8" height="8" fill="#F7C585"/><rect x="72" y="152" width="8" height="8" fill="#F7C585"/><rect x="80" y="152" width="8" height="8" fill="#F7C585"/><rect x="88" y="152" width="8" height="8" fill="#F7C585"/><rect x="96" y="152" width="8" height="8" fill="#F7C585"/><rect x="104" y="152" width="8" height="8" fill="#F7C585"/><rect x="112" y="152" width="8" height="8" fill="#F7C585"/><rect x="120" y="152" width="8" height="8" fill="#F7C585"/><rect x="56" y="160" width="8" height="8" fill="#F7C585"/><rect x="64" y="160" width="8" height="8" fill="#F7C585"/><rect x="72" y="160" width="8" height="8" fill="#F7C585"/><rect x="80" y="160" width="8" height="8" fill="#F7C585"/><rect x="88" y="160" width="8" height="8" fill="#F7C585"/><rect x="96" y="160" width="8" height="8" fill="#F7C585"/><rect x="104" y="160" width="8" height="8" fill="#F7C585"/><rect x="112" y="160" width="8" height="8" fill="#F7C585"/><rect x="120" y="160" width="8" height="8" fill="#F7C585"/><rect x="56" y="168" width="8" height="8" fill="#F7C585"/><rect x="64" y="168" width="8" height="8" fill="#F7C585"/><rect x="72" y="168" width="8" height="8" fill="#F7C585"/><rect x="80" y="168" width="8" height="8" fill="#F7C585"/><rect x="88" y="168" width="8" height="8" fill="#F7C585"/><rect x="96" y="168" width="8" height="8" fill="#F7C585"/><rect x="104" y="168" width="8" height="8" fill="#F7C585"/><rect x="112" y="168" width="8" height="8" fill="#F7C585"/><rect x="120" y="168" width="8" height="8" fill="#F7C585"/><rect x="56" y="176" width="8" height="8" fill="#F7C585"/><rect x="64" y="176" width="8" height="8" fill="#F7C585"/><rect x="72" y="176" width="8" height="8" fill="#F7C585"/><rect x="80" y="176" width="8" height="8" fill="#F7C585"/><rect x="88" y="176" width="8" height="8" fill="#F7C585"/><rect x="96" y="176" width="8" height="8" fill="#F7C585"/><rect x="104" y="176" width="8" height="8" fill="#F7C585"/><rect x="112" y="176" width="8" height="8" fill="#F7C585"/><rect x="120" y="176" width="8" height="8" fill="#F7C585"/><rect x="88" y="112" width="8" height="8" fill="#26160F"/><rect x="104" y="112" width="8" height="8" fill="#26160F"/><rect x="96" y="104" width="8" height="8" fill="#26160F"/><rect x="64" y="120" width="8" height="8" fill="#26160F"/><rect x="72" y="112" width="8" height="8" fill="#26160F"/><rect x="80" y="112" width="8" height="8" fill="#26160F"/><rect x="112" y="112" width="8" height="8" fill="#26160F"/><rect x="128" y="120" width="8" height="8" fill="#26160F"/><rect x="120" y="112" width="8" height="8" fill="#26160F"/><rect x="56" y="128" width="8" height="8" fill="#26160F"/><rect x="136" y="128" width="8" height="8" fill="#26160F"/><rect x="48" y="136" width="8" height="8" fill="#26160F"/><rect x="144" y="136" width="8" height="8" fill="#26160F"/><rect x="48" y="144" width="8" height="8" fill="#26160F"/><rect x="144" y="144" width="8" height="8" fill="#26160F"/><rect x="48" y="152" width="8" height="8" fill="#26160F"/><rect x="144" y="152" width="8" height="8" fill="#26160F"/><rect x="48" y="160" width="8" height="8" fill="#26160F"/><rect x="144" y="160" width="8" height="8" fill="#26160F"/><rect x="48" y="168" width="8" height="8" fill="#26160F"/><rect x="144" y="168" width="8" height="8" fill="#26160F"/><rect x="48" y="176" width="8" height="8" fill="#26160F"/><rect x="56" y="184" width="8" height="8" fill="#26160F"/><rect x="144" y="176" width="8" height="8" fill="#26160F"/><rect x="136" y="184" width="8" height="8" fill="#26160F"/><rect x="64" y="192" width="8" height="8" fill="#26160F"/><rect x="72" y="192" width="8" height="8" fill="#26160F"/><rect x="120" y="192" width="8" height="8" fill="#26160F"/><rect x="128" y="192" width="8" height="8" fill="#26160F"/><rect x="80" y="200" width="8" height="8" fill="#26160F"/><rect x="88" y="200" width="8" height="8" fill="#26160F"/><rect x="96" y="200" width="8" height="8" fill="#26160F"/><rect x="104" y="200" width="8" height="8" fill="#26160F"/><rect x="112" y="200" width="8" height="8" fill="#26160F"/><rect x="128" y="128" width="8" height="8" fill="#DF9E5B"/><rect x="128" y="136" width="8" height="8" fill="#DF9E5B"/><rect x="136" y="136" width="8" height="8" fill="#DF9E5B"/><rect x="128" y="144" width="8" height="8" fill="#DF9E5B"/><rect x="136" y="144" width="8" height="8" fill="#DF9E5B"/><rect x="128" y="152" width="8" height="8" fill="#DF9E5B"/><rect x="136" y="152" width="8" height="8" fill="#DF9E5B"/><rect x="128" y="160" width="8" height="8" fill="#DF9E5B"/><rect x="136" y="160" width="8" height="8" fill="#DF9E5B"/><rect x="128" y="168" width="8" height="8" fill="#DF9E5B"/><rect x="136" y="168" width="8" height="8" fill="#DF9E5B"/><rect x="128" y="176" width="8" height="8" fill="#DF9E5B"/><rect x="136" y="176" width="8" height="8" fill="#DF9E5B"/><rect x="64" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="72" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="80" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="88" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="96" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="104" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="112" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="120" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="128" y="184" width="8" height="8" fill="#DF9E5B"/><rect x="80" y="192" width="8" height="8" fill="#DF9E5B"/><rect x="88" y="192" width="8" height="8" fill="#DF9E5B"/><rect x="96" y="192" width="8" height="8" fill="#DF9E5B"/><rect x="104" y="192" width="8" height="8" fill="#DF9E5B"/><rect x="112" y="192" width="8" height="8" fill="#DF9E5B"/><rect x="72" y="120" width="8" height="8" fill="#FFE9C4" class="body-rim"/><rect x="64" y="128" width="8" height="8" fill="#FFE9C4" class="body-rim"/><rect x="64" y="136" width="8" height="8" fill="#FFE9C4" class="body-rim"/><rect x="96" y="136" width="8" height="8" fill="#FFE9C4"/><rect x="80" y="144" width="8" height="8" fill="#FFE9C4"/><rect x="88" y="144" width="8" height="8" fill="#FFE9C4"/><rect x="96" y="144" width="8" height="8" fill="#FFE9C4"/><rect x="104" y="144" width="8" height="8" fill="#FFE9C4"/><rect x="112" y="144" width="8" height="8" fill="#FFE9C4"/><rect x="72" y="152" width="8" height="8" fill="#FFE9C4"/><rect x="80" y="152" width="8" height="8" fill="#FFE9C4"/><rect x="88" y="152" width="8" height="8" fill="#FFE9C4"/><rect x="96" y="152" width="8" height="8" fill="#FFE9C4"/><rect x="104" y="152" width="8" height="8" fill="#FFE9C4"/><rect x="112" y="152" width="8" height="8" fill="#FFE9C4"/><rect x="120" y="152" width="8" height="8" fill="#FFE9C4"/><rect x="72" y="160" width="8" height="8" fill="#FFE9C4"/><rect x="80" y="160" width="8" height="8" fill="#FFE9C4"/><rect x="88" y="160" width="8" height="8" fill="#FFE9C4"/><rect x="96" y="160" width="8" height="8" fill="#FFE9C4"/><rect x="104" y="160" width="8" height="8" fill="#FFE9C4"/><rect x="112" y="160" width="8" height="8" fill="#FFE9C4"/><rect x="120" y="160" width="8" height="8" fill="#FFE9C4"/><rect x="80" y="168" width="8" height="8" fill="#FFE9C4"/><rect x="88" y="168" width="8" height="8" fill="#FFE9C4"/><rect x="96" y="168" width="8" height="8" fill="#FFE9C4"/><rect x="104" y="168" width="8" height="8" fill="#FFE9C4"/><rect x="112" y="168" width="8" height="8" fill="#FFE9C4"/><rect x="96" y="176" width="8" height="8" fill="#FFE9C4"/></g>
+<g class="accessory scarf scarf-moss"><rect x="64" y="120" width="8" height="8" fill="#5F8047"/><rect x="64" y="128" width="8" height="8" fill="#5F8047"/><rect x="128" y="120" width="8" height="8" fill="#5F8047"/><rect x="128" y="128" width="8" height="8" fill="#5F8047"/><rect x="72" y="120" width="8" height="8" fill="#7FA05E"/><rect x="80" y="120" width="8" height="8" fill="#7FA05E"/><rect x="88" y="120" width="8" height="8" fill="#7FA05E"/><rect x="104" y="120" width="8" height="8" fill="#7FA05E"/><rect x="112" y="120" width="8" height="8" fill="#7FA05E"/><rect x="120" y="120" width="8" height="8" fill="#7FA05E"/><rect x="72" y="128" width="8" height="8" fill="#7FA05E"/><rect x="80" y="128" width="8" height="8" fill="#7FA05E"/><rect x="88" y="128" width="8" height="8" fill="#7FA05E"/><rect x="112" y="128" width="8" height="8" fill="#7FA05E"/><rect x="120" y="128" width="8" height="8" fill="#7FA05E"/><rect x="96" y="120" width="8" height="8" fill="#5F8047"/><rect x="96" y="128" width="8" height="8" fill="#5F8047"/><rect x="104" y="136" width="8" height="8" fill="#7FA05E"/><rect x="96" y="136" width="8" height="8" fill="#7FA05E"/></g>
+<g class="accessory scarf scarf-sky"><rect x="64" y="120" width="8" height="8" fill="#4E7FB8"/><rect x="64" y="128" width="8" height="8" fill="#4E7FB8"/><rect x="128" y="120" width="8" height="8" fill="#4E7FB8"/><rect x="128" y="128" width="8" height="8" fill="#4E7FB8"/><rect x="72" y="120" width="8" height="8" fill="#6FA0D8"/><rect x="80" y="120" width="8" height="8" fill="#6FA0D8"/><rect x="88" y="120" width="8" height="8" fill="#6FA0D8"/><rect x="104" y="120" width="8" height="8" fill="#6FA0D8"/><rect x="112" y="120" width="8" height="8" fill="#6FA0D8"/><rect x="120" y="120" width="8" height="8" fill="#6FA0D8"/><rect x="72" y="128" width="8" height="8" fill="#6FA0D8"/><rect x="80" y="128" width="8" height="8" fill="#6FA0D8"/><rect x="88" y="128" width="8" height="8" fill="#6FA0D8"/><rect x="112" y="128" width="8" height="8" fill="#6FA0D8"/><rect x="120" y="128" width="8" height="8" fill="#6FA0D8"/><rect x="96" y="120" width="8" height="8" fill="#4E7FB8"/><rect x="96" y="128" width="8" height="8" fill="#4E7FB8"/><rect x="104" y="136" width="8" height="8" fill="#6FA0D8"/><rect x="96" y="136" width="8" height="8" fill="#6FA0D8"/></g>
+<g class="accessory scarf scarf-aurora"><rect x="64" y="120" width="8" height="8" fill="#9A7FD1"/><rect x="64" y="128" width="8" height="8" fill="#9A7FD1"/><rect x="128" y="120" width="8" height="8" fill="#9A7FD1"/><rect x="128" y="128" width="8" height="8" fill="#9A7FD1"/><rect x="72" y="120" width="8" height="8" fill="#7EC8A9"/><rect x="80" y="120" width="8" height="8" fill="#7EC8A9"/><rect x="88" y="120" width="8" height="8" fill="#7EC8A9"/><rect x="104" y="120" width="8" height="8" fill="#7EC8A9"/><rect x="112" y="120" width="8" height="8" fill="#7EC8A9"/><rect x="120" y="120" width="8" height="8" fill="#7EC8A9"/><rect x="72" y="128" width="8" height="8" fill="#7EC8A9"/><rect x="80" y="128" width="8" height="8" fill="#7EC8A9"/><rect x="88" y="128" width="8" height="8" fill="#7EC8A9"/><rect x="112" y="128" width="8" height="8" fill="#7EC8A9"/><rect x="120" y="128" width="8" height="8" fill="#7EC8A9"/><rect x="96" y="120" width="8" height="8" fill="#9A7FD1"/><rect x="96" y="128" width="8" height="8" fill="#9A7FD1"/><rect x="104" y="136" width="8" height="8" fill="#7EC8A9"/><rect x="96" y="136" width="8" height="8" fill="#7EC8A9"/></g>
+<g class="head">
+  <g class="ears">
+    <rect x="64" y="8" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="56" y="16" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="64" y="16" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="72" y="16" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="48" y="24" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="56" y="24" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="64" y="24" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="72" y="24" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="80" y="24" width="8" height="8" fill="#F7C585" class="ear ear-left"/><rect x="64" y="16" width="8" height="8" fill="#F6906E" class="inner-ear inner-ear-left"/><rect x="64" y="24" width="8" height="8" fill="#F6906E" class="inner-ear inner-ear-left"/>
+    <rect x="128" y="8" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="120" y="16" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="128" y="16" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="136" y="16" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="104" y="24" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="112" y="24" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="120" y="24" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="128" y="24" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="136" y="24" width="8" height="8" fill="#F7C585" class="ear ear-right"/><rect x="128" y="16" width="8" height="8" fill="#F6906E" class="inner-ear inner-ear-right"/><rect x="128" y="24" width="8" height="8" fill="#F6906E" class="inner-ear inner-ear-right"/>
+  </g>
+  <rect x="72" y="40" width="8" height="8" fill="#F7C585"/><rect x="80" y="40" width="8" height="8" fill="#F7C585"/><rect x="88" y="40" width="8" height="8" fill="#F7C585"/><rect x="96" y="40" width="8" height="8" fill="#F7C585"/><rect x="104" y="40" width="8" height="8" fill="#F7C585"/><rect x="112" y="40" width="8" height="8" fill="#F7C585"/><rect x="120" y="40" width="8" height="8" fill="#F7C585"/><rect x="64" y="48" width="8" height="8" fill="#F7C585"/><rect x="72" y="48" width="8" height="8" fill="#F7C585"/><rect x="80" y="48" width="8" height="8" fill="#F7C585"/><rect x="88" y="48" width="8" height="8" fill="#F7C585"/><rect x="96" y="48" width="8" height="8" fill="#F7C585"/><rect x="104" y="48" width="8" height="8" fill="#F7C585"/><rect x="112" y="48" width="8" height="8" fill="#F7C585"/><rect x="120" y="48" width="8" height="8" fill="#F7C585"/><rect x="128" y="48" width="8" height="8" fill="#F7C585"/><rect x="56" y="56" width="8" height="8" fill="#F7C585"/><rect x="64" y="56" width="8" height="8" fill="#F7C585"/><rect x="72" y="56" width="8" height="8" fill="#F7C585"/><rect x="80" y="56" width="8" height="8" fill="#F7C585"/><rect x="88" y="56" width="8" height="8" fill="#F7C585"/><rect x="96" y="56" width="8" height="8" fill="#F7C585"/><rect x="104" y="56" width="8" height="8" fill="#F7C585"/><rect x="112" y="56" width="8" height="8" fill="#F7C585"/><rect x="120" y="56" width="8" height="8" fill="#F7C585"/><rect x="128" y="56" width="8" height="8" fill="#F7C585"/><rect x="136" y="56" width="8" height="8" fill="#F7C585"/><rect x="48" y="64" width="8" height="8" fill="#F7C585"/><rect x="56" y="64" width="8" height="8" fill="#F7C585"/><rect x="64" y="64" width="8" height="8" fill="#F7C585"/><rect x="72" y="64" width="8" height="8" fill="#F7C585"/><rect x="80" y="64" width="8" height="8" fill="#F7C585"/><rect x="88" y="64" width="8" height="8" fill="#F7C585"/><rect x="96" y="64" width="8" height="8" fill="#F7C585"/><rect x="104" y="64" width="8" height="8" fill="#F7C585"/><rect x="112" y="64" width="8" height="8" fill="#F7C585"/><rect x="120" y="64" width="8" height="8" fill="#F7C585"/><rect x="128" y="64" width="8" height="8" fill="#F7C585"/><rect x="136" y="64" width="8" height="8" fill="#F7C585"/><rect x="144" y="64" width="8" height="8" fill="#F7C585"/><rect x="48" y="72" width="8" height="8" fill="#F7C585"/><rect x="56" y="72" width="8" height="8" fill="#F7C585"/><rect x="64" y="72" width="8" height="8" fill="#F7C585"/><rect x="72" y="72" width="8" height="8" fill="#F7C585"/><rect x="80" y="72" width="8" height="8" fill="#F7C585"/><rect x="88" y="72" width="8" height="8" fill="#F7C585"/><rect x="96" y="72" width="8" height="8" fill="#F7C585"/><rect x="104" y="72" width="8" height="8" fill="#F7C585"/><rect x="112" y="72" width="8" height="8" fill="#F7C585"/><rect x="120" y="72" width="8" height="8" fill="#F7C585"/><rect x="128" y="72" width="8" height="8" fill="#F7C585"/><rect x="136" y="72" width="8" height="8" fill="#F7C585"/><rect x="144" y="72" width="8" height="8" fill="#F7C585"/><rect x="48" y="80" width="8" height="8" fill="#F7C585"/><rect x="56" y="80" width="8" height="8" fill="#F7C585"/><rect x="64" y="80" width="8" height="8" fill="#F7C585"/><rect x="72" y="80" width="8" height="8" fill="#F7C585"/><rect x="80" y="80" width="8" height="8" fill="#F7C585"/><rect x="88" y="80" width="8" height="8" fill="#F7C585"/><rect x="96" y="80" width="8" height="8" fill="#F7C585"/><rect x="104" y="80" width="8" height="8" fill="#F7C585"/><rect x="112" y="80" width="8" height="8" fill="#F7C585"/><rect x="120" y="80" width="8" height="8" fill="#F7C585"/><rect x="128" y="80" width="8" height="8" fill="#F7C585"/><rect x="136" y="80" width="8" height="8" fill="#F7C585"/><rect x="144" y="80" width="8" height="8" fill="#F7C585"/><rect x="56" y="88" width="8" height="8" fill="#F7C585"/><rect x="64" y="88" width="8" height="8" fill="#F7C585"/><rect x="72" y="88" width="8" height="8" fill="#F7C585"/><rect x="80" y="88" width="8" height="8" fill="#F7C585"/><rect x="88" y="88" width="8" height="8" fill="#F7C585"/><rect x="96" y="88" width="8" height="8" fill="#F7C585"/><rect x="104" y="88" width="8" height="8" fill="#F7C585"/><rect x="112" y="88" width="8" height="8" fill="#F7C585"/><rect x="120" y="88" width="8" height="8" fill="#F7C585"/><rect x="128" y="88" width="8" height="8" fill="#F7C585"/><rect x="136" y="88" width="8" height="8" fill="#F7C585"/><rect x="56" y="96" width="8" height="8" fill="#F7C585"/><rect x="64" y="96" width="8" height="8" fill="#F7C585"/><rect x="72" y="96" width="8" height="8" fill="#F7C585"/><rect x="80" y="96" width="8" height="8" fill="#F7C585"/><rect x="88" y="96" width="8" height="8" fill="#F7C585"/><rect x="96" y="96" width="8" height="8" fill="#F7C585"/><rect x="104" y="96" width="8" height="8" fill="#F7C585"/><rect x="112" y="96" width="8" height="8" fill="#F7C585"/><rect x="120" y="96" width="8" height="8" fill="#F7C585"/><rect x="128" y="96" width="8" height="8" fill="#F7C585"/><rect x="136" y="96" width="8" height="8" fill="#F7C585"/><rect x="64" y="104" width="8" height="8" fill="#F7C585"/><rect x="72" y="104" width="8" height="8" fill="#F7C585"/><rect x="80" y="104" width="8" height="8" fill="#F7C585"/><rect x="88" y="104" width="8" height="8" fill="#F7C585"/><rect x="96" y="104" width="8" height="8" fill="#F7C585"/><rect x="104" y="104" width="8" height="8" fill="#F7C585"/><rect x="112" y="104" width="8" height="8" fill="#F7C585"/><rect x="120" y="104" width="8" height="8" fill="#F7C585"/><rect x="128" y="104" width="8" height="8" fill="#F7C585"/><rect x="80" y="112" width="8" height="8" fill="#F7C585"/><rect x="88" y="112" width="8" height="8" fill="#F7C585"/><rect x="96" y="112" width="8" height="8" fill="#F7C585"/><rect x="104" y="112" width="8" height="8" fill="#F7C585"/><rect x="112" y="112" width="8" height="8" fill="#F7C585"/><rect x="64" y="40" width="8" height="8" fill="#26160F"/><rect x="72" y="32" width="8" height="8" fill="#26160F"/><rect x="80" y="32" width="8" height="8" fill="#26160F"/><rect x="88" y="32" width="8" height="8" fill="#26160F"/><rect x="96" y="32" width="8" height="8" fill="#26160F"/><rect x="104" y="32" width="8" height="8" fill="#26160F"/><rect x="112" y="32" width="8" height="8" fill="#26160F"/><rect x="128" y="40" width="8" height="8" fill="#26160F"/><rect x="120" y="32" width="8" height="8" fill="#26160F"/><rect x="56" y="48" width="8" height="8" fill="#26160F"/><rect x="136" y="48" width="8" height="8" fill="#26160F"/><rect x="48" y="56" width="8" height="8" fill="#26160F"/><rect x="144" y="56" width="8" height="8" fill="#26160F"/><rect x="40" y="64" width="8" height="8" fill="#26160F"/><rect x="152" y="64" width="8" height="8" fill="#26160F"/><rect x="40" y="72" width="8" height="8" fill="#26160F"/><rect x="152" y="72" width="8" height="8" fill="#26160F"/><rect x="40" y="80" width="8" height="8" fill="#26160F"/><rect x="48" y="88" width="8" height="8" fill="#26160F"/><rect x="152" y="80" width="8" height="8" fill="#26160F"/><rect x="144" y="88" width="8" height="8" fill="#26160F"/><rect x="48" y="96" width="8" height="8" fill="#26160F"/><rect x="56" y="104" width="8" height="8" fill="#26160F"/><rect x="144" y="96" width="8" height="8" fill="#26160F"/><rect x="136" y="104" width="8" height="8" fill="#26160F"/><rect x="64" y="112" width="8" height="8" fill="#26160F"/><rect x="72" y="112" width="8" height="8" fill="#26160F"/><rect x="120" y="112" width="8" height="8" fill="#26160F"/><rect x="128" y="112" width="8" height="8" fill="#26160F"/><rect x="80" y="120" width="8" height="8" fill="#26160F"/><rect x="88" y="120" width="8" height="8" fill="#26160F"/><rect x="96" y="120" width="8" height="8" fill="#26160F"/><rect x="104" y="120" width="8" height="8" fill="#26160F"/><rect x="112" y="120" width="8" height="8" fill="#26160F"/><rect x="72" y="40" width="8" height="8" fill="#FFE9C4"/><rect x="80" y="40" width="8" height="8" fill="#FFE9C4"/><rect x="72" y="48" width="8" height="8" fill="#FFE9C4"/>
+  <g class="accessory leaf-hat"><rect x="96" y="8" width="8" height="8" fill="#7FA05E"/><rect x="88" y="16" width="8" height="8" fill="#7FA05E"/><rect x="96" y="16" width="8" height="8" fill="#7FA05E"/><rect x="104" y="16" width="8" height="8" fill="#7FA05E"/><rect x="88" y="24" width="8" height="8" fill="#5F8047"/><rect x="96" y="24" width="8" height="8" fill="#5F8047"/><rect x="104" y="24" width="8" height="8" fill="#5F8047"/></g>
+</g>
+<g class="face">
+  <g class="eye-open eye-left"><rect x="72" y="72" width="8" height="8" fill="#26160F"/><rect x="80" y="72" width="8" height="8" fill="#26160F"/><rect x="72" y="80" width="8" height="8" fill="#26160F"/><rect x="80" y="80" width="8" height="8" fill="#26160F"/><rect x="74" y="74" width="5" height="4" fill="#FFF7EA"/><rect x="83" y="85" width="3" height="3" fill="#FFF7EA" opacity="0.85"/></g>
+  <g class="eye-open eye-right"><rect x="112" y="72" width="8" height="8" fill="#26160F"/><rect x="120" y="72" width="8" height="8" fill="#26160F"/><rect x="112" y="80" width="8" height="8" fill="#26160F"/><rect x="120" y="80" width="8" height="8" fill="#26160F"/><rect x="114" y="74" width="5" height="4" fill="#FFF7EA"/><rect x="123" y="85" width="3" height="3" fill="#FFF7EA" opacity="0.85"/></g>
+  <g class="eye-closed">
+    <path d="M 72 78 Q 80 84 88 78" stroke="#26160F" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M 112 78 Q 120 84 128 78" stroke="#26160F" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g>
+  <rect x="60" y="88" width="8" height="8" fill="#F6906E" opacity="0.85"/><rect x="136" y="88" width="8" height="8" fill="#F6906E" opacity="0.85"/>
+  <rect x="96" y="88" width="8" height="8" fill="#26160F"/><rect x="88" y="96" width="8" height="8" fill="#26160F"/><rect x="104" y="96" width="8" height="8" fill="#26160F"/>
+  <g class="whiskers"><rect x="36" y="80" width="8" height="8" fill="#B97E42" opacity="0.9"/><rect x="36" y="88" width="8" height="8" fill="#B97E42" opacity="0.9"/><rect x="164" y="80" width="8" height="8" fill="#B97E42" opacity="0.9"/><rect x="164" y="88" width="8" height="8" fill="#B97E42" opacity="0.9"/></g>
+</g>
+<g class="paws"><rect x="72" y="192" width="8" height="8" fill="#FFE9C4" class="paw paw-left"/><rect x="80" y="192" width="8" height="8" fill="#FFE9C4" class="paw paw-left"/><rect x="72" y="200" width="8" height="8" fill="#FFE9C4" class="paw paw-left"/><rect x="80" y="200" width="8" height="8" fill="#FFE9C4" class="paw paw-left"/><rect x="112" y="192" width="8" height="8" fill="#FFE9C4" class="paw paw-right"/><rect x="120" y="192" width="8" height="8" fill="#FFE9C4" class="paw paw-right"/><rect x="112" y="200" width="8" height="8" fill="#FFE9C4" class="paw paw-right"/><rect x="120" y="200" width="8" height="8" fill="#FFE9C4" class="paw paw-right"/><rect x="80" y="200" width="8" height="8" fill="#B97E42" opacity="0.9"/><rect x="120" y="200" width="8" height="8" fill="#B97E42" opacity="0.9"/></g>
+<g class="accessory mug"><rect x="147" y="169" width="10" height="10" fill="#E07A2B"/><rect x="145" y="167" width="14" height="2" fill="#26160F"/><rect x="145" y="179" width="14" height="2" fill="#26160F"/><rect x="145" y="167" width="2" height="14" fill="#26160F"/><rect x="157" y="167" width="2" height="14" fill="#26160F"/><rect x="159" y="170" width="3" height="7" fill="#26160F"/><rect x="144" y="148.8" width="8" height="8" fill="#FFF7EA" opacity="0.75"/></g>
+<g class="glasses"><rect x="72" y="64" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="80" y="64" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="72" y="88" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="80" y="88" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="68" y="72" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="68" y="80" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="88" y="72" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="88" y="80" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="112" y="64" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="120" y="64" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="112" y="88" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="120" y="88" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="108" y="72" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="108" y="80" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="128" y="72" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="128" y="80" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="88" y="64" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="96" y="64" width="8" height="8" fill="#26160F" opacity="0.95"/><rect x="104" y="64" width="8" height="8" fill="#26160F" opacity="0.95"/></g>
+<g class="sleep-curl">
+  <rect x="64" y="160" width="8" height="8" fill="#26160F"/><rect x="72" y="152" width="8" height="8" fill="#26160F"/><rect x="80" y="152" width="8" height="8" fill="#26160F"/><rect x="88" y="152" width="8" height="8" fill="#26160F"/><rect x="96" y="152" width="8" height="8" fill="#26160F"/><rect x="104" y="152" width="8" height="8" fill="#26160F"/><rect x="112" y="152" width="8" height="8" fill="#26160F"/><rect x="128" y="160" width="8" height="8" fill="#26160F"/><rect x="120" y="152" width="8" height="8" fill="#26160F"/><rect x="48" y="168" width="8" height="8" fill="#26160F"/><rect x="56" y="160" width="8" height="8" fill="#26160F"/><rect x="144" y="168" width="8" height="8" fill="#26160F"/><rect x="136" y="160" width="8" height="8" fill="#26160F"/><rect x="40" y="176" width="8" height="8" fill="#26160F"/><rect x="48" y="184" width="8" height="8" fill="#26160F"/><rect x="152" y="176" width="8" height="8" fill="#26160F"/><rect x="144" y="184" width="8" height="8" fill="#26160F"/><rect x="56" y="192" width="8" height="8" fill="#26160F"/><rect x="64" y="192" width="8" height="8" fill="#26160F"/><rect x="128" y="192" width="8" height="8" fill="#26160F"/><rect x="136" y="192" width="8" height="8" fill="#26160F"/><rect x="72" y="200" width="8" height="8" fill="#26160F"/><rect x="80" y="200" width="8" height="8" fill="#26160F"/><rect x="88" y="200" width="8" height="8" fill="#26160F"/><rect x="96" y="200" width="8" height="8" fill="#26160F"/><rect x="104" y="200" width="8" height="8" fill="#26160F"/><rect x="112" y="200" width="8" height="8" fill="#26160F"/><rect x="120" y="200" width="8" height="8" fill="#26160F"/><rect x="72" y="160" width="8" height="8" fill="#F7C585"/><rect x="80" y="160" width="8" height="8" fill="#F7C585"/><rect x="88" y="160" width="8" height="8" fill="#F7C585"/><rect x="96" y="160" width="8" height="8" fill="#F7C585"/><rect x="104" y="160" width="8" height="8" fill="#F7C585"/><rect x="112" y="160" width="8" height="8" fill="#F7C585"/><rect x="120" y="160" width="8" height="8" fill="#F7C585"/><rect x="56" y="168" width="8" height="8" fill="#F7C585"/><rect x="64" y="168" width="8" height="8" fill="#F7C585"/><rect x="72" y="168" width="8" height="8" fill="#F7C585"/><rect x="80" y="168" width="8" height="8" fill="#F7C585"/><rect x="88" y="168" width="8" height="8" fill="#F7C585"/><rect x="96" y="168" width="8" height="8" fill="#F7C585"/><rect x="104" y="168" width="8" height="8" fill="#F7C585"/><rect x="112" y="168" width="8" height="8" fill="#F7C585"/><rect x="120" y="168" width="8" height="8" fill="#F7C585"/><rect x="128" y="168" width="8" height="8" fill="#F7C585"/><rect x="136" y="168" width="8" height="8" fill="#F7C585"/><rect x="48" y="176" width="8" height="8" fill="#F7C585"/><rect x="56" y="176" width="8" height="8" fill="#F7C585"/><rect x="64" y="176" width="8" height="8" fill="#F7C585"/><rect x="72" y="176" width="8" height="8" fill="#F7C585"/><rect x="80" y="176" width="8" height="8" fill="#F7C585"/><rect x="88" y="176" width="8" height="8" fill="#F7C585"/><rect x="96" y="176" width="8" height="8" fill="#F7C585"/><rect x="104" y="176" width="8" height="8" fill="#F7C585"/><rect x="112" y="176" width="8" height="8" fill="#F7C585"/><rect x="120" y="176" width="8" height="8" fill="#F7C585"/><rect x="128" y="176" width="8" height="8" fill="#F7C585"/><rect x="136" y="176" width="8" height="8" fill="#F7C585"/><rect x="144" y="176" width="8" height="8" fill="#F7C585"/><rect x="56" y="184" width="8" height="8" fill="#F7C585"/><rect x="64" y="184" width="8" height="8" fill="#F7C585"/><rect x="72" y="184" width="8" height="8" fill="#F7C585"/><rect x="80" y="184" width="8" height="8" fill="#F7C585"/><rect x="88" y="184" width="8" height="8" fill="#F7C585"/><rect x="96" y="184" width="8" height="8" fill="#F7C585"/><rect x="104" y="184" width="8" height="8" fill="#F7C585"/><rect x="112" y="184" width="8" height="8" fill="#F7C585"/><rect x="120" y="184" width="8" height="8" fill="#F7C585"/><rect x="128" y="184" width="8" height="8" fill="#F7C585"/><rect x="136" y="184" width="8" height="8" fill="#F7C585"/><rect x="72" y="192" width="8" height="8" fill="#F7C585"/><rect x="80" y="192" width="8" height="8" fill="#F7C585"/><rect x="88" y="192" width="8" height="8" fill="#F7C585"/><rect x="96" y="192" width="8" height="8" fill="#F7C585"/><rect x="104" y="192" width="8" height="8" fill="#F7C585"/><rect x="112" y="192" width="8" height="8" fill="#F7C585"/><rect x="120" y="192" width="8" height="8" fill="#F7C585"/>
+  <g class="curl-head"><rect x="40" y="144" width="8" height="8" fill="#26160F" class="curl-ear curl-ear-left"/><rect x="48" y="144" width="8" height="8" fill="#26160F" class="curl-ear curl-ear-left"/><rect x="40" y="152" width="8" height="8" fill="#26160F" class="curl-ear curl-ear-left"/><rect x="64" y="144" width="8" height="8" fill="#26160F" class="curl-ear curl-ear-right"/><rect x="56" y="144" width="8" height="8" fill="#26160F" class="curl-ear curl-ear-right"/><rect x="72" y="152" width="8" height="8" fill="#26160F" class="curl-ear curl-ear-right"/><rect x="40" y="152" width="8" height="8" fill="#26160F"/><rect x="48" y="144" width="8" height="8" fill="#26160F"/><rect x="64" y="152" width="8" height="8" fill="#26160F"/><rect x="56" y="144" width="8" height="8" fill="#26160F"/><rect x="32" y="160" width="8" height="8" fill="#26160F"/><rect x="72" y="160" width="8" height="8" fill="#26160F"/><rect x="24" y="168" width="8" height="8" fill="#26160F"/><rect x="72" y="168" width="8" height="8" fill="#26160F"/><rect x="24" y="176" width="8" height="8" fill="#26160F"/><rect x="32" y="184" width="8" height="8" fill="#26160F"/><rect x="72" y="176" width="8" height="8" fill="#26160F"/><rect x="40" y="192" width="8" height="8" fill="#26160F"/><rect x="48" y="192" width="8" height="8" fill="#26160F"/><rect x="56" y="192" width="8" height="8" fill="#26160F"/><rect x="72" y="184" width="8" height="8" fill="#26160F"/><rect x="64" y="192" width="8" height="8" fill="#26160F"/><rect x="48" y="152" width="8" height="8" fill="#F7C585"/><rect x="56" y="152" width="8" height="8" fill="#F7C585"/><rect x="40" y="160" width="8" height="8" fill="#F7C585"/><rect x="48" y="160" width="8" height="8" fill="#F7C585"/><rect x="56" y="160" width="8" height="8" fill="#F7C585"/><rect x="64" y="160" width="8" height="8" fill="#F7C585"/><rect x="32" y="168" width="8" height="8" fill="#F7C585"/><rect x="40" y="168" width="8" height="8" fill="#F7C585"/><rect x="48" y="168" width="8" height="8" fill="#F7C585"/><rect x="56" y="168" width="8" height="8" fill="#F7C585"/><rect x="64" y="168" width="8" height="8" fill="#F7C585"/><rect x="32" y="176" width="8" height="8" fill="#F7C585"/><rect x="40" y="176" width="8" height="8" fill="#F7C585"/><rect x="48" y="176" width="8" height="8" fill="#F7C585"/><rect x="56" y="176" width="8" height="8" fill="#F7C585"/><rect x="64" y="176" width="8" height="8" fill="#F7C585"/><rect x="40" y="184" width="8" height="8" fill="#F7C585"/><rect x="48" y="184" width="8" height="8" fill="#F7C585"/><rect x="56" y="184" width="8" height="8" fill="#F7C585"/><rect x="64" y="184" width="8" height="8" fill="#F7C585"/><rect x="44" y="172.8" width="8" height="8" fill="#26160F"/><rect x="60" y="172.8" width="8" height="8" fill="#26160F"/><rect x="52" y="182.4" width="8" height="8" fill="#26160F"/></g>
+  <rect x="80" y="200" width="8" height="8" fill="#DF9E5B"/><rect x="88" y="200" width="8" height="8" fill="#DF9E5B"/><rect x="96" y="200" width="8" height="8" fill="#DF9E5B"/><rect x="104" y="200" width="8" height="8" fill="#DF9E5B"/><rect x="112" y="200" width="8" height="8" fill="#DF9E5B"/><rect x="72" y="200" width="8" height="8" fill="#FFE9C4"/>
+</g>
+</g></g>
+<g class="zzz">
+  <path class="zzz-letter zzz-one" d="M 146 62 h 7.5 l -5.25 6 h 5.25 v 3.5999999999999996 h -7.5 l 5.25 -6 h -5.25 Z" fill="#26160F"/>
+  <path class="zzz-letter zzz-two" d="M 158 44 h 9.5 l -6.6499999999999995 7.6 h 6.6499999999999995 v 4.56 h -9.5 l 6.6499999999999995 -7.6 h -6.6499999999999995 Z" fill="#26160F"/>
+  <path class="zzz-letter zzz-three" d="M 172 22 h 11.5 l -8.049999999999999 9.2 h 8.049999999999999 v 5.52 h -11.5 l 8.049999999999999 -9.2 h -8.049999999999999 Z" fill="#26160F"/>
+</g>
+<g class="sparkles">
+  <rect class="sparkle sparkle-one" x="45" y="73" width="6" height="6"/>
+  <rect class="sparkle sparkle-two" x="153" y="81" width="5" height="5"/>
+  <rect class="sparkle sparkle-three" x="39" y="124" width="4" height="4"/>
+  <rect class="sparkle sparkle-four" x="159" y="132" width="6" height="6"/>
+  <path class="sparkle sparkle-five" d="M 100 24 l 5 6 6 5 -6 5 -5 6 -5 -6 -6 -5 6 -5 Z" transform="scale(0.55 0.55) translate(80 45)"/>
+</g>
+</svg>
+`, current: `<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mochi.
+
+  The character's artwork. Every position here is the contract in
+  docs/03-design/character-art-contract.md, and the class names are what the
+  animations in pet.css hook onto. Do not rename a class without changing the
+  stylesheet too.
+
+  The drawing is soft-real: real cat proportions, shading that is a gradient
+  between the palette tokens, glossy eyes. The scarf is no longer part of the
+  base art — three opt-in scarves live in the accessory groups below, hidden
+  until the Locker equips one.
+
+  Anchors: head (100, 78) · body (100, 158) · scarf knot (100, 120)
+           hat (100, 44) · glasses (100, 76) · paw (146, 176) · ground (100, 216)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" class="pet-svg" viewBox="0 0 200 220" width="200" height="220">
+  <defs>
+    <linearGradient id="mochi-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FBF3E6" />
+      <stop offset="45%" stop-color="#F3E7D6" />
+      <stop offset="100%" stop-color="#E4D2BB" />
+    </linearGradient>
+    <linearGradient id="mochi-aurora" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7EC8A9" />
+      <stop offset="100%" stop-color="#9A7FD1" />
+    </linearGradient>
+    <linearGradient id="mochi-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7FA3C7" />
+      <stop offset="100%" stop-color="#5F86B1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ground: the contact shadow, and later a bed. -->
+  <ellipse
+    class="contact-shadow"
+    cx="100"
+    cy="216"
+    rx="60"
+    ry="9"
+    fill="#2A2622"
+    opacity="0.12"
+  />
+
+  <!-- Bed: unlocks at level 10, shown while sleeping. -->
+  <g class="accessory bed">
+    <ellipse cx="100" cy="216" rx="56" ry="7" fill="#2A2622" opacity="0.12" />
+    <rect x="74" y="200" width="52" height="10" rx="5" fill="#FFF8EC" stroke="#CBB69C" stroke-width="1" />
+  </g>
+
+  <g class="facing">
+    <g class="character">
+      <!-- Tail: behind the body, curling out to the right and tapering. -->
+      <g class="tail-group">
+        <path
+          class="tail-outline"
+          d="M 151 168 C 176 154 192 168 186 190 C 181 205 164 206 156 196"
+          stroke="#2A2622"
+          stroke-width="16"
+          stroke-linecap="round"
+          fill="none"
+          opacity="0.06"
+        />
+        <path
+          class="tail"
+          d="M 151 168 C 176 154 192 168 186 190 C 181 205 164 206 156 196"
+          stroke="#E4D2BB"
+          stroke-width="13"
+          stroke-linecap="round"
+          fill="none"
+        />
+        <!-- The lit rim along the top of the tail, and the pale tip. -->
+        <path
+          d="M 151 167.5 C 175 153.5 190 166.5 185 188"
+          stroke="#FBF3E6"
+          stroke-width="3.5"
+          stroke-linecap="round"
+          fill="none"
+          opacity="0.7"
+        />
+        <circle cx="157" cy="196.5" r="6" fill="#FBF3E6" />
+      </g>
+
+      <!-- The far paws: behind the body, dimmer, so the walk has four feet. -->
+      <ellipse class="paw paw-far-left" cx="62" cy="206" rx="13" ry="7" fill="#E4D2BB" opacity="0.85" />
+      <ellipse class="paw paw-far-right" cx="138" cy="206" rx="13" ry="7" fill="#E4D2BB" opacity="0.85" />
+
+      <!-- Body: a rounded pear, wider than the head. -->
+      <path
+        class="body"
+        d="M 100 106 C 128 106 148 124 151 152 C 154 182 142 210 100 210 C 58 210 46 182 49 152 C 52 124 72 106 100 106 Z"
+        fill="url(#mochi-body)"
+      />
+      <!-- Ambient occlusion where the head meets the body. -->
+      <ellipse class="body-shade" cx="100" cy="118" rx="42" ry="9" fill="#CBB69C" opacity="0.3" />
+      <!-- A lit rim along the top-left of the body. -->
+      <path
+        class="body-rim"
+        d="M 63 130 C 70 114 85 107 99 106.5"
+        stroke="#FBF3E6"
+        stroke-width="3"
+        stroke-linecap="round"
+        fill="none"
+        opacity="0.8"
+      />
+      <ellipse class="belly" cx="100" cy="158" rx="34" ry="26" fill="#FFFDF8" opacity="0.55" />
+
+      <!-- Scarf moss: an opt-in cosmetic at the neck seam. -->
+      <g class="accessory scarf scarf-moss">
+        <path
+          class="scarf-back"
+          d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z"
+          fill="#6E8E5F"
+        />
+        <path
+          class="scarf-band"
+          d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z"
+          fill="#8FAE7C"
+        />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#6E8E5F" />
+        <path
+          class="scarf-tail"
+          d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z"
+          fill="#8FAE7C"
+        />
+      </g>
+
+      <!-- Scarf sky: the same shapes, the sky colour. -->
+      <g class="accessory scarf scarf-sky">
+        <path
+          class="scarf-back"
+          d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z"
+          fill="#5F86B1"
+        />
+        <path
+          class="scarf-band"
+          d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z"
+          fill="url(#mochi-sky)"
+        />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#5F86B1" />
+        <path
+          class="scarf-tail"
+          d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z"
+          fill="#7FA3C7"
+        />
+      </g>
+
+      <!-- Scarf aurora: the same shapes, the aurora wash. -->
+      <g class="accessory scarf scarf-aurora">
+        <path
+          class="scarf-back"
+          d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z"
+          fill="#9A7FD1"
+        />
+        <path
+          class="scarf-band"
+          d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z"
+          fill="url(#mochi-aurora)"
+        />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#9A7FD1" />
+        <path
+          class="scarf-tail"
+          d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z"
+          fill="#7EC8A9"
+        />
+      </g>
+
+      <!-- Head: a distinct shape, so the face sits where it should. -->
+      <g class="head">
+        <g class="ears">
+          <path
+            class="ear ear-left"
+            d="M 57 68 C 55 48 57 36 63 34 C 73 40 83 47 91 56 C 78 52 65 56 57 68 Z"
+            fill="#F3E7D6"
+          />
+          <path
+            class="inner-ear inner-ear-left"
+            d="M 65 60 C 64 47 65 40 68 38 C 74 42 81 47 85 52 C 77 50 70 53 65 60 Z"
+            fill="#E8B7A6"
+          />
+          <path
+            class="ear ear-right"
+            d="M 143 68 C 145 48 143 36 137 34 C 127 40 117 47 109 56 C 122 52 135 56 143 68 Z"
+            fill="#F3E7D6"
+          />
+          <path
+            class="inner-ear inner-ear-right"
+            d="M 135 60 C 136 47 135 40 132 38 C 126 42 119 47 115 52 C 123 50 130 53 135 60 Z"
+            fill="#E8B7A6"
+          />
+        </g>
+        <path
+          class="head-shape"
+          d="M 100 40 C 128 40 147 55 147 78 C 147 90 144 98 139 105 C 132 112 118 116 100 116 C 82 116 68 112 61 105 C 56 98 53 90 53 78 C 53 55 72 40 100 40 Z"
+          fill="url(#mochi-body)"
+        />
+        <!-- A lit rim along the top-left of the head. -->
+        <path
+          d="M 68 53 C 76 45 88 40.5 98 40"
+          stroke="#FBF3E6"
+          stroke-width="3"
+          stroke-linecap="round"
+          fill="none"
+          opacity="0.8"
+        />
+        <!-- Leaf hat: unlocks at level 2. -->
+        <g class="accessory leaf-hat">
+          <path d="M 89 44 Q 100 31 111 44 Q 100 52 89 44 Z" fill="#8FAE7C" />
+          <path d="M 100 43.5 L 100 34.5" stroke="#6E8E5F" stroke-width="1" stroke-linecap="round" />
+        </g>
+      </g>
+
+      <!-- Face: on the head, at the face anchor. Glossy eyes, two highlights. -->
+      <g class="face">
+        <g class="eye-open eye-left">
+          <ellipse cx="80" cy="76" rx="7" ry="9" fill="#2A2622" />
+          <ellipse cx="77.5" cy="72.5" rx="3" ry="3.2" fill="#FFFDF8" />
+          <ellipse cx="82.8" cy="79.6" rx="1.3" ry="1.3" fill="#FFFDF8" opacity="0.85" />
+        </g>
+        <g class="eye-open eye-right">
+          <ellipse cx="120" cy="76" rx="7" ry="9" fill="#2A2622" />
+          <ellipse cx="117.5" cy="72.5" rx="3" ry="3.2" fill="#FFFDF8" />
+          <ellipse cx="122.8" cy="79.6" rx="1.3" ry="1.3" fill="#FFFDF8" opacity="0.85" />
+        </g>
+        <g class="eye-closed">
+          <path d="M 72 78 Q 80 84 88 78" stroke="#2A2622" stroke-width="3" stroke-linecap="round" fill="none" />
+          <path d="M 112 78 Q 120 84 128 78" stroke="#2A2622" stroke-width="3" stroke-linecap="round" fill="none" />
+        </g>
+        <ellipse cx="72" cy="87" rx="6.5" ry="3.6" fill="#E8B7A6" opacity="0.55" />
+        <ellipse cx="128" cy="87" rx="6.5" ry="3.6" fill="#E8B7A6" opacity="0.55" />
+        <path d="M 95 85 L 105 85 L 100.5 90.6 Q 100 91.2 99.5 90.6 Z" fill="#2A2622" />
+        <path
+          class="mouth"
+          d="M 94 94 Q 97 98 100 94 Q 103 98 106 94"
+          stroke="#2A2622"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"
+        />
+        <g class="whiskers" stroke="#CBB69C" stroke-width="1.5" stroke-linecap="round" opacity="0.9">
+          <path d="M 66 82 L 50 78" />
+          <path d="M 66 87 L 50 87" />
+          <path d="M 134 82 L 150 78" />
+          <path d="M 134 87 L 150 87" />
+        </g>
+      </g>
+
+      <!-- Paws: resting on the ground, toe lines in the deep fur tone. -->
+      <g class="paws">
+        <ellipse class="paw paw-left" cx="80" cy="202" rx="17" ry="10" fill="#E4D2BB" />
+        <ellipse class="paw paw-right" cx="120" cy="202" rx="17" ry="10" fill="#E4D2BB" />
+        <path
+          d="M 75 202 L 75 206 M 85 202 L 85 206 M 115 202 L 115 206 M 125 202 L 125 206"
+          stroke="#CBB69C"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </g>
+
+      <!-- Mug: unlocks at level 5, held at the right paw. -->
+      <g class="accessory mug">
+        <path d="M 142.5 166 C 141.5 164 143 163 142.2 161" stroke="#B9A48B" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.65" />
+        <path d="M 147.5 166 C 146.5 164 148 163 147.2 161" stroke="#B9A48B" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.65" />
+        <rect x="140" y="168" width="12" height="11" rx="2" fill="#D98C45" />
+        <path d="M 152 170.5 C 156 170.5 156 177.5 152 177.5" stroke="#D98C45" stroke-width="2" stroke-linecap="round" fill="none" />
+      </g>
+
+      <!-- Glasses: worn by default, sitting on the face anchor. -->
+      <g class="glasses">
+        <circle cx="80" cy="76" r="12" fill="none" stroke="#2A2622" stroke-width="2.4" />
+        <circle cx="120" cy="76" r="12" fill="none" stroke="#2A2622" stroke-width="2.4" />
+        <path d="M 92 74 L 108 74" stroke="#2A2622" stroke-width="2.4" stroke-linecap="round" />
+        <path d="M 68 72 L 60 70 M 132 72 L 140 70" stroke="#2A2622" stroke-width="2" stroke-linecap="round" />
+      </g>
+
+      <!-- Sleep curl: a second pose, shown only while asleep. The head is
+           tucked against the left of a squat oval, and the tail is wrapped
+           along its front. -->
+      <g class="sleep-curl">
+        <ellipse class="curl-body" cx="100" cy="194" rx="52" ry="18" fill="url(#mochi-body)" />
+        <ellipse cx="64" cy="197" rx="24" ry="5" fill="#CBB69C" opacity="0.25" />
+        <g class="curl-tail">
+          <path d="M 148 202 C 128 210 78 210 64 202" stroke="#E4D2BB" stroke-width="7" stroke-linecap="round" fill="none" />
+          <circle cx="63" cy="201.5" r="3.5" fill="#FBF3E6" />
+        </g>
+        <g class="curl-head">
+          <g class="curl-ears">
+            <path class="curl-ear curl-ear-left" d="M 46 171 C 44 160 47 154 51 152.5 C 56 156 61 160 65 165 C 57 163 50 166 46 171 Z" fill="#F3E7D6" />
+            <path d="M 51 165 C 50.5 159 51.5 156 53 155 C 56 157 59 160 61 163 C 56 162 53 163 51 165 Z" fill="#E8B7A6" />
+            <path class="curl-ear curl-ear-right" d="M 66 164 C 67 155 71 151 75 150 C 79 154 83 158 86 163 C 79 161 71 162 66 164 Z" fill="#F3E7D6" />
+            <path d="M 71 160 C 71.5 156 73 154 74.5 153.5 C 77 156 79.5 158.5 81 161 C 77 160 74 160 71 160 Z" fill="#E8B7A6" />
+          </g>
+          <circle class="curl-head-shape" cx="62" cy="180" r="20" fill="url(#mochi-body)" />
+          <path d="M 47 172 C 49 166.5 53 163 58 161.5" stroke="#FBF3E6" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.8" />
+          <g class="curl-eyes">
+            <path d="M 51 181 Q 56 185 61 181" stroke="#2A2622" stroke-width="2.4" stroke-linecap="round" fill="none" />
+            <path d="M 67 181 Q 72 185 77 181" stroke="#2A2622" stroke-width="2.4" stroke-linecap="round" fill="none" />
+          </g>
+          <path d="M 62.5 187.5 L 65.5 187.5 L 64.3 190 Q 64 190.5 63.7 190 Z" fill="#2A2622" />
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- Effects: drawn in front, and only shown when they are wanted. -->
+  <g class="zzz">
+    <g transform="translate(146 66) scale(0.75)">
+      <path class="zzz-letter zzz-one" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#2A2622" />
+    </g>
+    <g transform="translate(160 46) scale(0.95)">
+      <path class="zzz-letter zzz-two" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#2A2622" />
+    </g>
+    <g transform="translate(176 22) scale(1.15)">
+      <path class="zzz-letter zzz-three" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#2A2622" />
+    </g>
+  </g>
+
+  <g class="sparkles">
+    <circle class="sparkle sparkle-one" cx="48" cy="76" r="3.2" />
+    <circle class="sparkle sparkle-two" cx="156" cy="84" r="2.5" />
+    <circle class="sparkle sparkle-three" cx="40" cy="126" r="2" />
+    <circle class="sparkle sparkle-four" cx="164" cy="136" r="3" />
+    <path
+      class="sparkle sparkle-five"
+      d="M 100 30 l 2.6 5.2 5.8 .8 -4.2 4.1 1 5.8 -5.2 -2.8 -5.2 2.8 1 -5.8 -4.2 -4.1 5.8 -.8 z"
+    />
+  </g>
+</svg>
+` };
+  (function () {
+    const m = window.__MOCKUPS__;
+    for (const slot of document.querySelectorAll('[id^=slot-a]')) slot.innerHTML = m.bold;
+    for (const slot of document.querySelectorAll('[id^=slot-b]')) slot.innerHTML = m.pixel;
+    for (const slot of document.querySelectorAll('[id^=slot-c]')) slot.innerHTML = m.current;
+    // ?row=dark (used by the snapshot script): jump straight to the dark row
+    if (location.search.includes('row=dark')) {
+      window.addEventListener('load', () => window.scrollTo(0, document.body.scrollHeight));
+    }
+  })();
+</script>
+</body>
+</html>

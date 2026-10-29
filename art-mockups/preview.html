@@ -1,0 +1,72 @@
+<!doctype html>
+<!--
+  Side-by-side mockup sheet: two Mochi art candidates at her real size,
+  over two hostile wallpapers. Load it in a browser and the real pet.css
+  animates both (idle breathing and blinking), so you judge them alive.
+-->
+<html lang="en" style="margin:0">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../src/renderer/src/pet/pet.css">
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #26221e; color: #f4ead7; margin: 0; padding: 28px; }
+  h1 { font-size: 17px; margin: 0 0 6px; }
+  table { border-collapse: separate; border-spacing: 12px; margin-top: 10px; }
+  .frame { width: 292px; height: 300px; border-radius: 12px; overflow: hidden; display: flex; align-items: end; justify-content: center; position: relative; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
+  .wall-white { background: #ffffff; }
+  .wall-dark {
+    background-color: #10151f;
+    background-image:
+      radial-gradient(circle at 12% 22%, #ffffff22 0 1.6px, transparent 2px),
+      radial-gradient(circle at 32% 68%, #ffffff1a 0 1.2px, transparent 2px),
+      radial-gradient(circle at 55% 39%, #ffffff20 0 1.8px, transparent 2.2px),
+      radial-gradient(circle at 74% 77%, #ffffff17 0 1.4px, transparent 2px),
+      radial-gradient(circle at 86% 28%, #ffffff1f 0 2px, transparent 2.4px),
+      radial-gradient(circle at 41% 12%, #ffffff18 0 1.1px, transparent 1.8px),
+      radial-gradient(circle at 66% 55%, #ffffff22 0 1.5px, transparent 2px),
+      radial-gradient(circle at 21% 88%, #ffffff1b 0 1.3px, transparent 2px),
+      linear-gradient(160deg, #1a2130 0%, #0d1119 60%, #141b28 100%);
+  }
+  .stage { position: relative; width: 320px; height: 360px; display: block; }
+  .spritebox { position: absolute; left: 60px; top: 134px; width: 200px; height: 220px; }
+  svg.pet-svg { width: 200px; height: 220px; display: block; }
+  .frame .spritebox { left: 50%; margin-left: -100px; bottom: 4px; top: auto; }
+  .cell-label { font-size: 12.5px; opacity: .7; margin-bottom: 6px; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; margin-right: 6px; }
+</style>
+</head>
+<body>
+  <h1>Mochi — mockup sheet A/B <span class="badge" style="background:#3a4f35;color:#dff0d5">A · Bold Mochi</span><span class="badge" style="background:#4f4033;color:#f0dcc5">B · Pixel Mochi</span></h1>
+  <div style="font-size:13px;opacity:.65">Both run the real pet.css — they are breathing and blinking right now. Frames below: hostile wallpapers (plain white, dark speckled).</div>
+  <table>
+    <tr>
+      <td><div class="cell-label">A · plain white wall</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-a1"></div></div></td>
+      <td><div class="cell-label">B · plain white wall</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-b1"></div></div></td>
+      <td rowspan="2" style="width:280px;vertical-align:top">
+        <div class="cell-label">Current art (control)</div>
+        <div class="frame wall-white"><div class="spritebox pet-sprite behavior-idle" id="slot-c1"></div></div>
+        <div style="height:18px"></div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-c2"></div></div>
+      </td>
+    </tr>
+    <tr>
+      <td><div class="cell-label">A · dark speckled wall</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-a2"></div></div></td>
+      <td><div class="cell-label">B · dark speckled wall</div>
+        <div class="frame wall-dark"><div class="spritebox pet-sprite behavior-idle" id="slot-b2"></div></div></td>
+    </tr>
+  </table>
+<script>
+  // SVGs are inlined at build time (build-preview.mjs) — no fetching.
+  window.__MOCKUPS__ = { bold: `%BOLD%`, pixel: `%PIXEL%`, current: `%CURRENT%` };
+  (function () {
+    const m = window.__MOCKUPS__;
+    for (const slot of document.querySelectorAll('[id^=slot-a]')) slot.innerHTML = m.bold;
+    for (const slot of document.querySelectorAll('[id^=slot-b]')) slot.innerHTML = m.pixel;
+    for (const slot of document.querySelectorAll('[id^=slot-c]')) slot.innerHTML = m.current;
+  })();
+</script>
+</body>
+</html>

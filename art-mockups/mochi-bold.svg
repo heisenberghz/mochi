@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mockup A: "Bold Mochi".
+
+  Her identity, repainted to the visual standard set by the ChatGPT pet
+  screenshot: a bold ink outline stamped around the whole silhouette
+  (paint-order puts the stroke behind each fill, so seams stay clean),
+  a saturated apricot palette with real shading steps, and the blurred
+  contact shadow the design doc always specified.
+
+  The class skeleton is exactly the production art's, so pet.css's
+  animations and the hit regions apply unchanged.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" class="pet-svg" viewBox="0 0 200 220" width="200" height="220">
+  <defs>
+    <linearGradient id="mochi-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE9C4" />
+      <stop offset="45%" stop-color="#F7C585" />
+      <stop offset="100%" stop-color="#DF9E5B" />
+    </linearGradient>
+    <linearGradient id="mochi-aurora" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7EC8A9" />
+      <stop offset="100%" stop-color="#9A7FD1" />
+    </linearGradient>
+    <linearGradient id="mochi-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6FA0D8" />
+      <stop offset="100%" stop-color="#4E7FB8" />
+    </linearGradient>
+    <filter id="shadow-blur" x="-30%" y="-120%" width="160%" height="340%">
+      <feGaussianBlur stdDeviation="3" />
+    </filter>
+  </defs>
+
+  <!-- Ground: a blurred contact shadow, so she sits on the desk. -->
+  <ellipse class="contact-shadow" cx="100" cy="216" rx="56" ry="8" fill="#26160F" opacity="0.22" filter="url(#shadow-blur)" />
+
+  <!-- Bed: unlocks at level 10, shown while sleeping. -->
+  <g class="accessory bed">
+    <ellipse cx="100" cy="216" rx="54" ry="6" fill="#26160F" opacity="0.18" filter="url(#shadow-blur)" />
+    <rect x="74" y="200" width="52" height="10" rx="5" fill="#FFF6E6" stroke="#26160F" stroke-width="2" paint-order="stroke" />
+  </g>
+
+  <g class="facing">
+    <g class="character">
+      <!-- Tail: an ink pass, then the soft ghost, then the fur. -->
+      <g class="tail-group">
+        <path class="tail-ring" d="M 151 168 C 176 154 192 168 186 190 C 181 205 164 206 156 196" stroke="#26160F" stroke-width="19" stroke-linecap="round" fill="none" />
+        <path class="tail-outline" d="M 151 168 C 176 154 192 168 186 190 C 181 205 164 206 156 196" stroke="#26160F" stroke-width="15" stroke-linecap="round" fill="none" opacity="0.10" />
+        <path class="tail" d="M 151 168 C 176 154 192 168 186 190 C 181 205 164 206 156 196" stroke="#F7C585" stroke-width="13" stroke-linecap="round" fill="none" />
+        <path d="M 151 167.5 C 175 153.5 190 166.5 185 188" stroke="#FFE9C4" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.75" />
+        <circle cx="157" cy="196.5" r="6" fill="#FFE9C4" />
+      </g>
+
+      <!-- The far paws: behind the body, darker now so the depth reads. -->
+      <ellipse class="paw paw-far-left" cx="62" cy="206" rx="13" ry="7" fill="#DF9E5B" stroke="#26160F" stroke-width="3" paint-order="stroke" />
+      <ellipse class="paw paw-far-right" cx="138" cy="206" rx="13" ry="7" fill="#DF9E5B" stroke="#26160F" stroke-width="3" paint-order="stroke" />
+
+      <!-- Body: a chunkier pear, outlined and banded with warmth. -->
+      <path
+        class="body"
+        d="M 100 106 C 130 108 152 126 155 154 C 158 184 144 210 100 210 C 56 210 42 184 45 154 C 48 126 70 108 100 108 Z"
+        fill="url(#mochi-body)"
+        stroke="#26160F" stroke-width="5" paint-order="stroke fill" stroke-linejoin="round"
+      />
+      <!-- Warm AO under the head, reading as a shading band. -->
+      <ellipse class="body-shade" cx="100" cy="119" rx="41" ry="9" fill="#B97E42" opacity="0.40" />
+      <!-- A lit band along the top-left of the body. -->
+      <path class="body-rim" d="M 63 130 C 70 114 85 107 99 106.5" stroke="#FFE9C4" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9" />
+      <ellipse class="belly" cx="100" cy="158" rx="34" ry="26" fill="#FFF6E6" opacity="0.85" />
+
+      <!-- Scarf moss: outlined like every other sticker layer. -->
+      <g class="accessory scarf scarf-moss">
+        <path class="scarf-back" d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z" fill="#5F8047" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <path class="scarf-band" d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z" fill="#7FA05E" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#5F8047" stroke="#26160F" stroke-width="2.5" paint-order="stroke" />
+        <path class="scarf-tail" d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z" fill="#7FA05E" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+      </g>
+
+      <!-- Scarf sky: the same shapes, the sky colour. -->
+      <g class="accessory scarf scarf-sky">
+        <path class="scarf-back" d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z" fill="#4E7FB8" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <path class="scarf-band" d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z" fill="url(#mochi-sky)" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#4E7FB8" stroke="#26160F" stroke-width="2.5" paint-order="stroke" />
+        <path class="scarf-tail" d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z" fill="#6FA0D8" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+      </g>
+
+      <!-- Scarf aurora: the same shapes, the aurora wash. -->
+      <g class="accessory scarf scarf-aurora">
+        <path class="scarf-back" d="M 62 104 C 50 112 44 128 47 144 C 48 152 53 158 58 156 C 52 142 54 122 66 112 Z" fill="#9A7FD1" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <path class="scarf-band" d="M 49 102 C 68 112 132 112 151 102 L 153 117 C 132 127 68 127 47 117 Z" fill="url(#mochi-aurora)" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+        <circle class="scarf-knot" cx="100" cy="118" r="8" fill="#9A7FD1" stroke="#26160F" stroke-width="2.5" paint-order="stroke" />
+        <path class="scarf-tail" d="M 104 122 C 112 131 111 143 102 150 L 92 143 C 99 136 99 127 95 120 Z" fill="#7EC8A9" stroke="#26160F" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round" />
+      </g>
+
+      <!-- Head: outlined like the body, with crisp ears. -->
+      <g class="head">
+        <g class="ears">
+          <path class="ear ear-left" d="M 57 68 C 55 48 57 36 63 34 C 73 40 83 47 91 56 C 78 52 65 56 57 68 Z" fill="#F7C585" stroke="#26160F" stroke-width="4" paint-order="stroke fill" stroke-linejoin="round" />
+          <path class="inner-ear inner-ear-left" d="M 65 60 C 64 47 65 40 68 38 C 74 42 81 47 85 52 C 77 50 70 53 65 60 Z" fill="#F6906E" />
+          <path class="ear ear-right" d="M 143 68 C 145 48 143 36 137 34 C 127 40 117 47 109 56 C 122 52 135 56 143 68 Z" fill="#F7C585" stroke="#26160F" stroke-width="4" paint-order="stroke fill" stroke-linejoin="round" />
+          <path class="inner-ear inner-ear-right" d="M 135 60 C 136 47 135 40 132 38 C 126 42 119 47 115 52 C 123 50 130 53 135 60 Z" fill="#F6906E" />
+        </g>
+        <path
+          class="head-shape"
+          d="M 100 40 C 130 40 150 55 150 78 C 150 90 146 98 141 105 C 134 112 118 116 100 116 C 82 116 66 112 59 105 C 54 98 50 90 50 78 C 50 55 70 40 100 40 Z"
+          fill="url(#mochi-body)"
+          stroke="#26160F" stroke-width="5" paint-order="stroke fill" stroke-linejoin="round"
+        />
+        <path d="M 68 53 C 76 45 88 40.5 98 40" stroke="#FFE9C4" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.9" />
+        <!-- Leaf hat: outlined. -->
+        <g class="accessory leaf-hat">
+          <path d="M 89 44 Q 100 31 111 44 Q 100 52 89 44 Z" fill="#7FA05E" stroke="#26160F" stroke-width="2" paint-order="stroke" stroke-linejoin="round" />
+          <path d="M 100 43.5 L 100 34.5" stroke="#5F8047" stroke-width="1.2" stroke-linecap="round" />
+        </g>
+      </g>
+
+      <!-- Face: same geometry, deeper ink for the sat palette. -->
+      <g class="face">
+        <g class="eye-open eye-left">
+          <ellipse cx="80" cy="76" rx="7" ry="9" fill="#26160F" />
+          <ellipse cx="77.5" cy="72.5" rx="3.2" ry="3.4" fill="#FFF7EA" />
+          <ellipse cx="83" cy="80" rx="1.5" ry="1.5" fill="#FFF7EA" opacity="0.9" />
+        </g>
+        <g class="eye-open eye-right">
+          <ellipse cx="120" cy="76" rx="7" ry="9" fill="#26160F" />
+          <ellipse cx="117.5" cy="72.5" rx="3.2" ry="3.4" fill="#FFF7EA" />
+          <ellipse cx="123" cy="80" rx="1.5" ry="1.5" fill="#FFF7EA" opacity="0.9" />
+        </g>
+        <g class="eye-closed">
+          <path d="M 72 78 Q 80 84 88 78" stroke="#26160F" stroke-width="3" stroke-linecap="round" fill="none" />
+          <path d="M 112 78 Q 120 84 128 78" stroke="#26160F" stroke-width="3" stroke-linecap="round" fill="none" />
+        </g>
+        <ellipse cx="72" cy="87" rx="7.5" ry="4.2" fill="#F6906E" opacity="0.85" />
+        <ellipse cx="128" cy="87" rx="7.5" ry="4.2" fill="#F6906E" opacity="0.85" />
+        <path d="M 95 85 L 105 85 L 100.5 90.6 Q 100 91.2 99.5 90.6 Z" fill="#26160F" />
+        <path class="mouth" d="M 94 94 Q 97 98 100 94 Q 103 98 106 94" stroke="#26160F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        <g class="whiskers" stroke="#26160F" stroke-width="2.2" stroke-linecap="round" opacity="0.8">
+          <path d="M 66 82 L 45 78" />
+          <path d="M 66 87 L 45 88" />
+          <path d="M 134 82 L 155 78" />
+          <path d="M 134 87 L 155 88" />
+        </g>
+      </g>
+
+      <!-- Paws: front, outlined, with raised toe lines. -->
+      <g class="paws">
+        <ellipse class="paw paw-left" cx="80" cy="202" rx="17" ry="10" fill="#F7C585" stroke="#26160F" stroke-width="4" paint-order="stroke" />
+        <ellipse class="paw paw-right" cx="120" cy="202" rx="17" ry="10" fill="#F7C585" stroke="#26160F" stroke-width="4" paint-order="stroke" />
+        <path d="M 75 202 L 75 206 M 85 202 L 85 206 M 115 202 L 115 206 M 125 202 L 125 206" stroke="#B97E42" stroke-width="1.5" stroke-linecap="round" />
+      </g>
+
+      <!-- Mug: warmer orange, outlined. -->
+      <g class="accessory mug">
+        <path d="M 142.5 166 C 141.5 164 143 163 142.2 161" stroke="#A8845D" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.7" />
+        <path d="M 147.5 166 C 146.5 164 148 163 147.2 161" stroke="#A8845D" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.7" />
+        <rect x="140" y="168" width="12" height="11" rx="2" fill="#E07A2B" stroke="#26160F" stroke-width="2.4" paint-order="stroke" />
+        <path d="M 152 170.5 C 156 170.5 156 177.5 152 177.5" stroke="#26160F" stroke-width="2.4" stroke-linecap="round" fill="none" />
+      </g>
+
+      <!-- Glasses: kept, now reading against the saturated face. -->
+      <g class="glasses">
+        <circle cx="80" cy="76" r="12" fill="none" stroke="#26160F" stroke-width="2.4" />
+        <circle cx="120" cy="76" r="12" fill="none" stroke="#26160F" stroke-width="2.4" />
+        <path d="M 92 74 L 108 74" stroke="#26160F" stroke-width="2.4" stroke-linecap="round" />
+        <path d="M 68 72 L 60 70 M 132 72 L 140 70" stroke="#26160F" stroke-width="2" stroke-linecap="round" />
+      </g>
+
+      <!-- Sleep curl: outlined, saturated, with its own soft shadow. -->
+      <g class="sleep-curl">
+        <ellipse class="curl-body" cx="100" cy="194" rx="52" ry="18" fill="url(#mochi-body)" stroke="#26160F" stroke-width="5" paint-order="stroke fill" />
+        <ellipse cx="64" cy="197" rx="24" ry="5" fill="#B97E42" opacity="0.3" />
+        <g class="curl-tail">
+          <path d="M 148 202 C 128 210 78 210 64 202" stroke="#26160F" stroke-width="11" stroke-linecap="round" fill="none" />
+          <path d="M 148 202 C 128 210 78 210 64 202" stroke="#DF9E5B" stroke-width="7" stroke-linecap="round" fill="none" />
+          <circle cx="63" cy="201.5" r="3.5" fill="#FFE9C4" />
+        </g>
+        <g class="curl-head">
+          <g class="curl-ears">
+            <path class="curl-ear curl-ear-left" d="M 46 171 C 44 160 47 154 51 152.5 C 56 156 61 160 65 165 C 57 163 50 166 46 171 Z" fill="#F7C585" stroke="#26160F" stroke-width="3.5" paint-order="stroke fill" stroke-linejoin="round" />
+            <path d="M 51 165 C 50.5 159 51.5 156 53 155 C 56 157 59 160 61 163 C 56 162 53 163 51 165 Z" fill="#F6906E" />
+            <path class="curl-ear curl-ear-right" d="M 66 164 C 67 155 71 151 75 150 C 79 154 83 158 86 163 C 79 161 71 162 66 164 Z" fill="#F7C585" stroke="#26160F" stroke-width="3.5" paint-order="stroke fill" stroke-linejoin="round" />
+            <path d="M 71 160 C 71.5 156 73 154 74.5 153.5 C 77 156 79.5 158.5 81 161 C 77 160 74 160 71 160 Z" fill="#F6906E" />
+          </g>
+          <circle class="curl-head-shape" cx="62" cy="180" r="20" fill="url(#mochi-body)" stroke="#26160F" stroke-width="4.5" paint-order="stroke fill" />
+          <path d="M 47 172 C 49 166.5 53 163 58 161.5" stroke="#FFE9C4" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.9" />
+          <g class="curl-eyes">
+            <path d="M 51 181 Q 56 185 61 181" stroke="#26160F" stroke-width="2.4" stroke-linecap="round" fill="none" />
+            <path d="M 67 181 Q 72 185 77 181" stroke="#26160F" stroke-width="2.4" stroke-linecap="round" fill="none" />
+          </g>
+          <path d="M 62.5 187.5 L 65.5 187.5 L 64.3 190 Q 64 190.5 63.7 190 Z" fill="#26160F" />
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- Effects -->
+  <g class="zzz">
+    <g transform="translate(146 66) scale(0.75)">
+      <path class="zzz-letter zzz-one" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#26160F" />
+    </g>
+    <g transform="translate(160 46) scale(0.95)">
+      <path class="zzz-letter zzz-two" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#26160F" />
+    </g>
+    <g transform="translate(176 22) scale(1.15)">
+      <path class="zzz-letter zzz-three" d="M 0 0 H 10 L 3 8 H 10 V 11 H 0 L 7 3 H 0 Z" fill="#26160F" />
+    </g>
+  </g>
+
+  <g class="sparkles">
+    <circle class="sparkle sparkle-one" cx="48" cy="76" r="3.2" />
+    <circle class="sparkle sparkle-two" cx="156" cy="84" r="2.5" />
+    <circle class="sparkle sparkle-three" cx="40" cy="126" r="2" />
+    <circle class="sparkle sparkle-four" cx="164" cy="136" r="3" />
+    <path class="sparkle sparkle-five" d="M 100 30 l 2.6 5.2 5.8 .8 -4.2 4.1 1 5.8 -5.2 -2.8 -5.2 2.8 1 -5.8 -4.2 -4.1 5.8 -.8 z" />
+  </g>
+</svg>
