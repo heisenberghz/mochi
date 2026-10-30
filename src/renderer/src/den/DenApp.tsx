@@ -335,7 +335,6 @@ export function DenApp() {
   const [tab, setTab] = useState<Tab>('home');
 const [highContrast, setHighContrast] = useState(false);
   const [notice, setNotice] = useState<{ text: string; sticky?: boolean } | null>(null);
-
   /**
    * A line at the foot of the window. Successes leave on their own;
    * failures stick (with a dismiss button) until they are seen.
@@ -348,10 +347,50 @@ const [highContrast, setHighContrast] = useState(false);
   const [recoveryDismissed, setRecoveryDismissed] = useState(false);
   const [insights, setInsights] = useState<InsightsView | null>(null);
   const [insightsRange, setInsightsRange] = useState<7 | 30>(7);
+  const [insightsFailed, setInsightsFailed] = useState(false);
+  const [insightsTick, setInsightsTick] = useState(0);
   const [exportPreview, setExportPreview] = useState<string | null>(null);
   const [resetArmed, setResetArmed] = useState(false);
   const resetHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const resetTriggerRef = useRef<HTMLElement | null>(null);
+  // Ending a session is the most expensive irreversible action in the app,
+  // sitting right next to "Skip" — so it takes two quiet presses. The first
+  // arms it for four seconds; the second commits. Escape, or doing nothing,
+  // cancels. No dialog, no ceremony.
+  const [endArmed, setEndArmed] = useState(false);
+  const endTimerRef = useRef<number | null>(null);
+  const clearEndArmTimer = useCallback(() => {
+    if (endTimerRef.current !== null) {
+      window.clearTimeout(endTimerRef.current);
+      endTimerRef.current = null;
+    }
+  }, []);
+  const handleEndPress = useCallback(
+    (stop: () => void) => {
+      if (!endArmed) {
+        setEndArmed(true);
+        clearEndArmTimer();
+        endTimerRef.current = window.setTimeout(() => setEndArmed(false), 4000);
+        return;
+      }
+      clearEndArmTimer();
+      setEndArmed(false);
+      stop();
+    },
+    [endArmed, clearEndArmTimer],
+  );
+
+  useEffect(() => {
+    if (!endArmed) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        clearEndArmTimer();
+        setEndArmed(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [endArmed, clearEndArmTimer]);
 
   useEffect(() => {
     const api = window.mochi;
@@ -446,13 +485,17 @@ const [highContrast, setHighContrast] = useState(false);
 
     let alive = true;
     const read = () => {
+      setInsightsFailed(false);
       api
         .getInsights()
         .then((view) => {
           if (alive) setInsights(view);
         })
         .catch(() => {
-          if (alive) say('Insights could not be read just now.', true);
+          if (alive) {
+            setInsightsFailed(true);
+            say('Insights could not be read just now.', true);
+          }
         });
     };
 
@@ -462,7 +505,7 @@ const [highContrast, setHighContrast] = useState(false);
       alive = false;
       window.clearInterval(timer);
     };
-  }, [tab]);
+  }, [tab, insightsTick]);
 
   const runFocus = useCallback(
     async (action: FocusAction) => {
@@ -702,11 +745,11 @@ const [highContrast, setHighContrast] = useState(false);
 
                   <button
                     type="button"
-                    className="btn btn-ghost"
+                    className={`btn ${endArmed ? 'btn-danger' : 'btn-ghost'}`}
                     disabled={!connected || focus.status === 'idle' || busy}
-                    onClick={() => void runFocus('stop')}
+                    onClick={() => handleEndPress(() => void runFocus('stop'))}
                   >
-                    End session
+                    {endArmed ? 'End it? Press again' : 'End session'}
                   </button>
 
                   <p className="focus-note">
@@ -842,11 +885,11 @@ const [highContrast, setHighContrast] = useState(false);
                     </button>
                     <button
                       type="button"
-                      className="btn btn-ghost"
+                      className={`btn ${endArmed ? 'btn-danger' : 'btn-ghost'}`}
                       disabled={!connected || focus.status === 'idle' || busy}
-                      onClick={() => void runFocus('stop')}
+                      onClick={() => handleEndPress(() => void runFocus('stop'))}
                     >
-                      End session
+                      {endArmed ? 'End it? Press again' : 'End session'}
                     </button>
                   </div>
 
@@ -1042,6 +1085,32 @@ const [highContrast, setHighContrast] = useState(false);
                   )}
                 </Card>
               </>
+            ) : insightsFailed ? (
+              <Card>
+                <div className="card-head">
+                  <h2 className="eyebrow">Insights</h2>
+                </div>
+                <p className="tip" role="status" aria-live="polite">
+                  The week could not be read just now. Nothing is missing — your data is
+                  safe.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-soft"
+                  onClick={() => setInsightsTick((tick) => tick + 1)}
+                >
+                  Try again
+                </button>
+              </Card>
+            ) : insights === null ? (
+              <Card>
+                <div className="card-head">
+                  <h2 className="eyebrow">Insights</h2>
+                </div>
+                <p className="tip" role="status" aria-live="polite">
+                  Reading your week…
+                </p>
+              </Card>
             ) : (
               <Card>
                 <div className="card-head">
