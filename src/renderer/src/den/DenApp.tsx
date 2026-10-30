@@ -362,7 +362,7 @@ const [highContrast, setHighContrast] = useState(false);
         setConnected(true);
       })
       .catch(() => {
-        if (alive) setNotice('Mochi could not load your data. Showing a preview.');
+        if (alive) setNotice('Your data could not be loaded just now. Showing a preview.');
       });
 
     return () => {
@@ -496,7 +496,7 @@ const [highContrast, setHighContrast] = useState(false);
       await api.setPetVisible(true);
       setNotice(`${snapshot.settings.petName} is back on your desktop.`);
     } catch {
-      setNotice('Could not show Mochi.');
+      setNotice(`Could not show ${snapshot.settings.petName}.`);
     }
   }, [snapshot.settings.petName]);
 
@@ -566,7 +566,7 @@ const [highContrast, setHighContrast] = useState(false);
 
         <div className="sidebar-foot">
           <span className={`status-dot${connected ? ' is-live' : ''}`} aria-hidden="true" />
-          <span>{connected ? 'Mochi is running' : 'Preview mode'}</span>
+          <span>{connected ? `${settings.petName} is running` : 'Preview mode'}</span>
         </div>
       </aside>
 
@@ -599,7 +599,12 @@ const [highContrast, setHighContrast] = useState(false);
           {tab !== 'settings' ? (
             <div className="header-meta">
               <span className="pill">Level {pet.level}</span>
-              <span className="pill pill-muted">{pet.xp} XP</span>
+              <span
+                className="pill pill-muted"
+                title="XP is what Mochi earns for every finished block."
+              >
+                {pet.xp} XP
+              </span>
             </div>
           ) : null}
         </header>
@@ -631,7 +636,7 @@ const [highContrast, setHighContrast] = useState(false);
 
         {!connected ? (
           <div className="banner" role="note">
-            Preview mode. Controls are disabled until the desktop app is running.
+            Preview mode. Mochi isn't running, so the controls are asleep.
           </div>
         ) : null}
 
@@ -651,8 +656,8 @@ const [highContrast, setHighContrast] = useState(false);
                       {focus.status === 'running'
                         ? `ends at ${clockTime(focus.remainingMs)}`
                         : focus.status === 'paused'
-                          ? 'paused'
-                          : 'ready to start'}
+                          ? 'Paused'
+                          : 'Not started'}
                     </span>
                   </div>
                 </div>
@@ -698,7 +703,9 @@ const [highContrast, setHighContrast] = useState(false);
 
                   <p className="focus-note">
                     {settings.reducedMotion === 'on'
-                      ? 'Reduced motion is on, so the pet stays still.'
+                      ? `Reduced motion is on, so the pet stays still. ${Math.round(
+                          focus.config.workMin,
+                        )} min work, ${Math.round(focus.config.shortBreakMin)} min break.`
                       : `${Math.round(focus.config.workMin)} min work, ${Math.round(
                           focus.config.shortBreakMin,
                         )} min break.`}
@@ -871,8 +878,9 @@ const [highContrast, setHighContrast] = useState(false);
                   </li>
                 </ul>
                 <p className="tip">
-                  Breaks start on their own. Work does not, so you can step away without
-                  coming back to a running timer.
+                  A block is one stretch of focus — the timer, start to end. A round is one
+                  block plus its short break. Breaks start on their own. Work does not, so
+                  you can step away without coming back to a running timer.
                 </p>
               </Card>
 
@@ -1214,7 +1222,7 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Toggle
                 label="Start with Windows"
-                description="Only applies to the installed app."
+                description="Starts when you sign in. Applies once Mochi is installed as an app."
                 checked={settings.launchAtLogin}
                 onChange={(value) => void saveSettings({ launchAtLogin: value })}
               />
@@ -1275,7 +1283,7 @@ const [highContrast, setHighContrast] = useState(false);
                         <label className="setting-label" htmlFor="quiet-start">
                           Starts
                         </label>
-                        <span className="setting-desc">Only until the end hour.</span>
+                        <span className="setting-desc">The hour the quiet begins.</span>
                       </div>
                       <select
                         id="quiet-start"
@@ -1297,7 +1305,7 @@ const [highContrast, setHighContrast] = useState(false);
                         <label className="setting-label" htmlFor="quiet-end">
                           Ends
                         </label>
-                        <span className="setting-desc">Next morning is fine.</span>
+                        <span className="setting-desc">Next morning is fine — it can run past midnight.</span>
                       </div>
                       <select
                         id="quiet-end"
@@ -1386,13 +1394,13 @@ const [highContrast, setHighContrast] = useState(false);
                       if (!api) return;
                       try {
                         const result = await api.exportData();
-                        setNotice(result.ok ? 'Data exported.' : 'Export cancelled.');
+                        setNotice(result.ok ? 'Backup saved.' : 'Backup cancelled.');
                       } catch {
-                        setNotice('Export cancelled.');
+                        setNotice('Backup cancelled.');
                       }
                     }}
                   >
-                    Export as JSON…
+                    Save a backup…
                   </button>
                   <button type="button" className="btn btn-soft" onClick={() => void openDataFolder()}>
                     Open data folder
