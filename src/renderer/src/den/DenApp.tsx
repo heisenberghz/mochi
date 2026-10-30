@@ -223,7 +223,7 @@ function FocusConfigEditor({ config, onSaved }: FocusConfigEditorProps) {
   return (
     <Card>
       <div className="card-head">
-        <span className="eyebrow">Session lengths</span>
+        <h2 className="eyebrow">Session lengths</h2>
       </div>
 
       <div className="field-grid">
@@ -334,7 +334,15 @@ export function DenApp() {
   const [connected, setConnected] = useState(false);
   const [tab, setTab] = useState<Tab>('home');
 const [highContrast, setHighContrast] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; sticky?: boolean } | null>(null);
+
+  /**
+   * A line at the foot of the window. Successes leave on their own;
+   * failures stick (with a dismiss button) until they are seen.
+   */
+  const say = useCallback((text: string, sticky = false) => {
+    setNotice(sticky ? { text, sticky: true } : { text });
+  }, []);
   const [busy, setBusy] = useState(false);
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const [recoveryDismissed, setRecoveryDismissed] = useState(false);
@@ -362,7 +370,7 @@ const [highContrast, setHighContrast] = useState(false);
         setConnected(true);
       })
       .catch(() => {
-        if (alive) setNotice('Your data could not be loaded just now. Showing a preview.');
+        if (alive) say('Your data could not be loaded just now. Showing a preview.', true);
       });
 
     return () => {
@@ -372,7 +380,7 @@ const [highContrast, setHighContrast] = useState(false);
   }, []);
 
   useEffect(() => {
-    if (!notice) return;
+    if (!notice || notice.sticky) return;
     const timer = window.setTimeout(() => setNotice(null), 5000);
     return () => window.clearTimeout(timer);
   }, [notice]);
@@ -444,7 +452,7 @@ const [highContrast, setHighContrast] = useState(false);
           if (alive) setInsights(view);
         })
         .catch(() => {
-          if (alive) setNotice('Insights could not be read just now.');
+          if (alive) say('Insights could not be read just now.', true);
         });
     };
 
@@ -463,9 +471,9 @@ const [highContrast, setHighContrast] = useState(false);
       setBusy(true);
       try {
         const result = await api.focus(action);
-        if (!result.ok) setNotice('That did not work. Please try again.');
+        if (!result.ok) say('That did not work. Please try again.', true);
       } catch {
-        setNotice('That did not work. Please try again.');
+        say('That did not work. Please try again.', true);
       } finally {
         setBusy(false);
       }
@@ -482,10 +490,10 @@ const [highContrast, setHighContrast] = useState(false);
       if (result.ok) {
         setSnapshot((prev) => ({ ...prev, settings: result.settings }));
       } else {
-        setNotice('Could not save that setting.');
+        say('Could not save that setting.', true);
       }
     } catch {
-      setNotice('Could not save that setting.');
+      say('Could not save that setting.', true);
     }
   }, []);
 
@@ -494,9 +502,9 @@ const [highContrast, setHighContrast] = useState(false);
     if (!api) return;
     try {
       await api.setPetVisible(true);
-      setNotice(`${snapshot.settings.petName} is back on your desktop.`);
+      say(`${snapshot.settings.petName} is back on your desktop.`);
     } catch {
-      setNotice(`Could not show ${snapshot.settings.petName}.`);
+      say(`Could not show ${snapshot.settings.petName}.`, true);
     }
   }, [snapshot.settings.petName]);
 
@@ -505,9 +513,9 @@ const [highContrast, setHighContrast] = useState(false);
     if (!api) return;
     try {
       const result = await api.openDataFolder();
-      if (!result.ok) setNotice('Could not open the data folder.');
+      if (!result.ok) say('Could not open the data folder.', true);
     } catch {
-      setNotice('Could not open the data folder.');
+      say('Could not open the data folder.', true);
     }
   }, []);
 
@@ -644,7 +652,7 @@ const [highContrast, setHighContrast] = useState(false);
           <div className="grid-home">
             <Card className="focus-card">
               <div className="card-head">
-                <span className="eyebrow">Current session</span>
+                <h2 className="eyebrow">Current session</h2>
                 <span className={`phase-tag${isWorking ? ' is-work' : ''}`}>{phase}</span>
               </div>
 
@@ -713,7 +721,7 @@ const [highContrast, setHighContrast] = useState(false);
                 </div>
               </div>
 
-              <div className="rounds" aria-label={`Round ${focus.round} of ${focus.totalRounds}`}>
+              <div className="rounds" role="group" aria-label={`Round ${focus.round} of ${focus.totalRounds}`}>
                 {Array.from({ length: focus.totalRounds }, (_, index) => {
                   const done = index + 1 < focus.round;
                   const current = index + 1 === focus.round;
@@ -733,7 +741,7 @@ const [highContrast, setHighContrast] = useState(false);
             <div className="stack">
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Today</span>
+                  <h2 className="eyebrow">Today</h2>
                 </div>
                 <div className="stat-row">
                   <div className="stat">
@@ -760,7 +768,7 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">A gentle tip</span>
+                  <h2 className="eyebrow">A gentle tip</h2>
                 </div>
                 <p className="tip">
                   Put the window over a quiet corner of the screen. {settings.petName} walks
@@ -854,7 +862,7 @@ const [highContrast, setHighContrast] = useState(false);
             <div className="stack">
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">This session</span>
+                  <h2 className="eyebrow">This session</h2>
                 </div>
                 <ul className="checklist">
                   <li>
@@ -886,7 +894,7 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">XP</span>
+                  <h2 className="eyebrow">XP</h2>
                 </div>
                 <p className="tip">
                   Each finished block earns at least {Math.round(focus.config.workMin)} XP, plus
@@ -911,7 +919,7 @@ const [highContrast, setHighContrast] = useState(false);
                 <div className="stack">
                   <Card>
                     <div className="card-head">
-                      <span className="eyebrow">Focus minutes</span>
+                      <h2 className="eyebrow">Focus minutes</h2>
                       <div className="range-toggle" role="group" aria-label="Range">
                         <button
                           type="button"
@@ -946,6 +954,26 @@ const [highContrast, setHighContrast] = useState(false);
                         </div>
                       ))}
                     </div>
+                    {/* The picture is an image to sighted browsing, so the
+                        numbers live here too — a plain table for assistive
+                        tech, matching the picture day for day. */}
+                    <table className="sr-only">
+                      <caption>{chartLabel}</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Day</th>
+                          <th scope="col">Focused</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {range.days.map((day) => (
+                          <tr key={day.dayKey}>
+                            <th scope="row">{day.dayKey}</th>
+                            <td>{formatMinutes(day.focusedMs)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                     <p className="tip">
                       {range === insights.week ? 'This week' : 'This month'}: best day was{' '}
                       {formatDay(range.bestDay?.dayKey ?? null)},{' '}
@@ -990,7 +1018,7 @@ const [highContrast, setHighContrast] = useState(false);
 
                 <Card>
                   <div className="card-head">
-                    <span className="eyebrow">Recent sessions</span>
+                    <h2 className="eyebrow">Recent sessions</h2>
                   </div>
                   {insights.recent.length > 0 ? (
                     <ul className="session-list">
@@ -1017,7 +1045,7 @@ const [highContrast, setHighContrast] = useState(false);
             ) : (
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Insights</span>
+                  <h2 className="eyebrow">Insights</h2>
                 </div>
                 <p className="tip">
                   A quiet start. There is nothing to show because nothing has happened yet —
@@ -1043,7 +1071,7 @@ const [highContrast, setHighContrast] = useState(false);
           <div className="grid-locker">
             <Card>
               <div className="card-head">
-                <span className="eyebrow">Locker</span>
+                <h2 className="eyebrow">Locker</h2>
                 <span className="pill">Level {pet.level}</span>
               </div>
               <div className="locker-grid">
@@ -1077,7 +1105,7 @@ const [highContrast, setHighContrast] = useState(false);
                             try {
                               await api.equip(cosmetic.id);
                             } catch {
-                              setNotice('Could not change that just now.');
+                              say('Could not change that just now.', true);
                             }
                           }}
                         >
@@ -1113,7 +1141,7 @@ const [highContrast, setHighContrast] = useState(false);
             <div className="stack">
             <Card>
               <div className="card-head">
-                <span className="eyebrow">Companion</span>
+                <h2 className="eyebrow">Companion</h2>
               </div>
 
               <div className="setting-row">
@@ -1230,7 +1258,7 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Display</span>
+                  <h2 className="eyebrow">Display</h2>
                 </div>
                 <Toggle
                   label="High contrast"
@@ -1248,7 +1276,7 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Sessions</span>
+                  <h2 className="eyebrow">Sessions</h2>
                 </div>
                 <Toggle
                   label="Pause when the computer is locked"
@@ -1268,7 +1296,7 @@ const [highContrast, setHighContrast] = useState(false);
             <div className="stack">
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Quiet hours</span>
+                  <h2 className="eyebrow">Quiet hours</h2>
                 </div>
                 <Toggle
                   label="Quiet hours"
@@ -1328,7 +1356,7 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Shortcuts</span>
+                  <h2 className="eyebrow">Shortcuts</h2>
                 </div>
                 <Toggle
                   label="Global keyboard shortcuts"
@@ -1360,7 +1388,7 @@ const [highContrast, setHighContrast] = useState(false);
 
               <Card>
                 <div className="card-head">
-                  <span className="eyebrow">Data &amp; privacy</span>
+                  <h2 className="eyebrow">Data &amp; privacy</h2>
                 </div>
                 <p className="tip">
                   {settings.petName} keeps its data in one file on this PC. No account, no
@@ -1379,7 +1407,7 @@ const [highContrast, setHighContrast] = useState(false);
                     onClick={() => {
                       setExportPreview(null);
                       void window.mochi?.getExportPayload().then(setExportPreview).catch(() => {
-                        setNotice('The data could not be read just now.');
+                        say('The data could not be read just now.', true);
                       });
                     }}
                   >
@@ -1394,9 +1422,9 @@ const [highContrast, setHighContrast] = useState(false);
                       if (!api) return;
                       try {
                         const result = await api.exportData();
-                        setNotice(result.ok ? 'Backup saved.' : 'Backup cancelled.');
+                        say(result.ok ? 'Backup saved.' : 'Backup cancelled.', !result.ok);
                       } catch {
-                        setNotice('Backup cancelled.');
+                        say('Backup cancelled.');
                       }
                     }}
                   >
@@ -1456,10 +1484,10 @@ const [highContrast, setHighContrast] = useState(false);
                     setBusy(true);
                     try {
                       const result = await api.resetData();
-                      setNotice(result.ok ? `A fresh start. ${settings.petName} says hello again.` : 'The reset did not work.');
+                      say(result.ok ? `A fresh start. ${settings.petName} says hello again.` : 'The reset did not work.', !result.ok);
                       setResetArmed(false);
                     } catch {
-                      setNotice('The reset did not work.');
+                      say('The reset did not work.', true);
                     } finally {
                       setBusy(false);
                     }
@@ -1474,7 +1502,16 @@ const [highContrast, setHighContrast] = useState(false);
 
         {notice ? (
           <div className="toast" role="status" aria-live="polite">
-            {notice}
+            <span>{notice.text}</span>
+            {notice.sticky ? (
+              <button
+                type="button"
+                className="toast-dismiss"
+                onClick={() => setNotice(null)}
+              >
+                Dismiss
+              </button>
+            ) : null}
           </div>
         ) : null}
       </main>

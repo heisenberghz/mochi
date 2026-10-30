@@ -54,6 +54,8 @@ colors:
   hc-text: "#ffffff"
   hc-muted: "#bbbbbb"
   hc-accent: "#ffd700"
+  hc-accent-soft: "#3a3000"
+  hc-warn: "#e0995f"
   pet-cream: "#f3e7d6"
   pet-ink: "#2a2622"
   scarf-moss: "#7FA05E"
@@ -97,7 +99,7 @@ typography:
     fontWeight: 400
   eyebrow:
     fontFamily: "\"Segoe UI\", system-ui, -apple-system, sans-serif"
-    fontSize: "11px"
+    fontSize: "12px"
     fontWeight: 650
     letterSpacing: "0.09em"
   timer:
@@ -221,7 +223,7 @@ Paper-warm neutrals carry the room; one orange carries the meaning.
 
 **Display/Body Font:** Segoe UI (with `system-ui`, `-apple-system`, sans fallback) — Windows-native, the app uses no webfonts.
 
-**Character:** One family, weight-carried hierarchy. Numbers always tabular — a timer must never jiggle. No italics anywhere; emphasis is achieved with weight 550–650 and color, never with case-shouting except the 11px eyebrows.
+**Character:** One family, weight-carried hierarchy. Numbers always tabular — a timer must never jiggle. No italics anywhere; emphasis is achieved with weight 550–650 and color, never with case-shouting except the 12px eyebrows.
 
 ### Hierarchy
 - **Title** (650, 24px, -0.02em): the page greeting ("Good evening."). One per screen.
@@ -229,8 +231,8 @@ Paper-warm neutrals carry the room; one orange carries the meaning.
 - **Stat** (650, 20–22px, tabular): "Today"-card counts.
 - **Body** (400–650, 13–13.5px, 1.45–1.55): card copy, tips at 12.5px in Mushroom.
 - **Label** (550, 13px): setting labels and button text.
-- **Eyebrow** (650, 11px, +0.09em tracking, uppercase): card section names ("TODAY", "COMPANION"). The smallest voice; never for body text.
-- **Fine print** (11–12px): captions, kbd, tag text. Keep above the WCAG-relevance floor and never combine with opacity.
+- **Eyebrow** (650, 12px, +0.09em tracking, uppercase): card section names ("TODAY", "COMPANION"). The smallest voice; never for body text.
+- **Fine print** (12–12.5px): captions, kbd, tag text. 12px is the floor — nothing in the Den reads smaller than 12px.
 
 ### Named Rules
 **The Tabletop Rule.** Every number that ticks — timers, meters, stats, XP — uses `font-variant-numeric: tabular-nums`. A jittering digit is a bug.

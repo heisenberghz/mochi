@@ -87,7 +87,7 @@
 
 .brand-tag {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .nav {
@@ -243,8 +243,7 @@
 
 .banner-path {
   margin: 6px 0 0;
-  font-size: 11.5px;
-  opacity: 0.8;
+  font-size: 12px;
   word-break: break-all;
 }
 
@@ -387,10 +386,13 @@
 
 .eyebrow {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.09em;
   text-transform: uppercase;
+  /* The card titles are h2 now (real headings for screen readers); h2
+     brings browser margins that break the card-head rhythm. */
+  margin: 0;
 }
 
 .phase-tag {
@@ -398,7 +400,7 @@
   border-radius: 999px;
   background: var(--track);
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -466,7 +468,7 @@
 
 .ring-caption {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .focus-controls {
@@ -557,7 +559,7 @@
   border-radius: 999px;
   background: var(--track);
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -596,7 +598,7 @@
 .rounds-label {
   margin-left: auto;
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 /* Stats */
@@ -634,7 +636,7 @@
 
 .stat-label {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .meter {
@@ -970,9 +972,12 @@
 
 .toast {
   position: fixed;
-  right: 26px;
+  /* Dead center at the foot: anchored right it sat on top of the Data &
+     privacy buttons — exactly where backup and reset live. */
+  left: 50%;
   bottom: 22px;
-  max-width: 320px;
+  transform: translateX(-50%);
+  max-width: 440px;
   padding: 11px 15px;
   border-radius: 12px;
   background: var(--ink);
@@ -980,6 +985,30 @@
   font-size: 12.5px;
   box-shadow: 0 14px 32px rgba(42, 38, 34, 0.24);
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toast-dismiss {
+  appearance: none;
+  flex: 0 0 auto;
+  border: 1px solid rgba(253, 249, 241, 0.4);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: transparent;
+  color: #fdf9f1;
+  font: 600 12px "Segoe UI", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.toast-dismiss:hover {
+  background: rgba(253, 249, 241, 0.14);
+}
+
+.toast-dismiss:focus-visible {
+  outline: 2px solid #fdf9f1;
+  outline-offset: 2px;
 }
 
 /* Narrow window fallback */
@@ -1009,21 +1038,96 @@
   }
 }
 
+/* High contrast: the lines drawn hard. This retunes the real tokens —
+   an earlier draft overrode --bg/--surface names that nothing reads, so
+   the toggle looked like it worked while the theme never moved. */
 .den-root.high-contrast {
-  --bg: #000;
-  --surface: #0a0a0a;
-  --surface-2: #141414;
-  --border: #fff;
-  --border-strong: #fff;
-  --text: #fff;
-  --text-muted: #bbb;
+  --paper: #000;
+  --card: #0a0a0a;
+  --ink: #fff;
+  --muted: #bbb;
+  --line: #fff;
   --accent: #ffd700;
+  --accent-soft: #3a3000;
+  --track: #141414;
+  --switch-track: #141414;
+  --switch-edge: #ffd700;
+  --stat-tile: #141414;
 }
 
-.den-root.high-contrast .card,
-.den-root.high-contrast .meter-track {
+/* Components whose rest look carries literal colors (not tokens) still
+   need a hand in high contrast — the token retune can't reach them. */
+.den-root.high-contrast .den-sidebar {
+  background: #000;
+}
+
+.den-root.high-contrast .nav-item:hover {
+  background: #141414;
+}
+
+.den-root.high-contrast .brand-mark {
+  background: #3a3000;
+  color: #ffd700;
+  box-shadow: inset 0 0 0 1px #ffd700;
+}
+
+.den-root.high-contrast .banner {
   background: #0a0a0a;
   border-color: #fff;
+  color: #fff;
+}
+
+.den-root.high-contrast .banner-recovery {
+  background: #0a0a0a;
+  border-color: #fff;
+  color: #fff;
+}
+
+.den-root.high-contrast .toast {
+  background: #fff;
+  color: #000;
+}
+
+.den-root.high-contrast .toast-dismiss {
+  border-color: rgba(0, 0, 0, 0.55);
+  color: #000;
+}
+
+.den-root.high-contrast .toast-dismiss:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.den-root.high-contrast .toast-dismiss:focus-visible {
+  outline-color: #000;
+}
+
+.den-root.high-contrast .text-input,
+.den-root.high-contrast .select-input,
+.den-root.high-contrast .number-input {
+  background: #0a0a0a;
+}
+
+.den-root.high-contrast .switch-thumb {
+  background: #fff;
+}
+
+.den-root.high-contrast .tip.warn {
+  color: #e0995f;
+}
+
+.den-root.high-contrast .chart-bar {
+  background: #ffd700;
+}
+
+/* Everything that wears accent-soft speaks white on it — Crust Bold is a
+   light-theme partner, unreadable on the HC #3a3000 wash. */
+.den-root.high-contrast
+  :is(.pill, .btn-soft, .phase-chip.is-on, .phase-tag.is-work, .session-tag.is-complete) {
+  color: #fff;
+}
+
+.den-root.high-contrast .btn-soft:hover:not(:disabled) {
+  background: #3a3000;
 }
 
 .den-root.high-contrast .pet-svg {
@@ -1123,7 +1227,7 @@
 }
 
 .session-tag {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
@@ -1157,7 +1261,7 @@
   border-radius: 6px;
   background: var(--track);
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -1176,6 +1280,13 @@
   color: var(--muted);
 }
 
+/* summary is interactive; it needs the same visible keyboard ring. */
+.export-preview summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .export-preview summary:hover {
   color: var(--ink);
 }
@@ -1188,7 +1299,7 @@
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--track);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   white-space: pre-wrap;
 }

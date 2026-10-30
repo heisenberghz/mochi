@@ -28,7 +28,7 @@
       "stat": { "displayName": "Stat", "purpose": "Daily counts; always tabular." },
       "body": { "displayName": "Body", "purpose": "Card copy and tips." },
       "label": { "displayName": "Label", "purpose": "Setting labels and button text." },
-      "eyebrow": { "displayName": "Eyebrow", "purpose": "Card section names; uppercase 11px — never body text." }
+      "eyebrow": { "displayName": "Eyebrow", "purpose": "Card section names; uppercase 12px headings — never body text." }
     },
     "shadows": [
       { "name": "card-rest", "value": "0 10px 28px rgba(58, 45, 32, 0.05)", "purpose": "Every card, at rest, always." },
