@@ -293,6 +293,27 @@ function formatMinutes(ms: number): string {
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 }
 
+/** The slider's spoken value, like "Large (125%)". */
+function sizeLabel(scale: Settings['petScale']): string {
+  const percent = `${Math.round(scale * 100)}%`;
+  switch (scale) {
+    case 0.75:
+      return `Snug (${percent})`;
+    case 1.25:
+      return `Large (${percent})`;
+    case 1.5:
+      return `Grand (${percent})`;
+    default:
+      return `Normal (${percent})`;
+  }
+}
+
+/** How far along the slider's track the scale sits, as a percent. */
+function fillPercent(scale: Settings['petScale']): number {
+  const step = PET_SCALES.indexOf(scale);
+  return Math.round((step / (PET_SCALES.length - 1)) * 100);
+}
+
 /** A readable day, like "Mar 10". */
 function formatDay(dayKey: string | null): string {
   if (!dayKey) return '—';
@@ -1051,29 +1072,39 @@ const [highContrast, setHighContrast] = useState(false);
               <div className="setting-row setting-row-stacked">
                 <div className="setting-copy">
                   <label className="setting-label" htmlFor="pet-scale">
-                    Size
+                    Pet size
                   </label>
                   <span className="setting-desc">
-                    How big she stands on the desk. The pixels stay crisp at
-                    every step.
+                    Adjust the size of your pet. She snaps to the sizes where
+                    her pixels stay crisp.
                   </span>
                 </div>
-                <select
-                  id="pet-scale"
-                  className="select-input"
-                  value={settings.petScale}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    if (PET_SCALES.includes(value as Settings['petScale'])) {
-                      void saveSettings({ petScale: value as Settings['petScale'] });
-                    }
-                  }}
-                >
-                  <option value="0.75">Snug (75%)</option>
-                  <option value="1">Normal (100%)</option>
-                  <option value="1.25">Large (125%)</option>
-                  <option value="1.5">Grand (150%)</option>
-                </select>
+                <div className="size-slider-row">
+                  <input
+                    type="range"
+                    id="pet-scale"
+                    className="size-slider"
+                    min={0}
+                    max={PET_SCALES.length - 1}
+                    step={1}
+                    value={PET_SCALES.indexOf(settings.petScale)}
+                    aria-valuetext={sizeLabel(settings.petScale)}
+                    onChange={(event) => {
+                      const next = PET_SCALES[Number(event.target.value)];
+                      if (next !== undefined) void saveSettings({ petScale: next });
+                    }}
+                    style={{
+                      ['--fill' as string]: `${fillPercent(settings.petScale)}%`,
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="size-reset"
+                    onClick={() => void saveSettings({ petScale: 1 })}
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
 
               <Toggle

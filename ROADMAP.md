@@ -300,6 +300,67 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 
 *Newest first. I add an entry after each piece of work.*
 
+### 2026-10-30 — Commit 14: the size setting as a slider with Reset
+
+The dropdown became a slider card in the Den's pet settings, after a
+screenshot the user liked:
+
+- **"Pet size / Adjust the size of your pet"** on the left; the slider and
+  a **Reset** button on the right. The track fills in the warm accent up
+  to the chosen step (via a `--fill` CSS variable set inline), the thumb
+  is a white round with the ink outline, and Reset jumps back to Normal.
+- **The slider snaps to the four steps.** It is an `input type=range` over
+  step indexes 0–3 — dragging always lands on Snug 75% / Normal 100% /
+  Large 125% / Grand 150%, never a between size that would blur her
+  pixels. The screen reader reads "Large (125%)" via `aria-valuetext`.
+- Styling uses the Den's own tokens (`--accent`, `--track`, `--ink`,
+  `--line`), so it follows light and dark free. Numbers and the live
+  resize plumbing are untouched from commit 12/13.
+
+### 2026-10-30 — Commit 13: the pet's zoom no longer leaks into the Den
+
+Found by the user at Grand 150%: the Den's **contents** were scaling with
+the pet (huge titles, clipped UI) while its window frame stayed 980×700.
+Root cause: the size was applied as an Electron **page zoom**, and
+Chromium shares zoom per origin — the pet and the Den both load from the
+same `file://` origin, so the Den inherited the pet's zoom.
+
+- The growing is now done **inside the pet page**: a fixed 320×360 logical
+  layer (`.pet-scaled` in pet.css) stretched by **CSS `zoom`** —
+  page-local by construction, so no other window can inherit it. (CSS
+  `transform` was tried first; it creates a composited layer, which a
+  transparent overlay window repaints in pieces when it moves. The
+  four-corner screen captures during the hunt were partially polluted by
+  the user's stale instance bleeding through the transparent test
+  windows — which is its own lesson: move any transparent-window repro
+  to the top of the screen before believing what it shows.)
+- The window keeps being the container (`PET_WINDOW × scale`, feet-anchored
+  resize, clamped, placement follows) — that half was correct and stays.
+- The pet renderer divides pointer coordinates and the drift sentinel's
+  measurements by the scale, restoring the same page-pixel math the
+  contract tests already hold (CSS zoom reports grown pixels, like the
+  transform did). The drift check now also re-runs when the scale
+  arrives, so a scaled launch measures with the right divisor.
+- Dead `placeNearDefault` removed (it had keyed off the removed zoom).
+- The "detached squares" near the art are the art's own pieces — the
+  cream multi-celled tail ring and the chip squares — approved in the
+  stage 10B QA sheet; confirmed via the top-of-screen stress capture
+  (`art-mockups/pet-scale-stress.cjs`), which shows her whole at every
+  size through walks, jumps and settles.
+- **The reason fresh tests kept failing: Chromium persists per-origin
+  page zoom inside the profile.** The old mechanism had written Grand
+  150% as a page zoom (level 2.2239 for the `localhost` dev origin into
+  Preferences), and every later launch — fresh process or not — had it
+  restored the moment the page committed, dropping a pre-zoomed sheet
+  into a window sized for the real setting. That is the chop in the
+  user's Snug screenshot, head to mouth only. Two layers now heal it:
+  `neutralisePersistedZoom` stamps the factor back to 1 on every
+  navigation, and `clearPersistedZoomLevels` deletes stored per-host
+  zoom entries from Preferences at startup (our real state lives in
+  state.json, untouched). Verified on the real polluted profile: the
+  table comes up empty and a live run renders her whole.
+- 258 tests passing; lint, typecheck, build green.
+
 ### 2026-10-29 — Commit 12 (stage 11A): a pet size setting
 
 A stepped size setting — **Snug 75% / Normal 100% / Large 125% / Grand 150%**
