@@ -1032,7 +1032,7 @@ const [highContrast, setHighContrast] = useState(false);
         ) : null}
 
         {tab === 'locker' ? (
-          <div className="grid-insights">
+          <div className="grid-locker">
             <Card>
               <div className="card-head">
                 <span className="eyebrow">Locker</span>
@@ -1079,6 +1079,17 @@ const [highContrast, setHighContrast] = useState(false);
                     </div>
                   );
                 })}
+                {/* The spare spot: keeps the grid from stranding the last
+                    item alone, and quiet-promises that the collection grows. */}
+                <div className="cosmetic-spot" aria-hidden="true">
+                  <div className="cosmetic-icon cosmetic-spot-icon" />
+                  <div className="cosmetic-info">
+                    <span className="cosmetic-label">A spare spot</span>
+                    <span className="cosmetic-level">
+                      More arrives as {settings.petName} grows
+                    </span>
+                  </div>
+                </div>
               </div>
               <p className="tip">
                 Free to wear — anything unlocked goes on and off as much as you like,
@@ -1091,6 +1102,7 @@ const [highContrast, setHighContrast] = useState(false);
 
         {tab === 'settings' ? (
           <div className="grid-settings">
+            <div className="stack">
             <Card>
               <div className="card-head">
                 <span className="eyebrow">Companion</span>
@@ -1174,6 +1186,32 @@ const [highContrast, setHighContrast] = useState(false);
                 onChange={(value) => void saveSettings({ sound: value })}
               />
 
+              <div className="setting-row setting-row-stacked">
+                <div className="setting-copy">
+                  <label className="setting-label" htmlFor="motion">
+                    Motion level
+                  </label>
+                  <span className="setting-desc">
+                    Reduced motion keeps the pet still and calm.
+                  </span>
+                </div>
+                <select
+                  id="motion"
+                  className="select-input"
+                  value={settings.reducedMotion}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === 'on' || value === 'off' || value === 'system') {
+                      void saveSettings({ reducedMotion: value });
+                    }
+                  }}
+                >
+                  <option value="system">Follow Windows</option>
+                  <option value="on">Reduced</option>
+                  <option value="off">Full</option>
+                </select>
+              </div>
+
               <Toggle
                 label="Start with Windows"
                 description="Only applies to the installed app."
@@ -1181,38 +1219,6 @@ const [highContrast, setHighContrast] = useState(false);
                 onChange={(value) => void saveSettings({ launchAtLogin: value })}
               />
             </Card>
-
-            <div className="stack">
-              <Card>
-                <div className="card-head">
-                  <span className="eyebrow">Motion</span>
-                </div>
-                <div className="setting-row setting-row-stacked">
-                  <div className="setting-copy">
-                    <label className="setting-label" htmlFor="motion">
-                      Motion level
-                    </label>
-                    <span className="setting-desc">
-                      Reduced motion keeps the pet still and calm.
-                    </span>
-                  </div>
-                  <select
-                    id="motion"
-                    className="select-input"
-                    value={settings.reducedMotion}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      if (value === 'on' || value === 'off' || value === 'system') {
-                        void saveSettings({ reducedMotion: value });
-                      }
-                    }}
-                  >
-                    <option value="system">Follow Windows</option>
-                    <option value="on">Reduced</option>
-                    <option value="off">Full</option>
-                  </select>
-                </div>
-              </Card>
 
               <Card>
                 <div className="card-head">
@@ -1249,7 +1255,9 @@ const [highContrast, setHighContrast] = useState(false);
                   onChange={(value) => void saveSettings({ autoResume: value })}
                 />
               </Card>
+            </div>
 
+            <div className="stack">
               <Card>
                 <div className="card-head">
                   <span className="eyebrow">Quiet hours</span>

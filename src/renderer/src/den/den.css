@@ -274,9 +274,58 @@
   grid-template-columns: minmax(0, 1.3fr) minmax(270px, 0.9fr);
 }
 
-.grid-focus,
-.grid-settings {
+.grid-focus {
   grid-template-columns: minmax(0, 1.1fr) minmax(270px, 0.9fr);
+}
+
+/* Two even columns: the settings page used to put one card against six,
+   leaving its first column mostly paper. Companion / Display / Sessions
+   sit against Quiet hours / Shortcuts / Data & privacy now. */
+.grid-settings {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Home fills its frame: the session card stretches, its rounds row docks
+   to the card floor, and the gentle tip soaks up whatever slack is left,
+   so neither column ends in paper. */
+.grid-home {
+  align-items: stretch;
+}
+
+.grid-home .focus-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-home .focus-card .focus-body {
+  margin-bottom: 16px;
+}
+
+.grid-home .focus-card .rounds {
+  margin-top: auto;
+}
+
+.grid-home .stack {
+  grid-template-rows: auto 1fr;
+  height: 100%;
+}
+
+.grid-home .stack > :last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-home .stack > :last-child .tip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.grid-locker {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+  max-width: 840px;
 }
 
 .grid-insights {
@@ -300,6 +349,7 @@
 .grid-home,
 .grid-focus,
 .grid-insights,
+.grid-locker,
 .grid-settings {
   animation: panel-in 180ms ease-out both;
 }
@@ -308,6 +358,7 @@
   .grid-home,
   .grid-focus,
   .grid-insights,
+  .grid-locker,
   .grid-settings {
     animation: none;
   }
@@ -1278,6 +1329,29 @@ input:focus-visible {
    the tile never claims a hover halo. */
 .cosmetic.locked {
   border-style: dashed;
+}
+
+/* The spare spot: an empty seat at the collection table. Dashed like the
+   locked tiles, but no icon and no label level — just a quiet promise. */
+.cosmetic-spot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--tile);
+  background: transparent;
+  color: var(--muted);
+}
+
+.cosmetic-spot .cosmetic-icon {
+  background: transparent;
+  border: 1px dashed var(--line);
+}
+
+.cosmetic-spot .cosmetic-icon::before,
+.cosmetic-spot .cosmetic-icon::after {
+  content: none;
 }
 
 .cosmetic.locked .cosmetic-icon {
