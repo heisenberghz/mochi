@@ -7,6 +7,12 @@
   --accent: #e07a2b;
   --accent-soft: #f5e4d2;
   --track: #ece1d2;
+  /* The off-switch needs a boundary its own two tokens can't give it:
+     track-on-card is ~1.2:1 in both themes. A dimmer track plus a warm
+     edge worth 3:1 keeps the toggle findable before it is ever touched. */
+  --switch-track: #ddd0be;
+  --switch-edge: #a08d74;
+  --stat-tile: #faf4e9;
   display: grid;
   grid-template-columns: 216px minmax(0, 1fr);
   height: 100vh;
@@ -544,25 +550,35 @@
 
 /* Stats */
 
+/* The one stat definition (an Insights-section copy used to shadow this
+   one and win by cascade order — the 22px-the-detector-saw landmine).
+   Flex-wrap so three or four stats share one cloud of tiles either way. */
 .stat-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
   margin-bottom: 16px;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #faf4e9;
+  background: var(--stat-tile);
 }
 
 .stat-value {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 650;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .stat-label {
@@ -867,7 +883,8 @@
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: #e3d7c6;
+  border: 1px solid var(--switch-edge);
+  background: var(--switch-track);
   transition: background 160ms ease;
 }
 
@@ -878,12 +895,14 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #fff;
+  /* Card Cream, not pure white — the palette's floor (#fffdf8). */
+  background: var(--card);
   box-shadow: 0 1px 3px rgba(42, 38, 34, 0.25);
   transition: transform 160ms ease;
 }
 
 .switch input:checked + .switch-track {
+  border-color: var(--accent);
   background: var(--accent);
 }
 
@@ -1016,36 +1035,10 @@
   width: 100%;
   min-height: 2px;
   border-radius: 4px 4px 0 0;
-  background: var(--accent);
-  opacity: 0.85;
+  /* A hair deeper than the accent, so a resting bar clears the 3:1
+     non-text minimum against Card Cream; the accent itself sits at 2.96. */
+  background: #d36f1f;
   transition: height 180ms ease;
-}
-
-.chart-col:last-child .chart-bar {
-  opacity: 1;
-}
-
-.stat-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 26px;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stat-value {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--muted);
 }
 
 .session-list {
@@ -1207,6 +1200,8 @@ input:focus-visible {
     --accent: #e89b60;
     --accent-soft: #48301c;
     --track: #332b24;
+    --switch-track: #4a3e34;
+    --switch-edge: #9c8a77;
     background:
       radial-gradient(1200px 600px at 85% -10%, #2a241d 0%, rgba(42, 36, 29, 0) 60%),
       var(--paper);
@@ -1217,6 +1212,13 @@ input:focus-visible {
   }
 
   .den-root:not(.high-contrast) .btn-soft {
+    color: #ecc9a3;
+  }
+
+  /* Crust Bold (#7c4c1c) is a light-theme-only partner: on the dark
+     accent-soft it lands at 1.7:1. These all sit on accent-soft, so they
+     take the same rescued glow the soft button already had. */
+  .den-root:not(.high-contrast) :is(.pill, .phase-tag.is-work, .phase-chip.is-on, .session-tag.is-complete) {
     color: #ecc9a3;
   }
 
@@ -1235,6 +1237,10 @@ input:focus-visible {
 
   .den-root:not(.high-contrast) .tip.warn {
     color: #e08d5b;
+  }
+
+  .den-root:not(.high-contrast) .chart-bar {
+    background: var(--accent);
   }
 }
 
@@ -1265,8 +1271,17 @@ input:focus-visible {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+/* Locked tiles dim their picture, not their words: the whole-card opacity
+   used to sink the "Level N" reason to about 2.1:1. Text now stays at full
+   strength (Mushroom on Card Cream passes), the icon fades instead, the
+   border goes dashed the way paper marks something "not opened yet", and
+   the tile never claims a hover halo. */
 .cosmetic.locked {
-  opacity: 0.55;
+  border-style: dashed;
+}
+
+.cosmetic.locked .cosmetic-icon {
+  opacity: 0.5;
 }
 
 .cosmetic-icon {
@@ -1325,6 +1340,11 @@ input:focus-visible {
 .cosmetic-toggle:hover {
   background: var(--accent-soft);
   border-color: var(--accent);
+}
+
+.cosmetic-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .cosmetic.worn .cosmetic-toggle {

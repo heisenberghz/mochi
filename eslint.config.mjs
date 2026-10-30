@@ -12,7 +12,21 @@ import tseslint from 'typescript-eslint';
  * what makes that a promise instead of a hope.
  */
 export default tseslint.config(
-  { ignores: ['out/**', 'node_modules/**', 'coverage/**', 'art-mockups/**'] },
+  // Local agent tooling (the impeccable skill copies on disk) is vendored
+  // third-party code, including a minified detector binary's helpers; it is
+  // git-ignored and lint-ignored for the same reason node_modules is.
+  {
+    ignores: [
+      'out/**',
+      'node_modules/**',
+      'coverage/**',
+      'art-mockups/**',
+      '.opencode/**',
+      '.github/agents/**',
+      '.github/hooks/**',
+      '.github/skills/**',
+    ],
+  },
 
   // Every TS file in the product.
   { files: ['src/**/*.{ts,tsx}'] },

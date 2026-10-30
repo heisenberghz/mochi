@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import type {
   AppSnapshot,
   FocusAction,
@@ -342,6 +342,8 @@ const [highContrast, setHighContrast] = useState(false);
   const [insightsRange, setInsightsRange] = useState<7 | 30>(7);
   const [exportPreview, setExportPreview] = useState<string | null>(null);
   const [resetArmed, setResetArmed] = useState(false);
+  const resetHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const resetTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const api = window.mochi;
@@ -375,15 +377,57 @@ const [highContrast, setHighContrast] = useState(false);
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  // The reset dialog closes on Escape, like every dialog should.
+  // The reset dialog closes on Escape, and it owns the keyboard while open:
+  // focus arrives on its title the moment it opens, the widget return trip
+  // puts focus back on "Reset everything…" when it leaves. Otherwise
+  // "modal" is a claim, not a fact, and Tab walks the page behind a cloth.
   useEffect(() => {
     if (!resetArmed) return;
+    resetHeadingRef.current?.focus();
+    const lastTrigger = resetTriggerRef.current;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setResetArmed(false);
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      lastTrigger?.focus();
+    };
   }, [resetArmed]);
+
+  /** Where focus was before the reset dialog was armed. */
+  const armReset = useCallback(() => {
+    resetTriggerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setResetArmed(true);
+  }, []);
+
+  // Keyboard capture for the dialog's Tab cycle. With aria-modal the page's
+  // content is hidden from assistive tech, so Tab must stay inside too.
+  const trapResetTab = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Tab') return;
+    const dialog = event.currentTarget;
+    const focusable = Array.from(
+      dialog.querySelectorAll<HTMLElement>('button:not(:disabled)'),
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    if (first === undefined) return;
+    const last = focusable[focusable.length - 1] ?? first;
+    const active = document.activeElement as HTMLElement | null;
+    if (focusable.indexOf(active ?? first) === -1) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+    if (event.shiftKey && (active === first || !dialog.contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, []);
 
   // Insights are read when the tab opens and quietly refreshed while it
   // stays open. They are never fetched otherwise — no chatty background work.
@@ -1018,7 +1062,16 @@ const [highContrast, setHighContrast] = useState(false);
                         <button
                           type="button"
                           className="cosmetic-toggle"
-                          onClick={() => void window.mochi.equip(cosmetic.id)}
+                          disabled={!connected}
+                          onClick={async () => {
+                            const api = window.mochi;
+                            if (!api) return;
+                            try {
+                              await api.equip(cosmetic.id);
+                            } catch {
+                              setNotice('Could not change that just now.');
+                            }
+                          }}
                         >
                           {worn ? 'Take off' : 'Wear'}
                         </button>
@@ -1341,7 +1394,7 @@ const [highContrast, setHighContrast] = useState(false);
                   <button
                     type="button"
                     className="btn btn-danger btn-small"
-                    onClick={() => setResetArmed(true)}
+                    onClick={() => armReset()}
                   >
                     Reset everything…
                   </button>
@@ -1364,8 +1417,11 @@ const [highContrast, setHighContrast] = useState(false);
               aria-modal="true"
               aria-labelledby="reset-title"
               onClick={(event) => event.stopPropagation()}
+              onKeyDown={trapResetTab}
             >
-              <h2 id="reset-title">Reset everything?</h2>
+              <h2 id="reset-title" tabIndex={-1} ref={resetHeadingRef} style={{ outline: 'none' }}>
+                Reset everything?
+              </h2>
               <p>
                 This erases every level, every minute, every setting — {settings.petName} forgets
                 you completely. There is no undo.

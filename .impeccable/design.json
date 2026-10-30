@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T00:00:00Z",
+  "title": "Design System: Mochi — the Den",
+  "extensions": {
+    "colorMeta": {
+      "toast-crust": { "role": "primary", "displayName": "Toast Crust", "canonical": "#e07a2b", "tonalRamp": ["#3d2008", "#7a3d10", "#a7500f", "#e07a2b", "#eb9a5c", "#f2b98b", "#f8d7b8", "#fdf0e2"] },
+      "crust-soft": { "role": "secondary", "displayName": "Crust Soft", "canonical": "#f5e4d2", "tonalRamp": ["#48301c", "#6b4a2e", "#8f6a48", "#b38f6d", "#d0ae8f", "#e8c8a6", "#f5e4d2", "#fdf6ec"] },
+      "crust-bold": { "role": "tertiary", "displayName": "Crust Bold", "canonical": "#7c4c1c", "tonalRamp": ["#33200c", "#573a16", "#7c4c1c", "#9a6a3a", "#b5884f", "#d1a875", "#e8cba5", "#f7ead2"] },
+      "paper": { "role": "neutral", "displayName": "Warm Paper", "canonical": "#f7f2e9", "tonalRamp": ["#221d18", "#3a3128", "#594b3c", "#7d6a55", "#a89278", "#cbb69c", "#e4dacb", "#f7f2e9"] },
+      "card": { "role": "neutral", "displayName": "Card Cream", "canonical": "#fffdf8", "tonalRamp": ["#2b2520", "#443c33", "#655849", "#8c7c67", "#b3a28a", "#dbcebb", "#efe7d8", "#fffdf8"] },
+      "ink": { "role": "neutral", "displayName": "Pet Ink", "canonical": "#2a2622", "tonalRamp": ["#2a2622", "#44403a", "#645c53", "#877d72", "#ada295", "#cfc6b9", "#e8e1d5", "#f7f2e9"] },
+      "mushroom": { "role": "neutral", "displayName": "Mushroom", "canonical": "#776c5f", "tonalRamp": ["#2a2622", "#453e35", "#5d5346", "#776c5f", "#998d7e", "#b6ab9b", "#d3c9ba", "#efe7da"] },
+      "branch-line": { "role": "neutral", "displayName": "Branch Line", "canonical": "#e4dacb", "tonalRamp": ["#3d342c", "#5f5347", "#8a7c6c", "#ad9f8d", "#c8b8a4", "#d8ccb9", "#e4dacb", "#f3ece0"] },
+      "sand-track": { "role": "neutral", "displayName": "Sand Track", "canonical": "#ece1d2", "tonalRamp": ["#332b24", "#4d4136", "#71604f", "#99846d", "#bda78d", "#dbcbb4", "#ece1d2", "#f7efe2"] },
+      "pet-cream": { "role": "tertiary", "displayName": "Mochi Cream", "canonical": "#f3e7d6", "tonalRamp": ["#5c4a36", "#866c4f", "#ab8f6f", "#c9ac8c", "#dfc5a9", "#ecd8bf", "#f3e7d6", "#faf3e7"] },
+      "scarf-moss": { "role": "tertiary", "displayName": "Scarf Moss", "canonical": "#7FA05E", "tonalRamp": ["#27381b", "#41562e", "#5F8047", "#7FA05E", "#9ab87b", "#b8d09e", "#d3e4c2", "#edf5e3"] },
+      "scarf-sky": { "role": "tertiary", "displayName": "Scarf Sky", "canonical": "#6FA0D8", "tonalRamp": ["#1e3049", "#2e4a6b", "#4E7FB8", "#6FA0D8", "#93bce6", "#b8d6ef", "#d8e9f6", "#eef6fc"] },
+      "scarf-aurora-a": { "role": "tertiary", "displayName": "Aurora Mint", "canonical": "#7EC8A9", "tonalRamp": ["#1d3d2f", "#2d5c48", "#47906b", "#7EC8A9", "#a4dcc0", "#c4ebd7", "#dff5ea", "#f2fcf6"] },
+      "scarf-aurora-b": { "role": "tertiary", "displayName": "Aurora Dusk", "canonical": "#9A7FD1", "tonalRamp": ["#2e2450", "#453b7a", "#654da3", "#9A7FD1", "#b79fe2", "#d2bff0", "#e4d8f6", "#f4effb"] },
+      "bedtime-green": { "role": "tertiary", "displayName": "Bedtime Green", "canonical": "#6e9a6a", "tonalRamp": ["#223a1f", "#345531", "#527a4e", "#6e9a6a", "#8cae88", "#aec2ab", "#cddbe8", "#e7f0e5"] },
+      "issue-rust": { "role": "tertiary", "displayName": "Issue Rust", "canonical": "#b4544c", "tonalRamp": ["#521f1b", "#7d2f28", "#a34441", "#b4544c", "#c97670", "#dfa09b", "#efc7c3", "#fae9e7"] },
+      "warn-copper": { "role": "tertiary", "displayName": "Warn Copper", "canonical": "#a14112", "tonalRamp": ["#331404", "#5c250a", "#a14112", "#c2683a", "#d98c66", "#e9ae8f", "#f4cdb8", "#fbeade"] }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Single page greeting; one per screen." },
+      "timer": { "displayName": "Timer", "purpose": "The ring's remaining time; largest text in the Den, always tabular." },
+      "stat": { "displayName": "Stat", "purpose": "Daily counts; always tabular." },
+      "body": { "displayName": "Body", "purpose": "Card copy and tips." },
+      "label": { "displayName": "Label", "purpose": "Setting labels and button text." },
+      "eyebrow": { "displayName": "Eyebrow", "purpose": "Card section names; uppercase 11px — never body text." }
+    },
+    "shadows": [
+      { "name": "card-rest", "value": "0 10px 28px rgba(58, 45, 32, 0.05)", "purpose": "Every card, at rest, always." },
+      { "name": "thumb-chip", "value": "0 1px 3px rgba(42, 38, 34, 0.25)", "purpose": "Slider and switch thumbs only." },
+      { "name": "toast", "value": "0 14px 32px rgba(42, 38, 34, 0.24)", "purpose": "The dark notice slab." },
+      { "name": "modal", "value": "0 24px 60px rgba(20, 15, 10, 0.35)", "purpose": "The reset dialog only; deepest shadow in the system." },
+      { "name": "status-halo", "value": "0 0 0 3px {crust-soft}", "purpose": "Worn cosmetics, current round dot, live status — attention ring, not elevation." }
+    ],
+    "motion": [
+      { "name": "motion-instant", "value": "80ms", "purpose": "Press states (buttons sink 1px)." },
+      { "name": "motion-fast", "value": "120ms", "purpose": "Small state changes (chrome hover)." },
+      { "name": "motion-base", "value": "200ms", "purpose": "Switch, range, chip fills." },
+      { "name": "motion-enter", "value": "300ms", "purpose": "Panels entering (180ms in Den practice; 300ms cap)." },
+      { "name": "motion-slow", "value": "400ms", "purpose": "Meter fill and the ring's conic sweep, linear." },
+      { "name": "ease-standard", "value": "cubic-bezier(0.2, 0.8, 0.2, 1)", "purpose": "Default; the pet's own easing." },
+      { "name": "ease-enter", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Entrances." },
+      { "name": "ease-exit", "value": "cubic-bezier(0.4, 0, 1, 1)", "purpose": "Exits." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one loud control; only the active action wears Toast Crust.",
+      "html": "<button class=\"ds-btn-primary\">Start focus</button>",
+      "css": ".ds-btn-primary { appearance:none; border:1px solid transparent; border-radius:10px; padding:9px 15px; font:600 13px \"Segoe UI\", system-ui, sans-serif; background:#e07a2b; color:#2b1d0f; cursor:pointer; transition: background 140ms cubic-bezier(0.2,0.8,0.2,1), transform 140ms ease; } .ds-btn-primary:hover { background:#e89b60; } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline:2px solid #2a2622; outline-offset:2px; } .ds-btn-primary:disabled { opacity:.45; cursor:not-allowed; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action; fills with sand on hover.",
+      "html": "<button class=\"ds-btn-ghost\">End session</button>",
+      "css": ".ds-btn-ghost { appearance:none; border:1px solid #e4dacb; border-radius:10px; padding:9px 15px; font:600 13px \"Segoe UI\", system-ui, sans-serif; background:transparent; color:#2a2622; cursor:pointer; transition: background 140ms ease; } .ds-btn-ghost:hover { background:#ece1d2; } .ds-btn-ghost:active { transform: translateY(1px); } .ds-btn-ghost:focus-visible { outline:2px solid #2a2622; outline-offset:2px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Cream paper floating on paper; the base container.",
+      "html": "<section class=\"ds-card\" style=\"width:280px\"><span style=\"letter-spacing:.09em; text-transform:uppercase; font-size:11px; font-weight:650; color:#776c5f\">Today</span><p style=\"margin:14px 0 0; color:#2a2622; font-size:13px\">Body of paper…</p></section>",
+      "css": ".ds-card { display:block; background:#fffdf8; border:1px solid #e4dacb; border-radius:18px; padding:18px 20px 20px; box-shadow:0 10px 28px rgba(58,45,32,.05); font-family:\"Segoe UI\", system-ui, sans-serif; color:#2a2622; }"
+    },
+    {
+      "name": "Switch",
+      "kind": "custom",
+      "refersTo": "components.switch",
+      "description": "Toggle; off = Sand Track, on = Toast Crust; ink outline on focus.",
+      "html": "<label class=\"ds-switch\"><input type=\"checkbox\" aria-label=\"Example toggle\"><span class=\"ds-switch-track\"><span class=\"ds-switch-thumb\"></span></span></label>",
+      "css": ".ds-switch{position:relative;display:inline-flex;width:42px;height:24px;} .ds-switch input{position:absolute;inset:0;z-index:2;margin:0;opacity:0;cursor:pointer;} .ds-switch-track{position:absolute;inset:0;border-radius:999px;background:#e3d7c6;transition:background 160ms ease;} .ds-switch-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(42,38,34,.25);transition:transform 160ms cubic-bezier(0.2,0.8,0.2,1);} .ds-switch input:checked + .ds-switch-track{background:#e07a2b;} .ds-switch input:checked + .ds-switch-track .ds-switch-thumb{transform:translateX(18px);} .ds-switch input:focus-visible + .ds-switch-track{outline:2px solid #2a2622;outline-offset:2px;}"
+    },
+    {
+      "name": "Chips",
+      "kind": "chip",
+      "refersTo": "components.chip",
+      "description": "Status pills; rest = sand + mushroom, live = crust soft + crust bold.",
+      "html": "<span class=\"ds-chip\">Not started</span> <span class=\"ds-chip is-live\">In progress</span> <span class=\"ds-pill\">Level 10</span>",
+      "css": ".ds-chip,.ds-pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font:600 11.5px \"Segoe UI\", system-ui, sans-serif;background:#ece1d2;color:#776c5f;} .ds-chip.is-live{background:#f5e4d2;color:#7c4c1c;} .ds-pill{height:26px;padding:0 10px;background:#f5e4d2;color:#7c4c1c;font-size:12px;}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "components.input",
+      "description": "Cream-tinted field; Crust outline on focus, rust on error.",
+      "html": "<input class=\"ds-input\" value=\"Mochi\" aria-label=\"Pet name\"> <input class=\"ds-input ds-input-error\" value=\"999\" aria-label=\"Minutes\" aria-invalid=\"true\">",
+      "css": ".ds-input{appearance:none;padding:8px 10px;border:1px solid #e4dacb;border-radius:9px;background:#fffefa;color:#2a2622;font-size:13px;font-family:\"Segoe UI\",system-ui,sans-serif;} .ds-input:focus{outline:2px solid #e07a2b;outline-offset:1px;border-color:transparent;} .ds-input-error{border-color:#b4544c;background:#fdf3f2;}"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "refersTo": "components.nav",
+      "description": "Typographic sidebar nav; active wears Crust Soft, no icons.",
+      "html": "<nav style=\"display:grid;gap:3px;width:150px\" aria-label=\"Sections\"><button class=\"ds-nav\" type=\"button\">Home</button><button class=\"ds-nav is-active\" type=\"button\" aria-current=\"page\">Locker</button></nav>",
+      "css": ".ds-nav{appearance:none;border:0;background:transparent;color:#776c5f;text-align:left;padding:9px 12px;border-radius:10px;font:400 13.5px \"Segoe UI\",system-ui,sans-serif;cursor:pointer;transition:background 140ms ease,color 140ms ease;} .ds-nav:hover{background:rgba(236,225,210,.6);color:#2a2622;} .ds-nav.is-active{background:#f5e4d2;color:#2a2622;font-weight:650;} .ds-nav:focus-visible{outline:2px solid #2a2622;outline-offset:2px;}"
+    },
+    {
+      "name": "Focus Ring",
+      "kind": "custom",
+      "refersTo": "components.ring",
+      "description": "Signature timer: a conic Toast Crust sweep around a cream disc.",
+      "html": "<div class=\"ds-ring\" style=\"--p:40\"><div class=\"ds-ring-inner\"><span class=\"ds-ring-time\">25:00</span></div></div>",
+      "css": ".ds-ring{width:168px;aspect-ratio:1;border-radius:50%;background:conic-gradient(#e07a2b calc(var(--p)*3.6deg), #e4dacb 0deg);display:grid;place-items:center;} .ds-ring-inner{width:calc(100% - 20px);height:calc(100% - 20px);border-radius:50%;background:#fffdf8;box-shadow:inset 0 0 0 1px rgba(228,218,203,.7);display:grid;place-items:center;} .ds-ring-time{font:650 33px/1.1 \"Segoe UI\",system-ui,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#2a2622;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Paper Den",
+    "overview": "The Den is a paper den — a desk corner made of cream paper scraps, ruled hairline lines, and ink handwriting. Mochi's fur (the pet's own cream and ink) is the material the UI borrows; warmth comes from tonal paper-on-paper layering, not decoration. The one loud thing in the room is the orange, which carries every active, running, worn signal — and never decorates. Feel is playful and bright, but small: roundness, bouncy micro-motion in the pet's own easing vocabulary, tabular timer digits. The calm comes from what it never does — it never shouts, never judges, never steals focus.",
+    "keyCharacteristics": [
+      "Paper on paper — cream cards floating on cream paper, separated by soft shadows, not lines",
+      "One voice — a single orange (Toast Crust) given all active meaning, in any theme",
+      "Pet-derived palette — cosmetic colors are the pet's own cream/ink plus its worn accessories",
+      "System type, tabular digits — Segoe UI everywhere, every ticking number tabular",
+      "Soft geometry — nothing sharper than a 9px corner",
+      "Motion in the pet's vocabulary — 80–400ms, cubic-bezier(0.2, 0.8, 0.2, 1); never fights the reduced-motion kill-switch"
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Toast Crust appears only where something is active, running, or worn — never as decoration, never on more than ~10% of a screen. Its rarity is the point.", "section": "colors" },
+      { "name": "The Property-Color Rule", "body": "Moss, sky and aurora belong to the pet. If a UI element wears a scarf color, the pet must be able to wear it too.", "section": "colors" },
+      { "name": "The Tabletop Rule", "body": "Every number that ticks — timers, meters, stats, XP — uses tabular numerals. A jittering digit is a bug.", "section": "typography" },
+      { "name": "The Lift-By-Tone Rule", "body": "Depth comes from soft warm shadows and tonal paper steps. Never add a border for depth, never a shadow darker than rgba(…, 0.35).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Toast Crust for state, never decoration; pair it with card-cream or Crust Bold text.",
+      "Do keep all countable numbers tabular (font-variant-numeric: tabular-nums).",
+      "Do keep keyboard visibility ink-black (2px, offset 2px) on every interactive element; Crust outlines on cream for text fields only.",
+      "Do draw cosmetic icons and Locker swatches from the pet's own palette at full strength, in any theme.",
+      "Do use the motion vocabulary: 80ms press, 120–200ms state, 300–400ms entrances; pronounce tab changes as a 180ms 6px rise.",
+      "Do keep light and dark as the same den at dusk: same structure, same roles, hue-matched."
+    ],
+    "donts": [
+      "Don't introduce a second accent or a blue/link color.",
+      "Don't dim text with opacity to signal unavailable — retheme the tile instead; Mushroom is already at its readability floor.",
+      "Don't add pure white or pure black; the palette starts at #fffdf8 and ends at #221d18.",
+      "Don't sharpen a corner below 9px or add square corners to anything round.",
+      "Don't animate anything <80ms or >400ms, and never without respecting the reduced-motion kill-switch.",
+      "Don't put an eyebrow-styled span where a real heading is needed — structure is not a style."
+    ]
+  }
+}
