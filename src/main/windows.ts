@@ -1,8 +1,10 @@
 import { app, BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import type { PetScale } from '../shared/constants';
 import { petWindowSize } from '../shared/geometry';
 import { hardenWebContents } from './hardening';
+import { nodeFileOps, writeFileAtomically } from './atomic-write';
 import type { Store } from './store';
 
 const isDev = !app.isPackaged;
@@ -60,9 +62,10 @@ export function clampToDisplay(
 
 export function createPetWindow(store: Store): BrowserWindow {
   const saved = store.state.placement;
-  // The pet's scale is a window property as much as an art property: the
-  // whole layer (art, bubble, swing room) grows together, and the page zoom
-  // does the growing so every logical number inside stays as it was.
+  // The pet's scale decides the window's size: the window is the container
+  // the page's scaled layer stretches into. The growing itself is done by
+  // the page (pet.css .pet-scaled), because an Electron page zoom is shared
+  // per origin and the Den loads from the same file origin.
   const scale = store.state.settings.petScale;
   const size = petWindowSize(scale);
   const position = saved ? clampToDisplay(saved.x, saved.y, size) : defaultPetPosition(scale);
@@ -102,10 +105,12 @@ export function createPetWindow(store: Store): BrowserWindow {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setMenu(null);
   win.setIgnoreMouseEvents(true, { forward: true });
-  // The zoom is what actually scales the page. It belongs to the webContents,
-  // so it must be set again if this same webContents ever reloads.
-  win.webContents.setZoomFactor(scale);
+  // The window is the scale's container; the page scales itself from inside
+  // (pet.css .pet-scaled), because an Electron page zoom is shared per
+  // origin and both windows load from the same file origin.
   hardenWebContents(win);
+  clearPersistedZoomLevels();
+  neutralisePersistedZoom(win);
   loadSurface(win, 'pet');
 
   return win;
@@ -135,16 +140,9 @@ export function createDenWindow(): BrowserWindow {
 
   win.setMenu(null);
   hardenWebContents(win);
+  neutralisePersistedZoom(win);
   loadSurface(win, 'den');
   return win;
-}
-
-export function placeNearDefault(win: BrowserWindow): void {
-  // The window carries its own scale: zoom is per-webContents, so the
-  // window's zoom answers "how big is this pet" without any extra wiring.
-  const scale = win.webContents.getZoomFactor() as PetScale;
-  const position = defaultPetPosition(scale);
-  win.setPosition(position.x, position.y);
 }
 
 export function clampPlacement(win: BrowserWindow): void {
@@ -154,3 +152,65 @@ export function clampPlacement(win: BrowserWindow): void {
     win.setPosition(next.x, next.y);
   }
 }
+
+/**
+ * Chromium persists per-origin page zoom inside the profile. An older build
+ * set the pet's scale as a page zoom, and that value kept being restored on
+ * every fresh launch — the page opened pre-zoomed inside a window sized for
+ * the setting, which chopped her. Stamping the factor back to 1 on every
+ * navigation heals profiles that carry the old value and keeps it gone: the
+ * pet's real scaling lives in pet.css (.pet-scaled) and is never written
+ * through this channel at all.
+ */
+function neutralisePersistedZoom(win: BrowserWindow): void {
+  win.webContents.on('did-navigate', () => {
+    if (Math.abs(win.webContents.getZoomFactor() - 1) > 1e-6) {
+      win.webContents.setZoomFactor(1);
+    }
+  });
+}
+
+/**
+ * Deletes the stored per-host zoom levels from the profile's Preferences —
+ * the file Chromium itself would otherwise restore from. Zoom entries land
+ * there only when code writes a page zoom (the old mechanism); nothing in
+ * this build does, so an empty table is this build's steady state. Storage
+ * that must survive goes through the Store instead, so touching Chromium's
+ * preference file cannot lose the pet, the placement or any setting. The
+ * stamp above remains as the live safety net for values applied before this
+ * cleanup runs.
+ */
+function clearPersistedZoomLevels(): void {
+  if (zoomPrefsCleared) return;
+  zoomPrefsCleared = true;
+  let prefsPath: string;
+  try {
+    prefsPath = join(app.getPath('userData'), 'Preferences');
+  } catch {
+    return;
+  }
+  try {
+    const prefs: unknown = JSON.parse(readFileSync(prefsPath, 'utf8'));
+    if (
+      typeof prefs !== 'object' ||
+      prefs === null ||
+      !('partition' in prefs) ||
+      typeof (prefs as { partition: unknown }).partition !== 'object'
+    ) {
+      return;
+    }
+    const partition = (prefs as { partition: Record<string, unknown> }).partition;
+    if (
+      'per_host_zoom_levels' in partition &&
+      Object.keys((partition.per_host_zoom_levels ?? {}) as object).length > 0
+    ) {
+      delete partition.per_host_zoom_levels;
+      writeFileAtomically(prefsPath, JSON.stringify(prefs), nodeFileOps);
+    }
+  } catch {
+    // An unparseable Preferences is not ours to fix; the stamp above still
+    // heals whatever zoom it contains.
+  }
+}
+
+let zoomPrefsCleared = false;

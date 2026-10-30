@@ -1248,6 +1248,11 @@ export class MochiController {
     const win = this.petWindow;
     if (!win || win.isDestroyed()) return;
 
+    // The window is the scale's container. Its bottom edge — where her feet
+    // are — stays on the same desk line, it grows equally to each side
+    // around her centre, and the page scales itself from inside
+    // (pet.css .pet-scaled). Recreating the window needs no special case:
+    // it reads the scale itself when it is created.
     const scale = this.store.state.settings.petScale;
     const size = petWindowSize(scale);
     const current = win.getBounds();
@@ -1256,9 +1261,6 @@ export class MochiController {
     const y = Math.round(bottom - size.height);
     const clamped = clampToDisplay(x, y, size);
 
-    if (Math.abs(win.webContents.getZoomFactor() - scale) > 1e-6) {
-      win.webContents.setZoomFactor(scale);
-    }
     win.setBounds({ ...clamped, width: size.width, height: size.height });
     // The saved placement is a top-left corner, so it must follow the resize
     // or the next launch would put her feet somewhere else.

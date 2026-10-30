@@ -127,7 +127,12 @@ export function PetApp() {
   const behaviorRef = useRef<Behavior>('idle');
   /** The art, so it can be checked against the click target. */
   const spriteRef = useRef<HTMLDivElement | null>(null);
+  /** The pet's size: window pixels are the page grown by this much. */
+  const petScale = snapshot?.settings.petScale ?? 1;
+  const scaleRef = useRef(1);
   const reducedMotion = useReducedMotion(snapshot);
+
+  scaleRef.current = petScale;
 
   // The main process cannot read the system's motion preference, so it is told
   // what the effective setting is. Without this, reduced motion would only
@@ -248,7 +253,10 @@ export function PetApp() {
     };
 
     const onMove = (event: MouseEvent): void => {
-      pointerRef.current = { x: event.clientX, y: event.clientY };
+      // Window pixels are the page grown by the pet's scale, so everything
+      // the art contract measures in page pixels is reached by the divisor.
+      const scale = scaleRef.current;
+      pointerRef.current = { x: event.clientX / scale, y: event.clientY / scale };
 
       // A drag in progress must never lose the window's interactivity. If it
       // did, the pointerup would never arrive and the pet would stay stuck
@@ -260,8 +268,8 @@ export function PetApp() {
       }
 
       const inside = isInside(
-        event.clientX,
-        event.clientY,
+        event.clientX / scale,
+        event.clientY / scale,
         behaviorRef.current,
         bubbleRef.current !== null,
         true,
@@ -273,7 +281,8 @@ export function PetApp() {
         // The art's own glances sit at seven degrees, so anything much past
         // ten reads as a neck out of joint rather than a look.
         const angle =
-          Math.atan2(event.clientY - 274, event.clientX - 160) * (180 / Math.PI);
+          Math.atan2(event.clientY / scale - 274, event.clientX / scale - 160) *
+          (180 / Math.PI);
         setLookAngle(Math.max(-10, Math.min(10, angle)));
       } else if (interactiveRef.current) {
         scheduleExit();
@@ -309,8 +318,11 @@ export function PetApp() {
     if (!svg) return;
 
     const check = (): void => {
+      // The zoom reports grown pixels; the contract speaks page pixels, so
+      // pixels, so the measurement is divided back first.
+      const scale = scaleRef.current;
       const rect = svg.getBoundingClientRect();
-      const drift = spriteOffsetDrift({ left: rect.left, top: rect.top });
+      const drift = spriteOffsetDrift({ left: rect.left / scale, top: rect.top / scale });
       if (drift > MAX_SPRITE_DRIFT_DIP) {
         console.warn(
           `[mochi] the pet's art has drifted ${drift.toFixed(1)}px from where the click target expects it`,
@@ -321,7 +333,9 @@ export function PetApp() {
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
-  }, []);
+    // The scale joins the deps so the check re-runs with the divisor it
+    // needs: on a scaled launch the first paint measures grown pixels.
+  }, [petScale]);
 
   const triggerPoke = useCallback(() => {
     if (!window.mochi) return;
@@ -413,75 +427,80 @@ export function PetApp() {
       className={`pet-root${reducedMotion ? ' reduced' : ''}`}
       data-cosmetics={pet.equipped.join(' ')}
     >
-      {bubble ? (
-        <div
-          className={`bubble${bubbleLeaving ? ' bubble-leaving' : ''}`}
-          role="status"
-          aria-live="polite"
-        >
-          <p className="bubble-text">{bubble.text}</p>
-          <div className="bubble-row">
-            {action ? (
+      <div
+        className="pet-scaled"
+        style={{ zoom: petScale }}
+      >
+        {bubble ? (
+          <div
+            className={`bubble${bubbleLeaving ? ' bubble-leaving' : ''}`}
+            role="status"
+            aria-live="polite"
+          >
+            <p className="bubble-text">{bubble.text}</p>
+            <div className="bubble-row">
+              {action ? (
+                <button
+                  type="button"
+                  className="bubble-action"
+                  onClick={() => runBubbleAction(action)}
+                >
+                  {action.label}
+                </button>
+              ) : (
+                <span className="bubble-spacer" />
+              )}
+              {secondaryAction ? (
+                <button
+                  type="button"
+                  className="bubble-action bubble-action-secondary"
+                  onClick={() => runBubbleAction(secondaryAction)}
+                >
+                  {secondaryAction.label}
+                </button>
+              ) : null}
               <button
                 type="button"
-                className="bubble-action"
-                onClick={() => runBubbleAction(action)}
+                className="bubble-close"
+                aria-label="Dismiss"
+                onClick={() => dismissBubble()}
               >
-                {action.label}
+                ×
               </button>
-            ) : (
-              <span className="bubble-spacer" />
-            )}
-            {secondaryAction ? (
-              <button
-                type="button"
-                className="bubble-action bubble-action-secondary"
-                onClick={() => runBubbleAction(secondaryAction)}
-              >
-                {secondaryAction.label}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="bubble-close"
-              aria-label="Dismiss"
-              onClick={() => dismissBubble()}
-            >
-              ×
-            </button>
+            </div>
+            <span className="bubble-tail" aria-hidden="true" />
           </div>
-          <span className="bubble-tail" aria-hidden="true" />
-        </div>
-      ) : null}
+        ) : null}
 
-      <div className="pet-stage">
-        <div
-          className="pet-interaction"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={(event) => endPointer(event, false)}
-          onPointerCancel={(event) => endPointer(event, true)}
-          onDoubleClick={() => {
-            if (window.mochi) void window.mochi.openDen();
-          }}
-          onContextMenu={(event) => {
-            event.preventDefault();
-            if (window.mochi) {
-              void window.mochi.contextMenu({ x: event.clientX, y: event.clientY });
-            }
-          }}
-        >
-          <PetSprite
-            behavior={pet.behavior}
-            facing={pet.facing}
-            poked={poked}
-            interactive={interactive}
-            settling={settling}
-            animationPaused={pet.animationPaused}
-            lookAngle={lookAngle}
-            emotion={emotionFor(pet)}
-            spriteRef={spriteRef}
-          />
+        <div className="pet-stage">
+          <div
+            className="pet-interaction"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={(event) => endPointer(event, false)}
+            onPointerCancel={(event) => endPointer(event, true)}
+            onDoubleClick={() => {
+              if (window.mochi) void window.mochi.openDen();
+            }}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              if (window.mochi) {
+                void window.mochi.contextMenu({ x: event.clientX, y: event.clientY });
+              }
+            }}
+          >
+            <PetSprite
+              behavior={pet.behavior}
+              facing={pet.facing}
+              poked={poked}
+              interactive={interactive}
+              settling={settling}
+              animationPaused={pet.animationPaused}
+              lookAngle={lookAngle}
+              emotion={emotionFor(pet)}
+              spriteRef={spriteRef}
+            />
+          </div>
         </div>
       </div>
     </div>

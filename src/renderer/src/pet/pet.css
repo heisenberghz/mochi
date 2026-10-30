@@ -14,6 +14,24 @@
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
 
+/*
+ * The pet's scaled page. The window itself is the big box; this layer is the
+ * page as the art contract draws it — PET_WINDOW from shared/constants.ts of
+ * logical room for the art, the bubble and the swing — stretched by the
+ * scale to fill it (the zoom is set inline by PetApp). CSS zoom is deliberate
+ * on both counts: it is page-local, so the other window (the Den, same file
+ * origin) can never inherit it, and it scales at layout time rather than as
+ * a compositor transform, which a transparent overlay window paints only in
+ * pieces — a CSS transform was chopped on screen.
+ */
+.pet-scaled {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 360px;
+}
+
 .pet-root {
   position: relative;
   width: 100vw;
