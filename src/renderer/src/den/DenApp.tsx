@@ -350,6 +350,7 @@ const [highContrast, setHighContrast] = useState(false);
   const [insightsFailed, setInsightsFailed] = useState(false);
   const [insightsTick, setInsightsTick] = useState(0);
   const [exportPreview, setExportPreview] = useState<string | null>(null);
+  const [equipping, setEquipping] = useState(false);
   const [resetArmed, setResetArmed] = useState(false);
   const resetHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const resetTriggerRef = useRef<HTMLElement | null>(null);
@@ -589,7 +590,11 @@ const [highContrast, setHighContrast] = useState(false);
   const isWorking = focus.phase === 'work';
 
   return (
-    <div className={`den-root${highContrast ? ' high-contrast' : ''}`}>
+    <div
+      className={`den-root${highContrast ? ' high-contrast' : ''}${
+        settings.reducedMotion === 'on' ? ' reduced-motion' : ''
+      }`}
+    >
       <aside className="den-sidebar">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true">
@@ -652,9 +657,10 @@ const [highContrast, setHighContrast] = useState(false);
               <span className="pill">Level {pet.level}</span>
               <span
                 className="pill pill-muted"
-                title="XP is what Mochi earns for every finished block."
+                title={`XP is what ${settings.petName} earns for every finished block.`}
               >
                 {pet.xp} XP
+                <span className="sr-only"> — earned for every finished block</span>
               </span>
             </div>
           ) : null}
@@ -700,7 +706,7 @@ const [highContrast, setHighContrast] = useState(false);
               </div>
 
               <div className="focus-body">
-                <div style={ringStyle} className="ring">
+                <div style={ringStyle} className="ring" role="timer" aria-label="Focus session, time remaining">
                   <div className="ring-inner">
                     <span className="ring-time">{formatTime(focus.remainingMs)}</span>
                     <span className="ring-caption">
@@ -817,7 +823,7 @@ const [highContrast, setHighContrast] = useState(false);
                   Put the window over a quiet corner of the screen. {settings.petName} walks
                   a little when you are away, and naps when you are gone for a while.
                 </p>
-                <button type="button" className="btn btn-soft" onClick={() => void showPet()}>
+                <button type="button" className="btn btn-soft" disabled={!connected} onClick={() => void showPet()}>
                   Show {settings.petName}
                 </button>
               </Card>
@@ -829,7 +835,7 @@ const [highContrast, setHighContrast] = useState(false);
           <div className="grid-focus">
             <Card className="focus-card">
               <div className="focus-body focus-body-tall">
-                <div style={ringStyle} className="ring ring-large">
+                <div style={ringStyle} className="ring ring-large" role="timer" aria-label="Focus session, time remaining">
                   <div className="ring-inner">
                     <span className="ring-time">{formatTime(focus.remainingMs)}</span>
                     <span className="ring-caption">{phase}</span>
@@ -1167,14 +1173,17 @@ const [highContrast, setHighContrast] = useState(false);
                         <button
                           type="button"
                           className="cosmetic-toggle"
-                          disabled={!connected}
+                          disabled={!connected || equipping}
                           onClick={async () => {
                             const api = window.mochi;
-                            if (!api) return;
+                            if (!api || equipping) return;
+                            setEquipping(true);
                             try {
                               await api.equip(cosmetic.id);
                             } catch {
                               say('Could not change that just now.', true);
+                            } finally {
+                              setEquipping(false);
                             }
                           }}
                         >
@@ -1210,7 +1219,7 @@ const [highContrast, setHighContrast] = useState(false);
             <div className="stack">
             <Card>
               <div className="card-head">
-                <h2 className="eyebrow">Companion</h2>
+                <h2 className="eyebrow">Body</h2>
               </div>
 
               <div className="setting-row">
@@ -1225,6 +1234,7 @@ const [highContrast, setHighContrast] = useState(false);
                   className="text-input"
                   value={nameDraft ?? settings.petName}
                   maxLength={20}
+                  disabled={!connected}
                   onChange={(event) => setNameDraft(event.target.value)}
                   onBlur={() => {
                     if (nameDraft !== null) {
@@ -1276,6 +1286,12 @@ const [highContrast, setHighContrast] = useState(false);
                   </button>
                 </div>
               </div>
+            </Card>
+
+            <Card>
+              <div className="card-head">
+                <h2 className="eyebrow">Behavior</h2>
+              </div>
 
               <Toggle
                 label={`Let ${settings.petName} wander`}
@@ -1297,7 +1313,7 @@ const [highContrast, setHighContrast] = useState(false);
                     Motion level
                   </label>
                   <span className="setting-desc">
-                    Reduced motion keeps the pet still and calm.
+                    Reduced motion keeps the pet still and calms the Den.
                   </span>
                 </div>
                 <select
@@ -1318,17 +1334,23 @@ const [highContrast, setHighContrast] = useState(false);
               </div>
 
               <Toggle
+                label="Carry on by itself"
+                description="After an idle pause, start again without asking."
+                checked={settings.autoResume}
+                onChange={(value) => void saveSettings({ autoResume: value })}
+              />
+            </Card>
+
+            <Card>
+              <div className="card-head">
+                <h2 className="eyebrow">Presence</h2>
+              </div>
+              <Toggle
                 label="Start with Windows"
                 description="Starts when you sign in. Applies once Mochi is installed as an app."
                 checked={settings.launchAtLogin}
                 onChange={(value) => void saveSettings({ launchAtLogin: value })}
               />
-            </Card>
-
-              <Card>
-                <div className="card-head">
-                  <h2 className="eyebrow">Display</h2>
-                </div>
                 <Toggle
                   label="High contrast"
                   description="Stronger contrast for the Den."
@@ -1341,23 +1363,11 @@ const [highContrast, setHighContrast] = useState(false);
                   checked={settings.hideInFullscreen}
                   onChange={(value) => void saveSettings({ hideInFullscreen: value })}
                 />
-              </Card>
-
-              <Card>
-                <div className="card-head">
-                  <h2 className="eyebrow">Sessions</h2>
-                </div>
                 <Toggle
                   label="Pause when the computer is locked"
                   description="A locked computer is not focus time."
                   checked={settings.pauseWhenLocked}
                   onChange={(value) => void saveSettings({ pauseWhenLocked: value })}
-                />
-                <Toggle
-                  label="Carry on by itself"
-                  description="After an idle pause, start again without asking."
-                  checked={settings.autoResume}
-                  onChange={(value) => void saveSettings({ autoResume: value })}
                 />
               </Card>
             </div>
@@ -1473,6 +1483,7 @@ const [highContrast, setHighContrast] = useState(false);
                   <button
                     type="button"
                     className="btn btn-soft"
+                    disabled={!connected || busy}
                     onClick={() => {
                       setExportPreview(null);
                       void window.mochi?.getExportPayload().then(setExportPreview).catch(() => {
@@ -1485,7 +1496,7 @@ const [highContrast, setHighContrast] = useState(false);
                   <button
                     type="button"
                     className="btn btn-soft"
-                    disabled={busy}
+                    disabled={!connected || busy}
                     onClick={async () => {
                       const api = window.mochi;
                       if (!api) return;
@@ -1499,7 +1510,7 @@ const [highContrast, setHighContrast] = useState(false);
                   >
                     Save a backup…
                   </button>
-                  <button type="button" className="btn btn-soft" onClick={() => void openDataFolder()}>
+                  <button type="button" className="btn btn-soft" disabled={!connected} onClick={() => void openDataFolder()}>
                     Open data folder
                   </button>
                 </div>
@@ -1507,6 +1518,7 @@ const [highContrast, setHighContrast] = useState(false);
                   <button
                     type="button"
                     className="btn btn-danger btn-small"
+                    disabled={!connected}
                     onClick={() => armReset()}
                   >
                     Reset everything…

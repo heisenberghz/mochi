@@ -4,7 +4,7 @@
 > original product specification. This file is the one we actually build from, and it gets
 > updated after every piece of work so you can always see where we are.
 >
-> **Last updated:** 2026-10-29 · **Repo:** `D:\pet` · **Branch:** `main`
+> **Last updated:** 2026-10-31 · **Repo:** `D:\pet` · **Branch:** `main`
 
 ---
 
@@ -299,6 +299,59 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 ## 7. Status log
 
 *Newest first. I add an entry after each piece of work.*
+
+### 2026-10-31 — The impeccable critique round-trip: 29/40, and the fixes
+
+The Den was critiqued by two independent assessors (a design-director
+review against `DESIGN.md`, plus the deterministic detector). The
+committed design system + the contrast/structure/copy sweep lifted the
+score from the 24/40 baseline to **29/40 ("Good" band)**, with the
+detector reporting 0 findings. The critique is persisted at
+`.impeccable/critique/`, so the next run has a real trend line. The
+priorities the user chose (P1 + P2 complete) landed as:
+
+- **Honest Insights states** — "Reading your week…" while loading, a
+  retry-able failure card ("Nothing is missing — your data is safe."),
+  and the gentle empty card only when the data truly is empty.
+- **"End session" takes two presses** — the first arms it ("End it?
+  Press again", danger-red, 4 s), the second commits; Escape or waiting
+  cancels. The reset dialog stays the only full modal.
+- **Visible focus rings** — the size slider and Locker Wear buttons had
+  accent outlines at ~2.1:1 on cream; keyboard rings are ink now, per
+  DESIGN.md's own rule.
+- **Token leaks closed** — the Locker's spare spot used an undefined
+  `--tile` (square corners in a round room); defined, and a dead
+  duplicate `.stat-label` block removed.
+- **Settings regrouped to ≤4 rows per card** — Body (name, size) /
+  Behavior (wander, sound, motion, auto-resume) / Presence (startup,
+  fullscreen, lock, high contrast), against Quiet hours / Shortcuts /
+  Data & privacy. The six-row Companion card is gone.
+- **Small frictions** — Wear buttons get a busy state (no double-click
+  race), the rings report themselves as timers (`role="timer"`), the XP
+  pill explains itself to screen readers, the Den's animations obey the
+  app's own **Reduced motion** setting (not just the OS preference), and
+  in preview mode the data buttons ("Save a backup…", "Open data
+  folder", "Reset everything…", name field, "Show Mochi") now actually
+  sit disabled, matching the "the controls are asleep" copy.
+
+*(One flagged defect — "the 7/30-day range resets every visit" — was
+verified false and not chased; the range already persists.)*
+
+### 2026-10-31 — The WCAG/paper polish sweep (five staged batches, one code commit)
+
+A dual-agent critique of the Den (24/40) produced five fix batches,
+applied checklist-wise and verified after each (typecheck, lint, 258
+tests, build, detector — which ended at 0 findings against the new
+`DESIGN.md`): dark-mode chip/contrast rescue (1.7:1 → readable), locked
+tiles dim the picture not the words, visible switch off-edges, chart
+bars past 3:1; the reset dialog became a real modal (focus in, Tab
+trapped, focus returned on close) and Locker wear is guarded; Settings
+went to two even columns, Home fills its frame, the Locker got a spare
+spot (2×4); a copy pass (one state vocabulary, block/round defined,
+"Save a backup…", honest "Start with Windows"); and real `<h2>`
+headings, a screen-reader chart table, the 12px type floor, a working
+high-contrast theme (the old one retuned dead token names), and a
+bottom-center toast with sticky errors + Dismiss.
 
 ### 2026-10-30 — Commit 14: the size setting as a slider with Reset
 

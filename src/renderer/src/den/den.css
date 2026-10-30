@@ -13,6 +13,7 @@
   --switch-track: #ddd0be;
   --switch-edge: #a08d74;
   --stat-tile: #faf4e9;
+  --tile: 12px;
   display: grid;
   grid-template-columns: 216px minmax(0, 1fr);
   height: 100vh;
@@ -35,6 +36,18 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* The app's own Reduced motion setting (independent of the OS preference,
+   which styles.css handles). "Reduced" in Settings quiets the Den's own
+   animations too — the setting was described as calm, so it should be. */
+.den-root.reduced-motion *,
+.den-root.reduced-motion *::before,
+.den-root.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
 
 /* Sidebar */
@@ -634,11 +647,6 @@
   font-size: 12px;
 }
 
-.stat-label {
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .meter {
   margin-top: 10px;
 }
@@ -823,7 +831,7 @@
 }
 
 .size-slider:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -844,7 +852,7 @@
 }
 
 .size-reset:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -1539,7 +1547,7 @@ input:focus-visible {
 }
 
 .cosmetic-toggle:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ink);
   outline-offset: 1px;
 }
 
