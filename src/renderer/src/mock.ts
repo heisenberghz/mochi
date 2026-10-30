@@ -30,6 +30,7 @@ export function mockSnapshot(): AppSnapshot {
     },
     settings: {
       petName: 'Mochi',
+      petScale: 1,
       roam: true,
       reducedMotion: 'system',
       sound: true,

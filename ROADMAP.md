@@ -300,6 +300,30 @@ I verify with the 138 unit tests and the two-phase smoke harness before asking y
 
 *Newest first. I add an entry after each piece of work.*
 
+### 2026-10-29 — Commit 12 (stage 11A): a pet size setting
+
+A stepped size setting — **Snug 75% / Normal 100% / Large 125% / Grand 150%**
+(`settings.petScale`) — with the whole window layer growing, not just the art:
+
+- **The steps are the crisp ones.** The sprite is pixel art on an 8-unit
+  cell; each step lands every cell on a whole number of screen pixels
+  (6/8/10/12). A free slider would blur her, so it is a dropdown of four.
+- **One mechanism: page zoom.** The window is created at
+  `PET_WINDOW × scale` (`petWindowSize` in `geometry.ts`) and the page keeps
+  its logical 320×360 layout (`webContents.setZoomFactor`). Every logical
+  number inside — art positions, hit regions, the bubble box, the drift
+  sentinel — keeps its value unchanged, so none of the contract tests moved.
+- **Feet stay planted.** On a change the window is re-bounded so its bottom
+  edge (the desk line) holds, grows equally left/right around her centre,
+  is re-clamped inside the work area, and the saved placement follows the
+  new top-left so the next launch lands the same.
+- **Click math stays honest.** The cursor watch in the controller divides the
+  DIP offset by the scale before the hit-region and bubble tests.
+- **UI + persistence.** A "Size" select in the Den's pet card (alongside
+  wander/sound); `sanitiseSettings` accepts only the four steps and old save
+  files arrive at Normal. Applied instantly from the Den.
+- 258 tests passing (5 new); lint, typecheck, build green.
+
 ### 2026-10-29 — Commit 11 (stage 10C): pixel icon + palette brought along
 
 The Den and the icon catch up with the pixel Mochi:

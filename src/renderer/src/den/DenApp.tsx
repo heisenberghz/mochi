@@ -9,7 +9,7 @@ import type {
   InsightsView,
   Settings,
 } from '../../../shared/types';
-import { COSMETICS, HOTKEY_DEFAULTS, unlockedCosmetics } from '../../../shared/constants';
+import { COSMETICS, HOTKEY_DEFAULTS, PET_SCALES, unlockedCosmetics } from '../../../shared/constants';
 import { formatTime, mockSnapshot } from '../mock';
 
 type Tab = 'home' | 'focus' | 'insights' | 'locker' | 'settings';
@@ -1046,6 +1046,34 @@ const [highContrast, setHighContrast] = useState(false);
                     if (event.key === 'Enter') event.currentTarget.blur();
                   }}
                 />
+              </div>
+
+              <div className="setting-row setting-row-stacked">
+                <div className="setting-copy">
+                  <label className="setting-label" htmlFor="pet-scale">
+                    Size
+                  </label>
+                  <span className="setting-desc">
+                    How big she stands on the desk. The pixels stay crisp at
+                    every step.
+                  </span>
+                </div>
+                <select
+                  id="pet-scale"
+                  className="select-input"
+                  value={settings.petScale}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    if (PET_SCALES.includes(value as Settings['petScale'])) {
+                      void saveSettings({ petScale: value as Settings['petScale'] });
+                    }
+                  }}
+                >
+                  <option value="0.75">Snug (75%)</option>
+                  <option value="1">Normal (100%)</option>
+                  <option value="1.25">Large (125%)</option>
+                  <option value="1.5">Grand (150%)</option>
+                </select>
               </div>
 
               <Toggle

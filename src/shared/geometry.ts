@@ -1,4 +1,5 @@
 import { HIT_HYSTERESIS, PET_WINDOW } from './constants';
+import type { PetScale } from './constants';
 import type { Behavior } from './types';
 
 export interface HitRegion {
@@ -35,6 +36,20 @@ export const BUBBLE_REGION = {
   width: BUBBLE_MAX_WIDTH,
   height: BUBBLE_MAX_HEIGHT,
 };
+
+/**
+ * The pet window's size once `scale` is applied, in DIPs.
+ *
+ * The whole window layer grows rather than the art alone: the bubble and the
+ * swing room above her head scale with her, so nothing collides at a size it
+ * was not drawn for.
+ */
+export function petWindowSize(scale: PetScale): { width: number; height: number } {
+  return {
+    width: Math.round(PET_WINDOW.width * scale),
+    height: Math.round(PET_WINDOW.height * scale),
+  };
+}
 
 /** The body, as the art draws it.
  *

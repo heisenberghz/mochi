@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PET_WINDOW } from './constants';
+import { PET_SCALES, PET_WINDOW } from './constants';
 import {
   HIT_REGION_SVG,
   MAX_SPRITE_DRIFT_DIP,
@@ -8,6 +8,7 @@ import {
   SPRITE_VIEWBOX,
   hitRegionFor,
   isInsideHitRegion,
+  petWindowSize,
   spriteOffsetDrift,
 } from './geometry';
 
@@ -98,6 +99,33 @@ describe('the hit region', () => {
 
     expect(isInsideHitRegion(awake.cx, topOfAwake, 'idle', false)).toBe(true);
     expect(isInsideHitRegion(awake.cx, topOfAwake, 'sleep', false)).toBe(false);
+  });
+});
+
+describe('the pet window at a scale', () => {
+  it('grows the whole window layer by the scale', () => {
+    expect(petWindowSize(1)).toEqual({ width: 320, height: 360 });
+    expect(petWindowSize(0.75)).toEqual({ width: 240, height: 270 });
+    expect(petWindowSize(1.25)).toEqual({ width: 400, height: 450 });
+    expect(petWindowSize(1.5)).toEqual({ width: 480, height: 540 });
+  });
+
+  it('grows by the same factor as the art, so nothing collides', () => {
+    // The bubble needs the window to have room above the pet; the walk needs
+    // room below her. Both are fractions of the window, so they scale with it.
+    for (const scale of PET_SCALES) {
+      const size = petWindowSize(scale);
+      expect(size.width).toBe(Math.round(PET_WINDOW.width * scale));
+      expect(size.height).toBe(Math.round(PET_WINDOW.height * scale));
+    }
+  });
+
+  it('keeps every scaled window size a whole number of pixels', () => {
+    for (const scale of PET_SCALES) {
+      const size = petWindowSize(scale);
+      expect(Number.isInteger(size.width)).toBe(true);
+      expect(Number.isInteger(size.height)).toBe(true);
+    }
   });
 });
 

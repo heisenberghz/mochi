@@ -43,6 +43,16 @@ export const WALK_DURATION_MAX_MS = 5200;
 export const WALK_SPEED_DIP_PER_SECOND = 70;
 
 /**
+ * The steps the pet can be scaled to.
+ *
+ * These are not free choices: the sprite is pixel art on an 8-unit cell, and
+ * each step below lands every cell on a whole number of screen pixels (6, 8,
+ * 10 or 12), so Mochi stays crisp. Anything between the steps blurs her.
+ */
+export const PET_SCALES = [0.75, 1, 1.25, 1.5] as const;
+export type PetScale = (typeof PET_SCALES)[number];
+
+/**
  * What one paw cycle is worth in ground distance. Two steps happen inside it
  * — one near paw and one far paw lift together in a trot.
  */
@@ -169,6 +179,8 @@ export const CURRENT_SCHEMA_VERSION = 5;
 
 export const DEFAULT_SETTINGS = {
   petName: 'Mochi',
+  /** How big the pet stands on the desk: one of PET_SCALES. */
+  petScale: 1 as PetScale,
   roam: true,
   reducedMotion: 'system',
   sound: true,

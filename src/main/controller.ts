@@ -33,6 +33,7 @@ import {
   IDLE_AUTO_PAUSE_SECONDS,
   BUBBLE_INTERACTIVE_MARGIN_MS,
   CURSOR_WATCH_INTERVAL_MS,
+  PET_SCALES,
   QUIET_MINUTE_MAX,
   QUIET_MINUTE_MIN,
   SNAP_DISTANCE,
@@ -40,7 +41,8 @@ import {
   WALK_SPEED_DIP_PER_SECOND,
 } from '../shared/constants';
 import { localDateKey } from '../shared/dates';
-import { isInsideHitRegion, BUBBLE_REGION } from '../shared/geometry';
+import { isInsideHitRegion, BUBBLE_REGION, petWindowSize } from '../shared/geometry';
+import type { PetScale } from '../shared/constants';
 import { defaultPersistedState } from '../domain/persistence-schema';
 import type {
   AppSnapshot,
@@ -57,11 +59,12 @@ import type {
 import { focusConfigIssues } from '../shared/focus-config';
 import { Store } from './store';
 import { monotonicNow, systemFocusClock } from './clock';
-import { clampPlacement, createDenWindow, createPetWindow } from './windows';
+import { clampPlacement, clampToDisplay, createDenWindow, createPetWindow } from './windows';
 import { isRealFullScreen } from './fullscreen-detector';
 
 const SETTINGS_KEYS: (keyof Settings)[] = [
   'petName',
+  'petScale',
   'roam',
   'reducedMotion',
   'sound',
@@ -905,8 +908,11 @@ export class MochiController {
     const bounds = this.petWindow.getBounds();
     // Both speak the same virtual zoom-adjusted pixels here (the cursor point
     // is DIP per Electron's docs; at 125% zoom that is physical/1.25).
-    const x = cursor.x - bounds.x;
-    const y = cursor.y - bounds.y;
+    // The pet's zoom scale is ours, not the OS's: the page keeps its logical
+    // layout, so the cursor offset is divided back into page pixels first.
+    const scale = this.store.state.settings.petScale;
+    const x = (cursor.x - bounds.x) / scale;
+    const y = (cursor.y - bounds.y) / scale;
 
     // Hysteresis: the region that counts as "entering" is a little larger
     // than the one that counts as "leaving", so sitting on the edge never
@@ -1226,6 +1232,37 @@ export class MochiController {
     if (!this.petWindow) return;
     if (this.petWindow.isVisible()) this.hidePet();
     else this.showPet();
+  }
+
+  /**
+   * Re-apply the pet's size after the setting changed.
+   *
+   * The window is what grows: its bottom edge — where her feet are — stays on
+   * the same desk line, the aquarium grows upward and equally to each side
+   * around her centre, and the page zoom does the growing so every logical
+   * number inside the page (art positions, hit regions, bubble) keeps its
+   * value. Recreating the window needs no special case: it reads the scale
+   * itself when it is created.
+   */
+  private applyPetScale(): void {
+    const win = this.petWindow;
+    if (!win || win.isDestroyed()) return;
+
+    const scale = this.store.state.settings.petScale;
+    const size = petWindowSize(scale);
+    const current = win.getBounds();
+    const bottom = current.y + current.height;
+    const x = Math.round(current.x + (current.width - size.width) / 2);
+    const y = Math.round(bottom - size.height);
+    const clamped = clampToDisplay(x, y, size);
+
+    if (Math.abs(win.webContents.getZoomFactor() - scale) > 1e-6) {
+      win.webContents.setZoomFactor(scale);
+    }
+    win.setBounds({ ...clamped, width: size.width, height: size.height });
+    // The saved placement is a top-left corner, so it must follow the resize
+    // or the next launch would put her feet somewhere else.
+    this.store.setPlacement(clamped.x, clamped.y);
   }
 
   private openDen(): void {
@@ -1806,6 +1843,9 @@ export class MochiController {
         if (!(key in patch)) continue;
         const value = patch[key];
         if (key === 'petName' && typeof value === 'string') next.petName = value.trim().slice(0, 20) || 'Mochi';
+        if (key === 'petScale' && PET_SCALES.includes(value as PetScale)) {
+          next.petScale = value as PetScale;
+        }
         if (key === 'roam' && typeof value === 'boolean') next.roam = value;
         if (
           key === 'reducedMotion' &&
@@ -1831,10 +1871,14 @@ export class MochiController {
         }
         if (key === 'globalHotkeys' && typeof value === 'boolean') next.globalHotkeys = value;
       }
+      const scaleChanged = next.petScale !== this.store.state.settings.petScale;
       this.store.setSettings(next);
       this.store.flush();
       this.applyLoginItem();
       this.applyHotkeys();
+      // The resize must land before the broadcast: the pet window's bounds
+      // and its zoom are part of the state the Den and the pet now describe.
+      if (scaleChanged) this.applyPetScale();
       this.broadcast();
       return { ok: true, settings: { ...next } };
     });

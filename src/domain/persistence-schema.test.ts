@@ -8,6 +8,7 @@ import {
   SchemaError,
   UnsupportedVersionError,
   defaultPersistedState,
+  sanitiseSettings,
 } from './persistence-schema';
 
 const TODAY = '2026-03-10';
@@ -40,6 +41,9 @@ describe('migrateState', () => {
     // Settings the old file never had arrive with their defaults.
     expect(state.settings.pauseWhenLocked).toBe(true);
     expect(state.settings.autoResume).toBe(false);
+    // The pet's size arrived after the first version: old files stand
+    // at the normal size.
+    expect(state.settings.petScale).toBe(1);
     expect(state.pet.lastSeenAt).toBeNull();
   });
 
@@ -257,6 +261,23 @@ describe('the version 2 to 3 migration', () => {
   it('gives the pet a last-seen time, so it can catch up later', () => {
     const { state } = migrateState(v2Fixture, TODAY);
     expect(state.pet.lastSeenAt).toBeNull();
+  });
+});
+
+describe('sanitiseSettings', () => {
+  it('keeps a scale the file chose', () => {
+    expect(sanitiseSettings({ petScale: 1.25 }).petScale).toBe(1.25);
+    expect(sanitiseSettings({ petScale: 0.75 }).petScale).toBe(0.75);
+    expect(sanitiseSettings({ petScale: 1.5 }).petScale).toBe(1.5);
+  });
+
+  it('falls back to the normal size for anything but the steps', () => {
+    // The steps exist so the pixel cells stay whole; anything between them
+    // would blur her, so it is not accepted.
+    expect(sanitiseSettings({ petScale: 3 }).petScale).toBe(1);
+    expect(sanitiseSettings({ petScale: 1.13 }).petScale).toBe(1);
+    expect(sanitiseSettings({ petScale: 'big' }).petScale).toBe(1);
+    expect(sanitiseSettings({}).petScale).toBe(1);
   });
 });
 

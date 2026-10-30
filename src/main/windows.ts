@@ -1,6 +1,7 @@
 import { app, BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
-import { PET_WINDOW } from '../shared/constants';
+import type { PetScale } from '../shared/constants';
+import { petWindowSize } from '../shared/geometry';
 import { hardenWebContents } from './hardening';
 import type { Store } from './store';
 
@@ -27,38 +28,48 @@ export function loadSurface(win: BrowserWindow, surface: 'pet' | 'den'): void {
   });
 }
 
-function defaultPetPosition(): { x: number; y: number } {
+function defaultPetPosition(scale: PetScale): { x: number; y: number } {
+  const size = petWindowSize(scale);
   const { workArea } = screen.getPrimaryDisplay();
   return {
-    x: Math.round(workArea.x + workArea.width - PET_WINDOW.width - 24),
-    y: Math.round(workArea.y + workArea.height - PET_WINDOW.height - 16),
+    x: Math.round(workArea.x + workArea.width - size.width - 24),
+    y: Math.round(workArea.y + workArea.height - size.height - 16),
   };
 }
 
-function clampToDisplay(x: number, y: number): { x: number; y: number } {
-  const bounds = { x, y, width: PET_WINDOW.width, height: PET_WINDOW.height };
+export function clampToDisplay(
+  x: number,
+  y: number,
+  size: { width: number; height: number },
+): { x: number; y: number } {
+  const bounds = { x, y, width: size.width, height: size.height };
   const display = screen.getDisplayMatching(bounds);
   const area = display.workArea;
 
   return {
     x: Math.round(
-      Math.min(area.x + area.width - 96, Math.max(area.x - PET_WINDOW.width + 96, x)),
+      Math.min(area.x + area.width - 96, Math.max(area.x - size.width + 96, x)),
     ),
     // The pet's feet must never reach the taskbar, so the whole window stays
     // inside the work area vertically.
     y: Math.round(
-      Math.min(area.y + area.height - PET_WINDOW.height, Math.max(area.y, y)),
+      Math.min(area.y + area.height - size.height, Math.max(area.y, y)),
     ),
   };
 }
 
 export function createPetWindow(store: Store): BrowserWindow {
   const saved = store.state.placement;
-  const position = saved ? clampToDisplay(saved.x, saved.y) : defaultPetPosition();
+  // The pet's scale is a window property as much as an art property: the
+  // whole layer (art, bubble, swing room) grows together, and the page zoom
+  // does the growing so every logical number inside stays as it was.
+  const scale = store.state.settings.petScale;
+  const size = petWindowSize(scale);
+  const position = saved ? clampToDisplay(saved.x, saved.y, size) : defaultPetPosition(scale);
 
   const win = new BrowserWindow({
-    width: PET_WINDOW.width,
-    height: PET_WINDOW.height,
+    width: size.width,
+    height: size.height,
     x: position.x,
     y: position.y,
     show: false,
@@ -91,6 +102,9 @@ export function createPetWindow(store: Store): BrowserWindow {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setMenu(null);
   win.setIgnoreMouseEvents(true, { forward: true });
+  // The zoom is what actually scales the page. It belongs to the webContents,
+  // so it must be set again if this same webContents ever reloads.
+  win.webContents.setZoomFactor(scale);
   hardenWebContents(win);
   loadSurface(win, 'pet');
 
@@ -126,13 +140,16 @@ export function createDenWindow(): BrowserWindow {
 }
 
 export function placeNearDefault(win: BrowserWindow): void {
-  const position = defaultPetPosition();
+  // The window carries its own scale: zoom is per-webContents, so the
+  // window's zoom answers "how big is this pet" without any extra wiring.
+  const scale = win.webContents.getZoomFactor() as PetScale;
+  const position = defaultPetPosition(scale);
   win.setPosition(position.x, position.y);
 }
 
 export function clampPlacement(win: BrowserWindow): void {
   const bounds = win.getBounds();
-  const next = clampToDisplay(bounds.x, bounds.y);
+  const next = clampToDisplay(bounds.x, bounds.y, bounds);
   if (next.x !== bounds.x || next.y !== bounds.y) {
     win.setPosition(next.x, next.y);
   }

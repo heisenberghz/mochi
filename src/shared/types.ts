@@ -13,8 +13,8 @@ export type Behavior =
   | 'celebrate'
   | 'drag';
 
-export type { CosmeticId } from './constants';
-import type { CosmeticId } from './constants';
+export type { CosmeticId, PetScale } from './constants';
+import type { CosmeticId, PetScale } from './constants';
 
 export type PetMode = 'awake' | 'focus' | 'sleep' | 'drag';
 
@@ -81,6 +81,8 @@ export type ReducedMotion = 'system' | 'on' | 'off';
 
 export interface Settings {
   petName: string;
+  /** How big the pet stands on the desk: one of PET_SCALES. */
+  petScale: PetScale;
   roam: boolean;
   reducedMotion: ReducedMotion;
   sound: boolean;

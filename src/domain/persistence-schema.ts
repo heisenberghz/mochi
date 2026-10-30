@@ -4,6 +4,7 @@ import {
   CURRENT_SCHEMA_VERSION,
   DEFAULT_SETTINGS,
   FOCUS_DEFAULTS,
+  PET_SCALES,
   cosmeticSlot,
 } from '../shared/constants';
 import type { CosmeticId } from '../shared/constants';
@@ -266,6 +267,7 @@ export function sanitiseSettings(value: unknown): Settings {
         ? value.petName.trim().slice(0, 20)
         : base.petName,
     roam: typeof value.roam === 'boolean' ? value.roam : base.roam,
+    petScale: PET_SCALES.find((scale) => scale === value.petScale) ?? base.petScale,
     reducedMotion:
       value.reducedMotion === 'on' || value.reducedMotion === 'off' || value.reducedMotion === 'system'
         ? value.reducedMotion
